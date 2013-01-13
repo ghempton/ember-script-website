@@ -10,10 +10,10 @@ $orange: #F64E3E
 
 body
   color: #111
-  line-height: 140%
-  font: 13px/1.231 sans-serif
-  *font-size: small
-  font-family: "Helvetica Neue", Helvetica, Arial
+  font-size: 16px
+  line-height: 150%
+  font-weight: 300
+  font-family: Lato, 'Helvetica Neue', Helvetica, Arial, sans-serif
 
   background: image-url('double_lined.png')
   @media (-webkit-min-device-pixel-ratio: 1.5), (min--moz-device-pixel-ratio: 1.5), (-o-min-device-pixel-ratio: 3/2), (min-device-pixel-ratio: 1.5)
@@ -26,19 +26,55 @@ body
   min-width: 768px
   margin: auto
 
+a
+  text-decoration: none
+  color: $orange
+
 h1
   font-family: LobsterTwo
   color: $orange
   font-size: 72px
+  line-height: 72px
   font-weight: bold
   text-align: center
+  margin: 0
+  margin-top: 36px
+
+h2
+  font-size: 28px
+  line-height: 28px
+  font-weight: 300
+  text-align: center
+  margin-top: 8px
+  margin-bottom: 24px
+
+h3
+  font-size: 24px
+  line-height: 24px
+  font-family: LobsterTwo
+  font-weight: bold
+  color: #fff
+  background-color: $orange
+  padding: 8px
+
+h4
+  font-size: 24px
+  line-height: 24px
+  font-family: LobsterTwo
+  font-weight: bold
 
 figure.example
-  position: absolute
+  position: relative
   width: 960px
   height: 240px
   +single-box-shadow
+  font-size: 16px
+  line-height: 16px
 
+  pre
+    margin: 0
+    padding: 0
+    border: none
   .emberscript, .javascript
     margin: 0
     position: absolute
@@ -48,3 +84,14 @@ figure.example
     left: 0
   .javascript
     right: 0
+
+pre
+  padding-left: 16px
+  border-left: 8px solid #ccc
+  font-size: 14px
+
+.footer
+  font-size: 14px
+  text-align: center
+  margin-top: 32px
+  margin-bottom: 16px

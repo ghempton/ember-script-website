@@ -1,0 +1,45 @@
+---
+title: Ember.js-Infused CoffeeScript
+---
+
+# EmberScript
+## Ember.js-Infused CoffeeScript
+
+EmberScript is a [CoffeeScript](http://coffeescript.org/) derived language that has first-class support for the [Ember.js](http://emberjs.com/) runtime. It also has all of the syntactical goodness of the original Coffeescript, compiles directly into JavaScript, and can be used outside of Ember applications! Because EmberScript is also a compiled language, really cool things such as compile-time property dependency inference are possible.
+
+*EmberScript on the left, JavaScript on the right. All examples are editable!*
+
+<%= example 'main' %>
+
+### Installation
+
+Being as EmberScript is still in early development, it is best to install via npm from git. After installing [Node.js](http://nodejs.org/), run the following command:
+
+```
+sudo npm install -g 'git://github.com/ghempton/ember-script.git#HEAD'
+ember-script --help
+```
+
+To use EmberScript inside of a Rails application through the asset pipeline, see [ember-script-rails](https://github.com/ghempton/ember-script-rails).
+
+### Language Reference
+
+For basic CoffeeScript syntax, please consult the [CoffeeScript reference](http://coffeescript.org/)
+
+#### Object Model
+
+EmberScript replaces the CoffeeScript object model with Ember's:
+
+<%= example 'object_model' %>
+
+#### Computed Properties and Observers
+
+<%= example 'properties' %>
+
+#### Dependency Inference
+
+<%= example 'inference' %>
+
+#### Properties and Accessors
+
+<%= example 'accessors' %>

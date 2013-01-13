@@ -15,6 +15,7 @@ $ ->
 
     editor = ace.edit($emberscript[0])
     editor.getSession().setMode("ace/mode/coffee")
+    editor.session.setUseWorker(false) # removes errors
     editor.getSession().on 'change', ->
       updateJS()
 
