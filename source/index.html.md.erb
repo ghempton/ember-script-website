@@ -1,17 +1,17 @@
 ---
-title: Ember.js-Infused CoffeeScript
+title: EmberScript
 ---
 
 # EmberScript
 ## Ember.js-Infused CoffeeScript
 
-EmberScript is a [CoffeeScript](http://coffeescript.org/) derived language that has first-class support for the [Ember.js](http://emberjs.com/) runtime. It also has all of the syntactical goodness of the original Coffeescript, compiles directly into JavaScript, and can be used outside of Ember applications! Because EmberScript is also a compiled language, really cool things such as compile-time property dependency inference are possible.
-
-*EmberScript on the left, JavaScript on the right. All examples are editable!*
+EmberScript is a [CoffeeScript](http://coffeescript.org/) derived language that has first-class support for the [Ember.js](http://emberjs.com/) runtime. It also has all of the syntactical goodness of the original Coffeescript, compiles directly into JavaScript, and can be used outside of Ember applications! Because EmberScript is also a compiled language, really cool things such as compile-time property dependency inference are possible:
 
 <%= example 'main' %>
 
-### Installation
+*EmberScript on the left, JavaScript on the right. All examples are editable!*
+
+### Getting Started
 
 Being as EmberScript is still in early development, it is best to install via npm from git. After installing [Node.js](http://nodejs.org/), run the following command:
 
@@ -28,18 +28,24 @@ For basic CoffeeScript syntax, please consult the [CoffeeScript reference](http:
 
 #### Object Model
 
-EmberScript replaces the CoffeeScript object model with Ember's:
+EmberScript replaces the CoffeeScript `class` keyword with Ember's [object model](http://emberjs.com/guides/object-model/classes-and-instances/). The `mixin` keyword is also introduced:
 
 <%= example 'object_model' %>
 
 #### Computed Properties and Observers
 
+An annotation based syntax is used to declare computed properties and observers:
+
 <%= example 'properties' %>
 
-#### Dependency Inference
+#### Dependency Inference (experimental)
+
+Dependencies of computed properties are inferred at compile time:
 
 <%= example 'inference' %>
 
 #### Properties and Accessors
+
+By default, all property accesses are deferred to Ember's `get` and `set` methods. To use normal javascript property access, use the `*.` operator:
 
 <%= example 'accessors' %>
