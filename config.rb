@@ -2,6 +2,8 @@ require "redcarpet"
 set :markdown, :tables => true, :autolink => true, :gh_blockcode => true, :fenced_code_blocks => true
 set :markdown_engine, :redcarpet
 
+require 'ember_script'
+
 require 'lib/template_helpers'
 helpers TemplateHelpers
 

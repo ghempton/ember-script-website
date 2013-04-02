@@ -7,6 +7,8 @@
 @import 'lib/fonts'
 
 $orange: #F64E3E
+$secondary1: #99765F
+$secondary2: #29CC18
 
 body
   color: #111
@@ -14,7 +16,6 @@ body
   line-height: 150%
   font-weight: 400
   font-family: Lato, 'Helvetica Neue', Helvetica, Arial, sans-serif
-
   background: #FFF4F3
 
 .main
@@ -52,6 +53,7 @@ h3
   color: #fff
   background-color: $orange
   padding: 8px
+  margin-top: 32px
 
 h4
   font-size: 18px
@@ -79,6 +81,26 @@ figure.example
     left: 0
   .javascript
     right: 0
+  .emberscript:after
+    content: 'EmberScript'
+    background: $secondary1
+  .javascript:after
+    content: 'JavaScript'
+    background: $secondary2
+  .javascript:after, .emberscript:after
+    text-transform: uppercase
+    position: absolute
+    z-index: 100
+    bottom: 4px
+    text-align: center
+    width: 80px
+    left: 50%
+    margin-left: -50px
+    padding: 2px
+    +border-radius(2px)
+    color: white
+    font-size: 10px
+
 
 pre
   padding-left: 16px
@@ -90,3 +112,9 @@ pre
   text-align: center
   margin-top: 32px
   margin-bottom: 16px
+
+.users
+  text-align: center
+
+.user
+  display: inline-block

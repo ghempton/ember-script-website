@@ -8,7 +8,7 @@ $ ->
 
     updateJS = ->
       try
-        js = EmberScript.em2js(editor.getValue(), bare: true)
+        js = EmberScript.em2js(editor.getValue(), bare: true, optimise: false)
         output.setValue(js)
         output.selection.clearSelection()
       catch e
@@ -21,6 +21,7 @@ $ ->
 
     output = ace.edit($javascript[0])
     output.getSession().setMode("ace/mode/javascript")
+    output.setHighlightActiveLine(false)
     output.setReadOnly(true)
 
     updateJS()

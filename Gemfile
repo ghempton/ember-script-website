@@ -6,3 +6,5 @@ gem "middleman-livereload", :git => "git://github.com/middleman/middleman-livere
 gem 'redcarpet'
 
 gem "compass"
+
+gem 'ember_script'
