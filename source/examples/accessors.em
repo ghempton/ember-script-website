@@ -1,7 +1,6 @@
 person.firstName
 person.address.city
 person.address?.city
-person?.address?.city
 
 person.firstName = "Wes"
 person.address.city = "San Diego"
