@@ -9735,7 +9735,7 @@ if ( typeof define === "function" && define.amd && define.amd.jQuery ) {
                 'ember.js'
             ],
             'author': 'Gordon Hempton/Michael Ficarra',
-            'version': '0.0.5',
+            'version': '0.0.7',
             'main': './lib/module',
             'bin': { 'ember-script': './bin/ember-script' },
             'homepage': 'https://github.com/ghempton/ember-script',
@@ -14643,7 +14643,6 @@ if ( typeof define === "function" && define.amd && define.amd.jQuery ) {
     });
     require.define('/src/ember-runtime.js', function (module, exports, __dirname, __filename) {
         (function () {
-            window = {};
             if ('undefined' === typeof Ember) {
                 Ember = {};
                 if ('undefined' !== typeof window) {
@@ -14664,6 +14663,9 @@ if ( typeof define === "function" && define.amd && define.amd.jQuery ) {
                     if ('trace' in Ember.Logger)
                         Ember.Logger.trace();
                 }
+            };
+            Ember.debug = function (message) {
+                Ember.Logger.debug('DEBUG: ' + message);
             };
             Ember.deprecate = function (message, test) {
                 if (Ember && Ember.TESTING_DEPRECATION) {
@@ -14703,1296 +14705,1534 @@ if ( typeof define === "function" && define.amd && define.amd.jQuery ) {
                     return func.apply(this, arguments);
                 };
             };
-            window.ember_assert = Ember.deprecateFunc('ember_assert is deprecated. Please use Ember.assert instead.', Ember.assert);
-            window.ember_warn = Ember.deprecateFunc('ember_warn is deprecated. Please use Ember.warn instead.', Ember.warn);
-            window.ember_deprecate = Ember.deprecateFunc('ember_deprecate is deprecated. Please use Ember.deprecate instead.', Ember.deprecate);
-            window.ember_deprecateFunc = Ember.deprecateFunc('ember_deprecateFunc is deprecated. Please use Ember.deprecateFunc instead.', Ember.deprecateFunc);
         }());
         (function () {
-            if ('undefined' === typeof Ember) {
-                Ember = {};
-            }
-            if ('undefined' !== typeof window) {
-                window.Em = window.Ember = Em = Ember;
-            }
-            Ember.isNamespace = true;
-            Ember.toString = function () {
-                return 'Ember';
-            };
-            Ember.VERSION = '1.0.pre';
-            Ember.ENV = Ember.ENV || ('undefined' === typeof ENV ? {} : ENV);
-            Ember.config = Ember.config || {};
-            Ember.EXTEND_PROTOTYPES = Ember.ENV.EXTEND_PROTOTYPES !== false;
-            Ember.LOG_STACKTRACE_ON_DEPRECATION = Ember.ENV.LOG_STACKTRACE_ON_DEPRECATION !== false;
-            Ember.SHIM_ES5 = Ember.ENV.SHIM_ES5 === false ? false : Ember.EXTEND_PROTOTYPES;
-            Ember.CP_DEFAULT_CACHEABLE = Ember.ENV.CP_DEFAULT_CACHEABLE !== false;
-            Ember.VIEW_PRESERVES_CONTEXT = Ember.ENV.VIEW_PRESERVES_CONTEXT !== false;
-            Ember.K = function () {
-                return this;
-            };
-            if ('undefined' === typeof Ember.assert) {
-                Ember.assert = Ember.K;
-            }
-            if ('undefined' === typeof Ember.warn) {
-                Ember.warn = Ember.K;
-            }
-            if ('undefined' === typeof Ember.deprecate) {
-                Ember.deprecate = Ember.K;
-            }
-            if ('undefined' === typeof Ember.deprecateFunc) {
-                Ember.deprecateFunc = function (_, func) {
-                    return func;
+            var define, requireModule;
+            (function () {
+                var registry = {}, seen = {};
+                define = function (name, deps, callback) {
+                    registry[name] = {
+                        deps: deps,
+                        callback: callback
+                    };
                 };
-            }
-            if ('undefined' === typeof ember_assert) {
-                window.ember_assert = Ember.K;
-            }
-            if ('undefined' === typeof ember_warn) {
-                window.ember_warn = Ember.K;
-            }
-            if ('undefined' === typeof ember_deprecate) {
-                window.ember_deprecate = Ember.K;
-            }
-            if ('undefined' === typeof ember_deprecateFunc) {
-                window.ember_deprecateFunc = function (_, func) {
-                    return func;
-                };
-            }
-            Ember.Logger = window.console || {
-                log: Ember.K,
-                warn: Ember.K,
-                error: Ember.K,
-                info: Ember.K,
-                debug: Ember.K
-            };
-        }());
-        (function () {
-            var isNativeFunc = function (func) {
-                return func && Function.prototype.toString.call(func).indexOf('[native code]') > -1;
-            };
-            var arrayMap = isNativeFunc(Array.prototype.map) ? Array.prototype.map : function (fun) {
-                    if (this === void 0 || this === null) {
-                        throw new TypeError();
+                requireModule = function (name) {
+                    if (seen[name]) {
+                        return seen[name];
                     }
-                    var t = Object(this);
-                    var len = t.length >>> 0;
-                    if (typeof fun !== 'function') {
-                        throw new TypeError();
-                    }
-                    var res = new Array(len);
-                    var thisp = arguments[1];
-                    for (var i = 0; i < len; i++) {
-                        if (i in t) {
-                            res[i] = fun.call(thisp, t[i], i, t);
-                        }
-                    }
-                    return res;
-                };
-            var arrayForEach = isNativeFunc(Array.prototype.forEach) ? Array.prototype.forEach : function (fun) {
-                    if (this === void 0 || this === null) {
-                        throw new TypeError();
-                    }
-                    var t = Object(this);
-                    var len = t.length >>> 0;
-                    if (typeof fun !== 'function') {
-                        throw new TypeError();
-                    }
-                    var thisp = arguments[1];
-                    for (var i = 0; i < len; i++) {
-                        if (i in t) {
-                            fun.call(thisp, t[i], i, t);
-                        }
-                    }
-                };
-            var arrayIndexOf = isNativeFunc(Array.prototype.indexOf) ? Array.prototype.indexOf : function (obj, fromIndex) {
-                    if (fromIndex === null || fromIndex === undefined) {
-                        fromIndex = 0;
-                    } else if (fromIndex < 0) {
-                        fromIndex = Math.max(0, this.length + fromIndex);
-                    }
-                    for (var i = fromIndex, j = this.length; i < j; i++) {
-                        if (this[i] === obj) {
-                            return i;
-                        }
-                    }
-                    return -1;
-                };
-            Ember.ArrayPolyfills = {
-                map: arrayMap,
-                forEach: arrayForEach,
-                indexOf: arrayIndexOf
-            };
-            var utils = Ember.EnumerableUtils = {
-                    map: function (obj, callback, thisArg) {
-                        return obj.map ? obj.map.call(obj, callback, thisArg) : arrayMap.call(obj, callback, thisArg);
-                    },
-                    forEach: function (obj, callback, thisArg) {
-                        return obj.forEach ? obj.forEach.call(obj, callback, thisArg) : arrayForEach.call(obj, callback, thisArg);
-                    },
-                    indexOf: function (obj, element, index) {
-                        return obj.indexOf ? obj.indexOf.call(obj, element, index) : arrayIndexOf.call(obj, element, index);
-                    },
-                    indexesOf: function (obj, elements) {
-                        return elements === undefined ? [] : utils.map(elements, function (item) {
-                            return utils.indexOf(obj, item);
-                        });
-                    },
-                    removeObject: function (array, item) {
-                        var index = utils.indexOf(array, item);
-                        if (index !== -1) {
-                            array.splice(index, 1);
-                        }
-                    }
-                };
-            if (Ember.SHIM_ES5) {
-                if (!Array.prototype.map) {
-                    Array.prototype.map = arrayMap;
-                }
-                if (!Array.prototype.forEach) {
-                    Array.prototype.forEach = arrayForEach;
-                }
-                if (!Array.prototype.indexOf) {
-                    Array.prototype.indexOf = arrayIndexOf;
-                }
-            }
-        }());
-        (function () {
-            var platform = Ember.platform = {};
-            Ember.create = Object.create;
-            if (!Ember.create) {
-                var K = function () {
-                };
-                Ember.create = function (obj, props) {
-                    K.prototype = obj;
-                    obj = new K();
-                    if (props) {
-                        K.prototype = obj;
-                        for (var prop in props) {
-                            K.prototype[prop] = props[prop].value;
-                        }
-                        obj = new K();
-                    }
-                    K.prototype = null;
-                    return obj;
-                };
-                Ember.create.isSimulated = true;
-            }
-            var defineProperty = Object.defineProperty;
-            var canRedefineProperties, canDefinePropertyOnDOM;
-            if (defineProperty) {
-                try {
-                    defineProperty({}, 'a', {
-                        get: function () {
-                        }
-                    });
-                } catch (e) {
-                    defineProperty = null;
-                }
-            }
-            if (defineProperty) {
-                canRedefineProperties = function () {
-                    var obj = {};
-                    defineProperty(obj, 'a', {
-                        configurable: true,
-                        enumerable: true,
-                        get: function () {
-                        },
-                        set: function () {
-                        }
-                    });
-                    defineProperty(obj, 'a', {
-                        configurable: true,
-                        enumerable: true,
-                        writable: true,
-                        value: true
-                    });
-                    return obj.a === true;
-                }();
-                canDefinePropertyOnDOM = function () {
-                    try {
-                        defineProperty(document.createElement('div'), 'definePropertyOnDOM', {});
-                        return true;
-                    } catch (e) {
-                    }
-                    return false;
-                }();
-                if (!canRedefineProperties) {
-                    defineProperty = null;
-                } else if (!canDefinePropertyOnDOM) {
-                    defineProperty = function (obj, keyName, desc) {
-                        var isNode;
-                        if (typeof Node === 'object') {
-                            isNode = obj instanceof Node;
+                    seen[name] = {};
+                    var mod = registry[name], deps = mod.deps, callback = mod.callback, reified = [], exports;
+                    for (var i = 0, l = deps.length; i < l; i++) {
+                        if (deps[i] === 'exports') {
+                            reified.push(exports = {});
                         } else {
-                            isNode = typeof obj === 'object' && typeof obj.nodeType === 'number' && typeof obj.nodeName === 'string';
+                            reified.push(requireModule(deps[i]));
                         }
-                        if (isNode) {
-                            return obj[keyName] = desc.value;
-                        } else {
-                            return Object.defineProperty(obj, keyName, desc);
-                        }
+                    }
+                    var value = callback.apply(this, reified);
+                    return seen[name] = exports || value;
+                };
+            }());
+            (function () {
+                if ('undefined' === typeof Ember) {
+                    Ember = {};
+                }
+                var imports = Ember.imports = Ember.imports || this;
+                var exports = Ember.exports = Ember.exports || this;
+                var lookup = Ember.lookup = Ember.lookup || this;
+                exports.Em = exports.Ember = Em = Ember;
+                Ember.isNamespace = true;
+                Ember.toString = function () {
+                    return 'Ember';
+                };
+                Ember.VERSION = '1.0.0-rc.2';
+                Ember.ENV = Ember.ENV || ('undefined' === typeof ENV ? {} : ENV);
+                Ember.config = Ember.config || {};
+                Ember.EXTEND_PROTOTYPES = Ember.ENV.EXTEND_PROTOTYPES;
+                if (typeof Ember.EXTEND_PROTOTYPES === 'undefined') {
+                    Ember.EXTEND_PROTOTYPES = true;
+                }
+                Ember.LOG_STACKTRACE_ON_DEPRECATION = Ember.ENV.LOG_STACKTRACE_ON_DEPRECATION !== false;
+                Ember.SHIM_ES5 = Ember.ENV.SHIM_ES5 === false ? false : Ember.EXTEND_PROTOTYPES;
+                Ember.LOG_VERSION = Ember.ENV.LOG_VERSION === false ? false : true;
+                Ember.K = function () {
+                    return this;
+                };
+                if ('undefined' === typeof Ember.assert) {
+                    Ember.assert = Ember.K;
+                }
+                if ('undefined' === typeof Ember.warn) {
+                    Ember.warn = Ember.K;
+                }
+                if ('undefined' === typeof Ember.debug) {
+                    Ember.debug = Ember.K;
+                }
+                if ('undefined' === typeof Ember.deprecate) {
+                    Ember.deprecate = Ember.K;
+                }
+                if ('undefined' === typeof Ember.deprecateFunc) {
+                    Ember.deprecateFunc = function (_, func) {
+                        return func;
                     };
                 }
-            }
-            platform.defineProperty = defineProperty;
-            platform.hasPropertyAccessors = true;
-            if (!platform.defineProperty) {
-                platform.hasPropertyAccessors = false;
-                platform.defineProperty = function (obj, keyName, desc) {
-                    if (!desc.get) {
-                        obj[keyName] = desc.value;
-                    }
-                };
-                platform.defineProperty.isSimulated = true;
-            }
-            if (Ember.ENV.MANDATORY_SETTER && !platform.hasPropertyAccessors) {
-                Ember.ENV.MANDATORY_SETTER = false;
-            }
-        }());
-        (function () {
-            var o_defineProperty = Ember.platform.defineProperty, o_create = Ember.create, GUID_KEY = '__ember' + +new Date(), uuid = 0, numberCache = [], stringCache = {};
-            var MANDATORY_SETTER = Ember.ENV.MANDATORY_SETTER;
-            Ember.GUID_KEY = GUID_KEY;
-            var GUID_DESC = {
-                    writable: false,
-                    configurable: false,
-                    enumerable: false,
-                    value: null
-                };
-            Ember.generateGuid = function generateGuid(obj, prefix) {
-                if (!prefix)
-                    prefix = 'ember';
-                var ret = prefix + uuid++;
-                if (obj) {
-                    GUID_DESC.value = ret;
-                    o_defineProperty(obj, GUID_KEY, GUID_DESC);
-                }
-                return ret;
-            };
-            Ember.guidFor = function guidFor(obj) {
-                if (obj === undefined)
-                    return '(undefined)';
-                if (obj === null)
-                    return '(null)';
-                var cache, ret;
-                var type = typeof obj;
-                switch (type) {
-                case 'number':
-                    ret = numberCache[obj];
-                    if (!ret)
-                        ret = numberCache[obj] = 'nu' + obj;
-                    return ret;
-                case 'string':
-                    ret = stringCache[obj];
-                    if (!ret)
-                        ret = stringCache[obj] = 'st' + uuid++;
-                    return ret;
-                case 'boolean':
-                    return obj ? '(true)' : '(false)';
-                default:
-                    if (obj[GUID_KEY])
-                        return obj[GUID_KEY];
-                    if (obj === Object)
-                        return '(Object)';
-                    if (obj === Array)
-                        return '(Array)';
-                    ret = 'ember' + uuid++;
-                    GUID_DESC.value = ret;
-                    o_defineProperty(obj, GUID_KEY, GUID_DESC);
-                    return ret;
-                }
-            };
-            var META_DESC = {
-                    writable: true,
-                    configurable: false,
-                    enumerable: false,
-                    value: null
-                };
-            var META_KEY = Ember.GUID_KEY + '_meta';
-            Ember.META_KEY = META_KEY;
-            var EMPTY_META = {
-                    descs: {},
-                    watching: {}
-                };
-            if (MANDATORY_SETTER) {
-                EMPTY_META.values = {};
-            }
-            Ember.EMPTY_META = EMPTY_META;
-            if (Object.freeze)
-                Object.freeze(EMPTY_META);
-            var isDefinePropertySimulated = Ember.platform.defineProperty.isSimulated;
-            function Meta(obj) {
-                this.descs = {};
-                this.watching = {};
-                this.cache = {};
-                this.source = obj;
-            }
-            if (isDefinePropertySimulated) {
-                Meta.prototype.__preventPlainObject__ = true;
-            }
-            Ember.meta = function meta(obj, writable) {
-                var ret = obj[META_KEY];
-                if (writable === false)
-                    return ret || EMPTY_META;
-                if (!ret) {
-                    if (!isDefinePropertySimulated)
-                        o_defineProperty(obj, META_KEY, META_DESC);
-                    ret = new Meta(obj);
-                    if (MANDATORY_SETTER) {
-                        ret.values = {};
-                    }
-                    obj[META_KEY] = ret;
-                    ret.descs.constructor = null;
-                } else if (ret.source !== obj) {
-                    if (!isDefinePropertySimulated)
-                        o_defineProperty(obj, META_KEY, META_DESC);
-                    ret = o_create(ret);
-                    ret.descs = o_create(ret.descs);
-                    ret.watching = o_create(ret.watching);
-                    ret.cache = {};
-                    ret.source = obj;
-                    if (MANDATORY_SETTER) {
-                        ret.values = o_create(ret.values);
-                    }
-                    obj[META_KEY] = ret;
-                }
-                return ret;
-            };
-            Ember.getMeta = function getMeta(obj, property) {
-                var meta = Ember.meta(obj, false);
-                return meta[property];
-            };
-            Ember.setMeta = function setMeta(obj, property, value) {
-                var meta = Ember.meta(obj, true);
-                meta[property] = value;
-                return value;
-            };
-            Ember.metaPath = function metaPath(obj, path, writable) {
-                var meta = Ember.meta(obj, writable), keyName, value;
-                for (var i = 0, l = path.length; i < l; i++) {
-                    keyName = path[i];
-                    value = meta[keyName];
-                    if (!value) {
-                        if (!writable) {
-                            return undefined;
-                        }
-                        value = meta[keyName] = { __ember_source__: obj };
-                    } else if (value.__ember_source__ !== obj) {
-                        if (!writable) {
-                            return undefined;
-                        }
-                        value = meta[keyName] = o_create(value);
-                        value.__ember_source__ = obj;
-                    }
-                    meta = value;
-                }
-                return value;
-            };
-            Ember.wrap = function (func, superFunc) {
-                function K() {
-                }
-                var newFunc = function () {
-                    var ret, sup = this._super;
-                    this._super = superFunc || K;
-                    ret = func.apply(this, arguments);
-                    this._super = sup;
-                    return ret;
-                };
-                newFunc.base = func;
-                return newFunc;
-            };
-            Ember.isArray = function (obj) {
-                if (!obj || obj.setInterval) {
-                    return false;
-                }
-                if (Array.isArray && Array.isArray(obj)) {
-                    return true;
-                }
-                if (Ember.Array && Ember.Array.detect(obj)) {
-                    return true;
-                }
-                if (obj.length !== undefined && 'object' === typeof obj) {
-                    return true;
-                }
-                return false;
-            };
-            Ember.makeArray = function (obj) {
-                if (obj === null || obj === undefined) {
-                    return [];
-                }
-                return Ember.isArray(obj) ? obj : [obj];
-            };
-            function canInvoke(obj, methodName) {
-                return !!(obj && typeof obj[methodName] === 'function');
-            }
-            Ember.canInvoke = canInvoke;
-            Ember.tryInvoke = function (obj, methodName, args) {
-                if (canInvoke(obj, methodName)) {
-                    return obj[methodName].apply(obj, args);
-                }
-            };
-        }());
-        (function () {
-            var guidFor = Ember.guidFor, indexOf = Ember.ArrayPolyfills.indexOf;
-            var copy = function (obj) {
-                var output = {};
-                for (var prop in obj) {
-                    if (obj.hasOwnProperty(prop)) {
-                        output[prop] = obj[prop];
-                    }
-                }
-                return output;
-            };
-            var copyMap = function (original, newObject) {
-                var keys = original.keys.copy(), values = copy(original.values);
-                newObject.keys = keys;
-                newObject.values = values;
-                return newObject;
-            };
-            var OrderedSet = Ember.OrderedSet = function () {
-                    this.clear();
-                };
-            OrderedSet.create = function () {
-                return new OrderedSet();
-            };
-            OrderedSet.prototype = {
-                clear: function () {
-                    this.presenceSet = {};
-                    this.list = [];
-                },
-                add: function (obj) {
-                    var guid = guidFor(obj), presenceSet = this.presenceSet, list = this.list;
-                    if (guid in presenceSet) {
-                        return;
-                    }
-                    presenceSet[guid] = true;
-                    list.push(obj);
-                },
-                remove: function (obj) {
-                    var guid = guidFor(obj), presenceSet = this.presenceSet, list = this.list;
-                    delete presenceSet[guid];
-                    var index = indexOf.call(list, obj);
-                    if (index > -1) {
-                        list.splice(index, 1);
-                    }
-                },
-                isEmpty: function () {
-                    return this.list.length === 0;
-                },
-                has: function (obj) {
-                    var guid = guidFor(obj), presenceSet = this.presenceSet;
-                    return guid in presenceSet;
-                },
-                forEach: function (fn, self) {
-                    var list = this.list.slice();
-                    for (var i = 0, j = list.length; i < j; i++) {
-                        fn.call(self, list[i]);
-                    }
-                },
-                toArray: function () {
-                    return this.list.slice();
-                },
-                copy: function () {
-                    var set = new OrderedSet();
-                    set.presenceSet = copy(this.presenceSet);
-                    set.list = this.list.slice();
-                    return set;
-                }
-            };
-            var Map = Ember.Map = function () {
-                    this.keys = Ember.OrderedSet.create();
-                    this.values = {};
-                };
-            Map.create = function () {
-                return new Map();
-            };
-            Map.prototype = {
-                get: function (key) {
-                    var values = this.values, guid = guidFor(key);
-                    return values[guid];
-                },
-                set: function (key, value) {
-                    var keys = this.keys, values = this.values, guid = guidFor(key);
-                    keys.add(key);
-                    values[guid] = value;
-                },
-                remove: function (key) {
-                    var keys = this.keys, values = this.values, guid = guidFor(key), value;
-                    if (values.hasOwnProperty(guid)) {
-                        keys.remove(key);
-                        value = values[guid];
-                        delete values[guid];
-                        return true;
-                    } else {
-                        return false;
-                    }
-                },
-                has: function (key) {
-                    var values = this.values, guid = guidFor(key);
-                    return values.hasOwnProperty(guid);
-                },
-                forEach: function (callback, self) {
-                    var keys = this.keys, values = this.values;
-                    keys.forEach(function (key) {
-                        var guid = guidFor(key);
-                        callback.call(self, key, values[guid]);
-                    });
-                },
-                copy: function () {
-                    return copyMap(this, new Map());
-                }
-            };
-            var MapWithDefault = Ember.MapWithDefault = function (options) {
-                    Map.call(this);
-                    this.defaultValue = options.defaultValue;
-                };
-            MapWithDefault.create = function (options) {
-                if (options) {
-                    return new MapWithDefault(options);
-                } else {
-                    return new Map();
-                }
-            };
-            MapWithDefault.prototype = Ember.create(Map.prototype);
-            MapWithDefault.prototype.get = function (key) {
-                var hasValue = this.has(key);
-                if (hasValue) {
-                    return Map.prototype.get.call(this, key);
-                } else {
-                    var defaultValue = this.defaultValue(key);
-                    this.set(key, defaultValue);
-                    return defaultValue;
-                }
-            };
-            MapWithDefault.prototype.copy = function () {
-                return copyMap(this, new MapWithDefault({ defaultValue: this.defaultValue }));
-            };
-        }());
-        (function () {
-            var META_KEY = Ember.META_KEY, get, set;
-            var MANDATORY_SETTER = Ember.ENV.MANDATORY_SETTER;
-            var IS_GLOBAL = /^([A-Z$]|([0-9][A-Z$]))/;
-            var IS_GLOBAL_PATH = /^([A-Z$]|([0-9][A-Z$])).*[\.\*]/;
-            var HAS_THIS = /^this[\.\*]/;
-            var FIRST_KEY = /^([^\.\*]+)/;
-            get = function get(obj, keyName) {
-                if (keyName === '') {
-                    return obj;
-                }
-                if (!keyName && 'string' === typeof obj) {
-                    keyName = obj;
-                    obj = null;
-                }
-                if (!obj || keyName.indexOf('.') !== -1) {
-                    return getPath(obj, keyName);
-                }
-                Ember.assert('You need to provide an object and key to `get`.', !!obj && keyName);
-                var meta = obj[META_KEY], desc = meta && meta.descs[keyName], ret;
-                if (desc) {
-                    return desc.get(obj, keyName);
-                } else {
-                    if (MANDATORY_SETTER && meta && meta.watching[keyName] > 0) {
-                        ret = meta.values[keyName];
-                    } else {
-                        ret = obj[keyName];
-                    }
-                    if (ret === undefined && 'object' === typeof obj && !(keyName in obj) && 'function' === typeof obj.unknownProperty) {
-                        return obj.unknownProperty(keyName);
-                    }
-                    return ret;
-                }
-            };
-            set = function set(obj, keyName, value, tolerant) {
-                if (typeof obj === 'string') {
-                    Ember.assert('Path \'' + obj + '\' must be global if no obj is given.', IS_GLOBAL.test(obj));
-                    value = keyName;
-                    keyName = obj;
-                    obj = null;
-                }
-                if (!obj || keyName.indexOf('.') !== -1) {
-                    return setPath(obj, keyName, value, tolerant);
-                }
-                Ember.assert('You need to provide an object and key to `set`.', !!obj && keyName !== undefined);
-                Ember.assert('calling set on destroyed object', !obj.isDestroyed);
-                var meta = obj[META_KEY], desc = meta && meta.descs[keyName], isUnknown, currentValue;
-                if (desc) {
-                    desc.set(obj, keyName, value);
-                } else {
-                    isUnknown = 'object' === typeof obj && !(keyName in obj);
-                    if (isUnknown && 'function' === typeof obj.setUnknownProperty) {
-                        obj.setUnknownProperty(keyName, value);
-                    } else if (meta && meta.watching[keyName] > 0) {
-                        if (MANDATORY_SETTER) {
-                            currentValue = meta.values[keyName];
+                Ember.uuid = 0;
+                function consoleMethod(name) {
+                    if (imports.console && imports.console[name]) {
+                        if (imports.console[name].apply) {
+                            return function () {
+                                imports.console[name].apply(imports.console, arguments);
+                            };
                         } else {
-                            currentValue = obj[keyName];
+                            return function () {
+                                var message = Array.prototype.join.call(arguments, ', ');
+                                imports.console[name](message);
+                            };
                         }
-                        if (value !== currentValue) {
-                            Ember.propertyWillChange(obj, keyName);
-                            if (MANDATORY_SETTER) {
-                                if (currentValue === undefined && !(keyName in obj)) {
-                                    Ember.defineProperty(obj, keyName, null, value);
-                                } else {
-                                    meta.values[keyName] = value;
-                                }
-                            } else {
-                                obj[keyName] = value;
-                            }
-                            Ember.propertyDidChange(obj, keyName);
-                        }
-                    } else {
-                        obj[keyName] = value;
                     }
                 }
-                return value;
-            };
-            function firstKey(path) {
-                return path.match(FIRST_KEY)[0];
-            }
-            function normalizeTuple(target, path) {
-                var hasThis = HAS_THIS.test(path), isGlobal = !hasThis && IS_GLOBAL_PATH.test(path), key;
-                if (!target || isGlobal)
-                    target = window;
-                if (hasThis)
-                    path = path.slice(5);
-                if (target === window) {
-                    key = firstKey(path);
-                    target = get(target, key);
-                    path = path.slice(key.length + 1);
-                }
-                if (!path || path.length === 0)
-                    throw new Error('Invalid Path');
-                return [
-                    target,
-                    path
-                ];
-            }
-            function getPath(root, path) {
-                var hasThis, parts, tuple, idx, len;
-                if (root === null && path.indexOf('.') === -1) {
-                    return get(window, path);
-                }
-                hasThis = HAS_THIS.test(path);
-                if (!root || hasThis) {
-                    tuple = normalizeTuple(root, path);
-                    root = tuple[0];
-                    path = tuple[1];
-                    tuple.length = 0;
-                }
-                parts = path.split('.');
-                len = parts.length;
-                for (idx = 0; root && idx < len; idx++) {
-                    root = get(root, parts[idx], true);
-                    if (root && root.isDestroyed) {
-                        return undefined;
-                    }
-                }
-                return root;
-            }
-            function setPath(root, path, value, tolerant) {
-                var keyName;
-                keyName = path.slice(path.lastIndexOf('.') + 1);
-                path = path.slice(0, path.length - (keyName.length + 1));
-                if (path !== 'this') {
-                    root = getPath(root, path);
-                }
-                if (!keyName || keyName.length === 0) {
-                    throw new Error('You passed an empty path');
-                }
-                if (!root) {
-                    if (tolerant) {
-                        return;
-                    } else {
-                        throw new Error('Object in path ' + path + ' could not be found or was destroyed.');
-                    }
-                }
-                return set(root, keyName, value);
-            }
-            Ember.normalizeTuple = function (target, path) {
-                return normalizeTuple(target, path);
-            };
-            Ember.getWithDefault = function (root, key, defaultValue) {
-                var value = get(root, key);
-                if (value === undefined) {
-                    return defaultValue;
-                }
-                return value;
-            };
-            Ember.get = get;
-            Ember.getPath = Ember.deprecateFunc('getPath is deprecated since get now supports paths', Ember.get);
-            Ember.set = set;
-            Ember.setPath = Ember.deprecateFunc('setPath is deprecated since set now supports paths', Ember.set);
-            Ember.trySet = function (root, path, value) {
-                return set(root, path, value, true);
-            };
-            Ember.trySetPath = Ember.deprecateFunc('trySetPath has been renamed to trySet', Ember.trySet);
-            Ember.isGlobalPath = function (path) {
-                return IS_GLOBAL.test(path);
-            };
-            if (Ember.config.overrideAccessors) {
-                Ember.config.overrideAccessors();
-                get = Ember.get;
-                set = Ember.set;
-            }
-        }());
-        (function () {
-            var GUID_KEY = Ember.GUID_KEY, META_KEY = Ember.META_KEY, EMPTY_META = Ember.EMPTY_META, metaFor = Ember.meta, o_create = Ember.create, objectDefineProperty = Ember.platform.defineProperty;
-            var MANDATORY_SETTER = Ember.ENV.MANDATORY_SETTER;
-            var Descriptor = Ember.Descriptor = function () {
+                Ember.Logger = {
+                    log: consoleMethod('log') || Ember.K,
+                    warn: consoleMethod('warn') || Ember.K,
+                    error: consoleMethod('error') || Ember.K,
+                    info: consoleMethod('info') || Ember.K,
+                    debug: consoleMethod('debug') || consoleMethod('info') || Ember.K
                 };
-            Ember.defineProperty = function (obj, keyName, desc, data, meta) {
-                var descs, existingDesc, watching, value;
-                if (!meta)
-                    meta = metaFor(obj);
-                descs = meta.descs;
-                existingDesc = meta.descs[keyName];
-                watching = meta.watching[keyName] > 0;
-                if (existingDesc instanceof Ember.Descriptor) {
-                    existingDesc.teardown(obj, keyName);
+                Ember.onerror = null;
+                Ember.handleErrors = function (func, context) {
+                    if ('function' === typeof Ember.onerror) {
+                        try {
+                            return func.call(context || this);
+                        } catch (error) {
+                            Ember.onerror(error);
+                        }
+                    } else {
+                        return func.call(context || this);
+                    }
+                };
+                Ember.merge = function (original, updates) {
+                    for (var prop in updates) {
+                        if (!updates.hasOwnProperty(prop)) {
+                            continue;
+                        }
+                        original[prop] = updates[prop];
+                    }
+                    return original;
+                };
+                Ember.isNone = function (obj) {
+                    return obj === null || obj === undefined;
+                };
+                Ember.none = Ember.deprecateFunc('Ember.none is deprecated. Please use Ember.isNone instead.', Ember.isNone);
+                Ember.isEmpty = function (obj) {
+                    return obj === null || obj === undefined || obj.length === 0 && typeof obj !== 'function' || typeof obj === 'object' && Ember.get(obj, 'length') === 0;
+                };
+                Ember.empty = Ember.deprecateFunc('Ember.empty is deprecated. Please use Ember.isEmpty instead.', Ember.isEmpty);
+            }());
+            (function () {
+                var platform = Ember.platform = {};
+                Ember.create = Object.create;
+                if (!Ember.create || Ember.ENV.STUB_OBJECT_CREATE) {
+                    var K = function () {
+                    };
+                    Ember.create = function (obj, props) {
+                        K.prototype = obj;
+                        obj = new K();
+                        if (props) {
+                            K.prototype = obj;
+                            for (var prop in props) {
+                                K.prototype[prop] = props[prop].value;
+                            }
+                            obj = new K();
+                        }
+                        K.prototype = null;
+                        return obj;
+                    };
+                    Ember.create.isSimulated = true;
                 }
-                if (desc instanceof Ember.Descriptor) {
-                    value = desc;
-                    descs[keyName] = desc;
-                    if (MANDATORY_SETTER && watching) {
-                        objectDefineProperty(obj, keyName, {
+                var defineProperty = Object.defineProperty;
+                var canRedefineProperties, canDefinePropertyOnDOM;
+                if (defineProperty) {
+                    try {
+                        defineProperty({}, 'a', {
+                            get: function () {
+                            }
+                        });
+                    } catch (e) {
+                        defineProperty = null;
+                    }
+                }
+                if (defineProperty) {
+                    canRedefineProperties = function () {
+                        var obj = {};
+                        defineProperty(obj, 'a', {
+                            configurable: true,
+                            enumerable: true,
+                            get: function () {
+                            },
+                            set: function () {
+                            }
+                        });
+                        defineProperty(obj, 'a', {
                             configurable: true,
                             enumerable: true,
                             writable: true,
-                            value: undefined
+                            value: true
                         });
-                    } else {
-                        obj[keyName] = undefined;
+                        return obj.a === true;
+                    }();
+                    canDefinePropertyOnDOM = function () {
+                        try {
+                            defineProperty(document.createElement('div'), 'definePropertyOnDOM', {});
+                            return true;
+                        } catch (e) {
+                        }
+                        return false;
+                    }();
+                    if (!canRedefineProperties) {
+                        defineProperty = null;
+                    } else if (!canDefinePropertyOnDOM) {
+                        defineProperty = function (obj, keyName, desc) {
+                            var isNode;
+                            if (typeof Node === 'object') {
+                                isNode = obj instanceof Node;
+                            } else {
+                                isNode = typeof obj === 'object' && typeof obj.nodeType === 'number' && typeof obj.nodeName === 'string';
+                            }
+                            if (isNode) {
+                                return obj[keyName] = desc.value;
+                            } else {
+                                return Object.defineProperty(obj, keyName, desc);
+                            }
+                        };
                     }
-                    desc.setup(obj, keyName);
+                }
+                platform.defineProperty = defineProperty;
+                platform.hasPropertyAccessors = true;
+                if (!platform.defineProperty) {
+                    platform.hasPropertyAccessors = false;
+                    platform.defineProperty = function (obj, keyName, desc) {
+                        if (!desc.get) {
+                            obj[keyName] = desc.value;
+                        }
+                    };
+                    platform.defineProperty.isSimulated = true;
+                }
+                if (Ember.ENV.MANDATORY_SETTER && !platform.hasPropertyAccessors) {
+                    Ember.ENV.MANDATORY_SETTER = false;
+                }
+            }());
+            (function () {
+                var o_defineProperty = Ember.platform.defineProperty, o_create = Ember.create, GUID_KEY = '__ember' + +new Date(), uuid = 0, numberCache = [], stringCache = {};
+                var MANDATORY_SETTER = Ember.ENV.MANDATORY_SETTER;
+                Ember.GUID_KEY = GUID_KEY;
+                var GUID_DESC = {
+                        writable: false,
+                        configurable: false,
+                        enumerable: false,
+                        value: null
+                    };
+                Ember.generateGuid = function generateGuid(obj, prefix) {
+                    if (!prefix)
+                        prefix = 'ember';
+                    var ret = prefix + uuid++;
+                    if (obj) {
+                        GUID_DESC.value = ret;
+                        o_defineProperty(obj, GUID_KEY, GUID_DESC);
+                    }
+                    return ret;
+                };
+                Ember.guidFor = function guidFor(obj) {
+                    if (obj === undefined)
+                        return '(undefined)';
+                    if (obj === null)
+                        return '(null)';
+                    var cache, ret;
+                    var type = typeof obj;
+                    switch (type) {
+                    case 'number':
+                        ret = numberCache[obj];
+                        if (!ret)
+                            ret = numberCache[obj] = 'nu' + obj;
+                        return ret;
+                    case 'string':
+                        ret = stringCache[obj];
+                        if (!ret)
+                            ret = stringCache[obj] = 'st' + uuid++;
+                        return ret;
+                    case 'boolean':
+                        return obj ? '(true)' : '(false)';
+                    default:
+                        if (obj[GUID_KEY])
+                            return obj[GUID_KEY];
+                        if (obj === Object)
+                            return '(Object)';
+                        if (obj === Array)
+                            return '(Array)';
+                        ret = 'ember' + uuid++;
+                        GUID_DESC.value = ret;
+                        o_defineProperty(obj, GUID_KEY, GUID_DESC);
+                        return ret;
+                    }
+                };
+                var META_DESC = {
+                        writable: true,
+                        configurable: false,
+                        enumerable: false,
+                        value: null
+                    };
+                var META_KEY = Ember.GUID_KEY + '_meta';
+                Ember.META_KEY = META_KEY;
+                var EMPTY_META = {
+                        descs: {},
+                        watching: {}
+                    };
+                if (MANDATORY_SETTER) {
+                    EMPTY_META.values = {};
+                }
+                Ember.EMPTY_META = EMPTY_META;
+                if (Object.freeze)
+                    Object.freeze(EMPTY_META);
+                var isDefinePropertySimulated = Ember.platform.defineProperty.isSimulated;
+                function Meta(obj) {
+                    this.descs = {};
+                    this.watching = {};
+                    this.cache = {};
+                    this.source = obj;
+                }
+                if (isDefinePropertySimulated) {
+                    Meta.prototype.__preventPlainObject__ = true;
+                    Meta.prototype.toJSON = function () {
+                    };
+                }
+                Ember.meta = function meta(obj, writable) {
+                    var ret = obj[META_KEY];
+                    if (writable === false)
+                        return ret || EMPTY_META;
+                    if (!ret) {
+                        if (!isDefinePropertySimulated)
+                            o_defineProperty(obj, META_KEY, META_DESC);
+                        ret = new Meta(obj);
+                        if (MANDATORY_SETTER) {
+                            ret.values = {};
+                        }
+                        obj[META_KEY] = ret;
+                        ret.descs.constructor = null;
+                    } else if (ret.source !== obj) {
+                        if (!isDefinePropertySimulated)
+                            o_defineProperty(obj, META_KEY, META_DESC);
+                        ret = o_create(ret);
+                        ret.descs = o_create(ret.descs);
+                        ret.watching = o_create(ret.watching);
+                        ret.cache = {};
+                        ret.source = obj;
+                        if (MANDATORY_SETTER) {
+                            ret.values = o_create(ret.values);
+                        }
+                        obj[META_KEY] = ret;
+                    }
+                    return ret;
+                };
+                Ember.getMeta = function getMeta(obj, property) {
+                    var meta = Ember.meta(obj, false);
+                    return meta[property];
+                };
+                Ember.setMeta = function setMeta(obj, property, value) {
+                    var meta = Ember.meta(obj, true);
+                    meta[property] = value;
+                    return value;
+                };
+                Ember.metaPath = function metaPath(obj, path, writable) {
+                    var meta = Ember.meta(obj, writable), keyName, value;
+                    for (var i = 0, l = path.length; i < l; i++) {
+                        keyName = path[i];
+                        value = meta[keyName];
+                        if (!value) {
+                            if (!writable) {
+                                return undefined;
+                            }
+                            value = meta[keyName] = { __ember_source__: obj };
+                        } else if (value.__ember_source__ !== obj) {
+                            if (!writable) {
+                                return undefined;
+                            }
+                            value = meta[keyName] = o_create(value);
+                            value.__ember_source__ = obj;
+                        }
+                        meta = value;
+                    }
+                    return value;
+                };
+                Ember.wrap = function (func, superFunc) {
+                    function K() {
+                    }
+                    function superWrapper() {
+                        var ret, sup = this._super;
+                        this._super = superFunc || K;
+                        ret = func.apply(this, arguments);
+                        this._super = sup;
+                        return ret;
+                    }
+                    superWrapper.wrappedFunction = func;
+                    superWrapper.__ember_observes__ = func.__ember_observes__;
+                    superWrapper.__ember_observesBefore__ = func.__ember_observesBefore__;
+                    return superWrapper;
+                };
+                Ember.isArray = function (obj) {
+                    if (!obj || obj.setInterval) {
+                        return false;
+                    }
+                    if (Array.isArray && Array.isArray(obj)) {
+                        return true;
+                    }
+                    if (Ember.Array && Ember.Array.detect(obj)) {
+                        return true;
+                    }
+                    if (obj.length !== undefined && 'object' === typeof obj) {
+                        return true;
+                    }
+                    return false;
+                };
+                Ember.makeArray = function (obj) {
+                    if (obj === null || obj === undefined) {
+                        return [];
+                    }
+                    return Ember.isArray(obj) ? obj : [obj];
+                };
+                function canInvoke(obj, methodName) {
+                    return !!(obj && typeof obj[methodName] === 'function');
+                }
+                Ember.canInvoke = canInvoke;
+                Ember.tryInvoke = function (obj, methodName, args) {
+                    if (canInvoke(obj, methodName)) {
+                        return obj[methodName].apply(obj, args || []);
+                    }
+                };
+                var needsFinallyFix = function () {
+                        var count = 0;
+                        try {
+                            try {
+                            } finally {
+                                count++;
+                                throw new Error('needsFinallyFixTest');
+                            }
+                        } catch (e) {
+                        }
+                        return count !== 1;
+                    }();
+                if (needsFinallyFix) {
+                    Ember.tryFinally = function (tryable, finalizer, binding) {
+                        var result, finalResult, finalError;
+                        binding = binding || this;
+                        try {
+                            result = tryable.call(binding);
+                        } finally {
+                            try {
+                                finalResult = finalizer.call(binding);
+                            } catch (e) {
+                                finalError = e;
+                            }
+                        }
+                        if (finalError) {
+                            throw finalError;
+                        }
+                        return finalResult === undefined ? result : finalResult;
+                    };
                 } else {
-                    descs[keyName] = undefined;
-                    if (desc == null) {
-                        value = data;
+                    Ember.tryFinally = function (tryable, finalizer, binding) {
+                        var result, finalResult;
+                        binding = binding || this;
+                        try {
+                            result = tryable.call(binding);
+                        } finally {
+                            finalResult = finalizer.call(binding);
+                        }
+                        return finalResult === undefined ? result : finalResult;
+                    };
+                }
+                if (needsFinallyFix) {
+                    Ember.tryCatchFinally = function (tryable, catchable, finalizer, binding) {
+                        var result, finalResult, finalError, finalReturn;
+                        binding = binding || this;
+                        try {
+                            result = tryable.call(binding);
+                        } catch (error) {
+                            result = catchable.call(binding, error);
+                        } finally {
+                            try {
+                                finalResult = finalizer.call(binding);
+                            } catch (e) {
+                                finalError = e;
+                            }
+                        }
+                        if (finalError) {
+                            throw finalError;
+                        }
+                        return finalResult === undefined ? result : finalResult;
+                    };
+                } else {
+                    Ember.tryCatchFinally = function (tryable, catchable, finalizer, binding) {
+                        var result, finalResult;
+                        binding = binding || this;
+                        try {
+                            result = tryable.call(binding);
+                        } catch (error) {
+                            result = catchable.call(binding, error);
+                        } finally {
+                            finalResult = finalizer.call(binding);
+                        }
+                        return finalResult === undefined ? result : finalResult;
+                    };
+                }
+            }());
+            (function () {
+                Ember.Instrumentation = {};
+                var subscribers = [], cache = {};
+                var populateListeners = function (name) {
+                    var listeners = [], subscriber;
+                    for (var i = 0, l = subscribers.length; i < l; i++) {
+                        subscriber = subscribers[i];
+                        if (subscriber.regex.test(name)) {
+                            listeners.push(subscriber.object);
+                        }
+                    }
+                    cache[name] = listeners;
+                    return listeners;
+                };
+                var time = function () {
+                        var perf = 'undefined' !== typeof window ? window.performance || {} : {};
+                        var fn = perf.now || perf.mozNow || perf.webkitNow || perf.msNow || perf.oNow;
+                        return fn ? fn.bind(perf) : function () {
+                            return +new Date();
+                        };
+                    }();
+                Ember.Instrumentation.instrument = function (name, payload, callback, binding) {
+                    var listeners = cache[name], timeName, ret;
+                    if (Ember.STRUCTURED_PROFILE) {
+                        timeName = name + ': ' + payload.object;
+                        console.time(timeName);
+                    }
+                    if (!listeners) {
+                        listeners = populateListeners(name);
+                    }
+                    if (listeners.length === 0) {
+                        ret = callback.call(binding);
+                        if (Ember.STRUCTURED_PROFILE) {
+                            console.timeEnd(timeName);
+                        }
+                        return ret;
+                    }
+                    var beforeValues = [], listener, i, l;
+                    function tryable() {
+                        for (i = 0, l = listeners.length; i < l; i++) {
+                            listener = listeners[i];
+                            beforeValues[i] = listener.before(name, time(), payload);
+                        }
+                        return callback.call(binding);
+                    }
+                    function catchable(e) {
+                        payload = payload || {};
+                        payload.exception = e;
+                    }
+                    function finalizer() {
+                        for (i = 0, l = listeners.length; i < l; i++) {
+                            listener = listeners[i];
+                            listener.after(name, time(), payload, beforeValues[i]);
+                        }
+                        if (Ember.STRUCTURED_PROFILE) {
+                            console.timeEnd(timeName);
+                        }
+                    }
+                    return Ember.tryCatchFinally(tryable, catchable, finalizer);
+                };
+                Ember.Instrumentation.subscribe = function (pattern, object) {
+                    var paths = pattern.split('.'), path, regex = [];
+                    for (var i = 0, l = paths.length; i < l; i++) {
+                        path = paths[i];
+                        if (path === '*') {
+                            regex.push('[^\\.]*');
+                        } else {
+                            regex.push(path);
+                        }
+                    }
+                    regex = regex.join('\\.');
+                    regex = regex + '(\\..*)?';
+                    var subscriber = {
+                            pattern: pattern,
+                            regex: new RegExp('^' + regex + '$'),
+                            object: object
+                        };
+                    subscribers.push(subscriber);
+                    cache = {};
+                    return subscriber;
+                };
+                Ember.Instrumentation.unsubscribe = function (subscriber) {
+                    var index;
+                    for (var i = 0, l = subscribers.length; i < l; i++) {
+                        if (subscribers[i] === subscriber) {
+                            index = i;
+                        }
+                    }
+                    subscribers.splice(index, 1);
+                    cache = {};
+                };
+                Ember.Instrumentation.reset = function () {
+                    subscribers = [];
+                    cache = {};
+                };
+                Ember.instrument = Ember.Instrumentation.instrument;
+                Ember.subscribe = Ember.Instrumentation.subscribe;
+            }());
+            (function () {
+                var utils = Ember.EnumerableUtils = {
+                        map: function (obj, callback, thisArg) {
+                            return obj.map ? obj.map.call(obj, callback, thisArg) : Array.prototype.map.call(obj, callback, thisArg);
+                        },
+                        forEach: function (obj, callback, thisArg) {
+                            return obj.forEach ? obj.forEach.call(obj, callback, thisArg) : Array.prototype.forEach.call(obj, callback, thisArg);
+                        },
+                        indexOf: function (obj, element, index) {
+                            return obj.indexOf ? obj.indexOf.call(obj, element, index) : Array.prototype.indexOf.call(obj, element, index);
+                        },
+                        indexesOf: function (obj, elements) {
+                            return elements === undefined ? [] : utils.map(elements, function (item) {
+                                return utils.indexOf(obj, item);
+                            });
+                        },
+                        addObject: function (array, item) {
+                            var index = utils.indexOf(array, item);
+                            if (index === -1) {
+                                array.push(item);
+                            }
+                        },
+                        removeObject: function (array, item) {
+                            var index = utils.indexOf(array, item);
+                            if (index !== -1) {
+                                array.splice(index, 1);
+                            }
+                        },
+                        replace: function (array, idx, amt, objects) {
+                            if (array.replace) {
+                                return array.replace(idx, amt, objects);
+                            } else {
+                                var args = Array.prototype.concat.apply([
+                                        idx,
+                                        amt
+                                    ], objects);
+                                return array.splice.apply(array, args);
+                            }
+                        },
+                        intersection: function (array1, array2) {
+                            var intersection = [];
+                            array1.forEach(function (element) {
+                                if (array2.indexOf(element) >= 0) {
+                                    intersection.push(element);
+                                }
+                            });
+                            return intersection;
+                        }
+                    };
+            }());
+            (function () {
+                var isNativeFunc = function (func) {
+                    return func && Function.prototype.toString.call(func).indexOf('[native code]') > -1;
+                };
+                var arrayMap = isNativeFunc(Array.prototype.map) ? Array.prototype.map : function (fun) {
+                        if (this === void 0 || this === null) {
+                            throw new TypeError();
+                        }
+                        var t = Object(this);
+                        var len = t.length >>> 0;
+                        if (typeof fun !== 'function') {
+                            throw new TypeError();
+                        }
+                        var res = new Array(len);
+                        var thisp = arguments[1];
+                        for (var i = 0; i < len; i++) {
+                            if (i in t) {
+                                res[i] = fun.call(thisp, t[i], i, t);
+                            }
+                        }
+                        return res;
+                    };
+                var arrayForEach = isNativeFunc(Array.prototype.forEach) ? Array.prototype.forEach : function (fun) {
+                        if (this === void 0 || this === null) {
+                            throw new TypeError();
+                        }
+                        var t = Object(this);
+                        var len = t.length >>> 0;
+                        if (typeof fun !== 'function') {
+                            throw new TypeError();
+                        }
+                        var thisp = arguments[1];
+                        for (var i = 0; i < len; i++) {
+                            if (i in t) {
+                                fun.call(thisp, t[i], i, t);
+                            }
+                        }
+                    };
+                var arrayIndexOf = isNativeFunc(Array.prototype.indexOf) ? Array.prototype.indexOf : function (obj, fromIndex) {
+                        if (fromIndex === null || fromIndex === undefined) {
+                            fromIndex = 0;
+                        } else if (fromIndex < 0) {
+                            fromIndex = Math.max(0, this.length + fromIndex);
+                        }
+                        for (var i = fromIndex, j = this.length; i < j; i++) {
+                            if (this[i] === obj) {
+                                return i;
+                            }
+                        }
+                        return -1;
+                    };
+                Ember.ArrayPolyfills = {
+                    map: arrayMap,
+                    forEach: arrayForEach,
+                    indexOf: arrayIndexOf
+                };
+                if (Ember.SHIM_ES5) {
+                    if (!Array.prototype.map) {
+                        Array.prototype.map = arrayMap;
+                    }
+                    if (!Array.prototype.forEach) {
+                        Array.prototype.forEach = arrayForEach;
+                    }
+                    if (!Array.prototype.indexOf) {
+                        Array.prototype.indexOf = arrayIndexOf;
+                    }
+                }
+            }());
+            (function () {
+                var guidFor = Ember.guidFor, indexOf = Ember.ArrayPolyfills.indexOf;
+                var copy = function (obj) {
+                    var output = {};
+                    for (var prop in obj) {
+                        if (obj.hasOwnProperty(prop)) {
+                            output[prop] = obj[prop];
+                        }
+                    }
+                    return output;
+                };
+                var copyMap = function (original, newObject) {
+                    var keys = original.keys.copy(), values = copy(original.values);
+                    newObject.keys = keys;
+                    newObject.values = values;
+                    return newObject;
+                };
+                var OrderedSet = Ember.OrderedSet = function () {
+                        this.clear();
+                    };
+                OrderedSet.create = function () {
+                    return new OrderedSet();
+                };
+                OrderedSet.prototype = {
+                    clear: function () {
+                        this.presenceSet = {};
+                        this.list = [];
+                    },
+                    add: function (obj) {
+                        var guid = guidFor(obj), presenceSet = this.presenceSet, list = this.list;
+                        if (guid in presenceSet) {
+                            return;
+                        }
+                        presenceSet[guid] = true;
+                        list.push(obj);
+                    },
+                    remove: function (obj) {
+                        var guid = guidFor(obj), presenceSet = this.presenceSet, list = this.list;
+                        delete presenceSet[guid];
+                        var index = indexOf.call(list, obj);
+                        if (index > -1) {
+                            list.splice(index, 1);
+                        }
+                    },
+                    isEmpty: function () {
+                        return this.list.length === 0;
+                    },
+                    has: function (obj) {
+                        var guid = guidFor(obj), presenceSet = this.presenceSet;
+                        return guid in presenceSet;
+                    },
+                    forEach: function (fn, self) {
+                        var list = this.list.slice();
+                        for (var i = 0, j = list.length; i < j; i++) {
+                            fn.call(self, list[i]);
+                        }
+                    },
+                    toArray: function () {
+                        return this.list.slice();
+                    },
+                    copy: function () {
+                        var set = new OrderedSet();
+                        set.presenceSet = copy(this.presenceSet);
+                        set.list = this.list.slice();
+                        return set;
+                    }
+                };
+                var Map = Ember.Map = function () {
+                        this.keys = Ember.OrderedSet.create();
+                        this.values = {};
+                    };
+                Map.create = function () {
+                    return new Map();
+                };
+                Map.prototype = {
+                    get: function (key) {
+                        var values = this.values, guid = guidFor(key);
+                        return values[guid];
+                    },
+                    set: function (key, value) {
+                        var keys = this.keys, values = this.values, guid = guidFor(key);
+                        keys.add(key);
+                        values[guid] = value;
+                    },
+                    remove: function (key) {
+                        var keys = this.keys, values = this.values, guid = guidFor(key), value;
+                        if (values.hasOwnProperty(guid)) {
+                            keys.remove(key);
+                            value = values[guid];
+                            delete values[guid];
+                            return true;
+                        } else {
+                            return false;
+                        }
+                    },
+                    has: function (key) {
+                        var values = this.values, guid = guidFor(key);
+                        return values.hasOwnProperty(guid);
+                    },
+                    forEach: function (callback, self) {
+                        var keys = this.keys, values = this.values;
+                        keys.forEach(function (key) {
+                            var guid = guidFor(key);
+                            callback.call(self, key, values[guid]);
+                        });
+                    },
+                    copy: function () {
+                        return copyMap(this, new Map());
+                    }
+                };
+                var MapWithDefault = Ember.MapWithDefault = function (options) {
+                        Map.call(this);
+                        this.defaultValue = options.defaultValue;
+                    };
+                MapWithDefault.create = function (options) {
+                    if (options) {
+                        return new MapWithDefault(options);
+                    } else {
+                        return new Map();
+                    }
+                };
+                MapWithDefault.prototype = Ember.create(Map.prototype);
+                MapWithDefault.prototype.get = function (key) {
+                    var hasValue = this.has(key);
+                    if (hasValue) {
+                        return Map.prototype.get.call(this, key);
+                    } else {
+                        var defaultValue = this.defaultValue(key);
+                        this.set(key, defaultValue);
+                        return defaultValue;
+                    }
+                };
+                MapWithDefault.prototype.copy = function () {
+                    return copyMap(this, new MapWithDefault({ defaultValue: this.defaultValue }));
+                };
+            }());
+            (function () {
+                var META_KEY = Ember.META_KEY, get;
+                var MANDATORY_SETTER = Ember.ENV.MANDATORY_SETTER;
+                var IS_GLOBAL_PATH = /^([A-Z$]|([0-9][A-Z$])).*[\.\*]/;
+                var HAS_THIS = /^this[\.\*]/;
+                var FIRST_KEY = /^([^\.\*]+)/;
+                get = function get(obj, keyName) {
+                    if (keyName === '') {
+                        return obj;
+                    }
+                    if (!keyName && 'string' === typeof obj) {
+                        keyName = obj;
+                        obj = null;
+                    }
+                    if (!obj || keyName.indexOf('.') !== -1) {
+                        Ember.assert('Cannot call get with \'' + keyName + '\' on an undefined object.', obj !== undefined);
+                        return getPath(obj, keyName);
+                    }
+                    Ember.assert('You need to provide an object and key to `get`.', !!obj && keyName);
+                    var meta = obj[META_KEY], desc = meta && meta.descs[keyName], ret;
+                    if (desc) {
+                        return desc.get(obj, keyName);
+                    } else {
+                        if (MANDATORY_SETTER && meta && meta.watching[keyName] > 0) {
+                            ret = meta.values[keyName];
+                        } else {
+                            ret = obj[keyName];
+                        }
+                        if (ret === undefined && 'object' === typeof obj && !(keyName in obj) && 'function' === typeof obj.unknownProperty) {
+                            return obj.unknownProperty(keyName);
+                        }
+                        return ret;
+                    }
+                };
+                if (Ember.config.overrideAccessors) {
+                    Ember.get = get;
+                    Ember.config.overrideAccessors();
+                    get = Ember.get;
+                }
+                function firstKey(path) {
+                    return path.match(FIRST_KEY)[0];
+                }
+                function normalizeTuple(target, path) {
+                    var hasThis = HAS_THIS.test(path), isGlobal = !hasThis && IS_GLOBAL_PATH.test(path), key;
+                    if (!target || isGlobal)
+                        target = Ember.lookup;
+                    if (hasThis)
+                        path = path.slice(5);
+                    if (target === Ember.lookup) {
+                        key = firstKey(path);
+                        target = get(target, key);
+                        path = path.slice(key.length + 1);
+                    }
+                    if (!path || path.length === 0)
+                        throw new Error('Invalid Path');
+                    return [
+                        target,
+                        path
+                    ];
+                }
+                var getPath = Ember._getPath = function (root, path) {
+                        var hasThis, parts, tuple, idx, len;
+                        if (root === null && path.indexOf('.') === -1) {
+                            return get(Ember.lookup, path);
+                        }
+                        hasThis = HAS_THIS.test(path);
+                        if (!root || hasThis) {
+                            tuple = normalizeTuple(root, path);
+                            root = tuple[0];
+                            path = tuple[1];
+                            tuple.length = 0;
+                        }
+                        parts = path.split('.');
+                        len = parts.length;
+                        for (idx = 0; root && idx < len; idx++) {
+                            root = get(root, parts[idx], true);
+                            if (root && root.isDestroyed) {
+                                return undefined;
+                            }
+                        }
+                        return root;
+                    };
+                Ember.normalizeTuple = function (target, path) {
+                    return normalizeTuple(target, path);
+                };
+                Ember.getWithDefault = function (root, key, defaultValue) {
+                    var value = get(root, key);
+                    if (value === undefined) {
+                        return defaultValue;
+                    }
+                    return value;
+                };
+                Ember.get = get;
+                Ember.getPath = Ember.deprecateFunc('getPath is deprecated since get now supports paths', Ember.get);
+            }());
+            (function () {
+                var o_create = Ember.create, metaFor = Ember.meta, META_KEY = Ember.META_KEY;
+                function indexOf(array, target, method) {
+                    var index = -1;
+                    for (var i = 0, l = array.length; i < l; i++) {
+                        if (target === array[i][0] && method === array[i][1]) {
+                            index = i;
+                            break;
+                        }
+                    }
+                    return index;
+                }
+                function actionsFor(obj, eventName) {
+                    var meta = metaFor(obj, true), actions;
+                    if (!meta.listeners) {
+                        meta.listeners = {};
+                    }
+                    if (!meta.hasOwnProperty('listeners')) {
+                        meta.listeners = o_create(meta.listeners);
+                    }
+                    actions = meta.listeners[eventName];
+                    if (actions && !meta.listeners.hasOwnProperty(eventName)) {
+                        actions = meta.listeners[eventName] = meta.listeners[eventName].slice();
+                    } else if (!actions) {
+                        actions = meta.listeners[eventName] = [];
+                    }
+                    return actions;
+                }
+                function actionsUnion(obj, eventName, otherActions) {
+                    var meta = obj[META_KEY], actions = meta && meta.listeners && meta.listeners[eventName];
+                    if (!actions) {
+                        return;
+                    }
+                    for (var i = actions.length - 1; i >= 0; i--) {
+                        var target = actions[i][0], method = actions[i][1], once = actions[i][2], suspended = actions[i][3], actionIndex = indexOf(otherActions, target, method);
+                        if (actionIndex === -1) {
+                            otherActions.push([
+                                target,
+                                method,
+                                once,
+                                suspended
+                            ]);
+                        }
+                    }
+                }
+                function actionsDiff(obj, eventName, otherActions) {
+                    var meta = obj[META_KEY], actions = meta && meta.listeners && meta.listeners[eventName], diffActions = [];
+                    if (!actions) {
+                        return;
+                    }
+                    for (var i = actions.length - 1; i >= 0; i--) {
+                        var target = actions[i][0], method = actions[i][1], once = actions[i][2], suspended = actions[i][3], actionIndex = indexOf(otherActions, target, method);
+                        if (actionIndex !== -1) {
+                            continue;
+                        }
+                        otherActions.push([
+                            target,
+                            method,
+                            once,
+                            suspended
+                        ]);
+                        diffActions.push([
+                            target,
+                            method,
+                            once,
+                            suspended
+                        ]);
+                    }
+                    return diffActions;
+                }
+                function addListener(obj, eventName, target, method, once) {
+                    Ember.assert('You must pass at least an object and event name to Ember.addListener', !!obj && !!eventName);
+                    if (!method && 'function' === typeof target) {
+                        method = target;
+                        target = null;
+                    }
+                    var actions = actionsFor(obj, eventName), actionIndex = indexOf(actions, target, method);
+                    if (actionIndex !== -1) {
+                        return;
+                    }
+                    actions.push([
+                        target,
+                        method,
+                        once,
+                        undefined
+                    ]);
+                    if ('function' === typeof obj.didAddListener) {
+                        obj.didAddListener(eventName, target, method);
+                    }
+                }
+                function removeListener(obj, eventName, target, method) {
+                    Ember.assert('You must pass at least an object and event name to Ember.removeListener', !!obj && !!eventName);
+                    if (!method && 'function' === typeof target) {
+                        method = target;
+                        target = null;
+                    }
+                    function _removeListener(target, method, once) {
+                        var actions = actionsFor(obj, eventName), actionIndex = indexOf(actions, target, method);
+                        if (actionIndex === -1) {
+                            return;
+                        }
+                        actions.splice(actionIndex, 1);
+                        if ('function' === typeof obj.didRemoveListener) {
+                            obj.didRemoveListener(eventName, target, method);
+                        }
+                    }
+                    if (method) {
+                        _removeListener(target, method);
+                    } else {
+                        var meta = obj[META_KEY], actions = meta && meta.listeners && meta.listeners[eventName];
+                        if (!actions) {
+                            return;
+                        }
+                        for (var i = actions.length - 1; i >= 0; i--) {
+                            _removeListener(actions[i][0], actions[i][1]);
+                        }
+                    }
+                }
+                function suspendListener(obj, eventName, target, method, callback) {
+                    if (!method && 'function' === typeof target) {
+                        method = target;
+                        target = null;
+                    }
+                    var actions = actionsFor(obj, eventName), actionIndex = indexOf(actions, target, method), action;
+                    if (actionIndex !== -1) {
+                        action = actions[actionIndex].slice();
+                        action[3] = true;
+                        actions[actionIndex] = action;
+                    }
+                    function tryable() {
+                        return callback.call(target);
+                    }
+                    function finalizer() {
+                        if (action) {
+                            action[3] = undefined;
+                        }
+                    }
+                    return Ember.tryFinally(tryable, finalizer);
+                }
+                function suspendListeners(obj, eventNames, target, method, callback) {
+                    if (!method && 'function' === typeof target) {
+                        method = target;
+                        target = null;
+                    }
+                    var suspendedActions = [], eventName, actions, action, i, l;
+                    for (i = 0, l = eventNames.length; i < l; i++) {
+                        eventName = eventNames[i];
+                        actions = actionsFor(obj, eventName);
+                        var actionIndex = indexOf(actions, target, method);
+                        if (actionIndex !== -1) {
+                            action = actions[actionIndex].slice();
+                            action[3] = true;
+                            actions[actionIndex] = action;
+                            suspendedActions.push(action);
+                        }
+                    }
+                    function tryable() {
+                        return callback.call(target);
+                    }
+                    function finalizer() {
+                        for (i = 0, l = suspendedActions.length; i < l; i++) {
+                            suspendedActions[i][3] = undefined;
+                        }
+                    }
+                    return Ember.tryFinally(tryable, finalizer);
+                }
+                function watchedEvents(obj) {
+                    var listeners = obj[META_KEY].listeners, ret = [];
+                    if (listeners) {
+                        for (var eventName in listeners) {
+                            if (listeners[eventName]) {
+                                ret.push(eventName);
+                            }
+                        }
+                    }
+                    return ret;
+                }
+                function sendEvent(obj, eventName, params, actions) {
+                    if (obj !== Ember && 'function' === typeof obj.sendEvent) {
+                        obj.sendEvent(eventName, params);
+                    }
+                    if (!actions) {
+                        var meta = obj[META_KEY];
+                        actions = meta && meta.listeners && meta.listeners[eventName];
+                    }
+                    if (!actions) {
+                        return;
+                    }
+                    for (var i = actions.length - 1; i >= 0; i--) {
+                        if (!actions[i] || actions[i][3] === true) {
+                            continue;
+                        }
+                        var target = actions[i][0], method = actions[i][1], once = actions[i][2];
+                        if (once) {
+                            removeListener(obj, eventName, target, method);
+                        }
+                        if (!target) {
+                            target = obj;
+                        }
+                        if ('string' === typeof method) {
+                            method = target[method];
+                        }
+                        if (params) {
+                            method.apply(target, params);
+                        } else {
+                            method.call(target);
+                        }
+                    }
+                    return true;
+                }
+                function hasListeners(obj, eventName) {
+                    var meta = obj[META_KEY], actions = meta && meta.listeners && meta.listeners[eventName];
+                    return !!(actions && actions.length);
+                }
+                function listenersFor(obj, eventName) {
+                    var ret = [];
+                    var meta = obj[META_KEY], actions = meta && meta.listeners && meta.listeners[eventName];
+                    if (!actions) {
+                        return ret;
+                    }
+                    for (var i = 0, l = actions.length; i < l; i++) {
+                        var target = actions[i][0], method = actions[i][1];
+                        ret.push([
+                            target,
+                            method
+                        ]);
+                    }
+                    return ret;
+                }
+                Ember.addListener = addListener;
+                Ember.removeListener = removeListener;
+                Ember._suspendListener = suspendListener;
+                Ember._suspendListeners = suspendListeners;
+                Ember.sendEvent = sendEvent;
+                Ember.hasListeners = hasListeners;
+                Ember.watchedEvents = watchedEvents;
+                Ember.listenersFor = listenersFor;
+                Ember.listenersDiff = actionsDiff;
+                Ember.listenersUnion = actionsUnion;
+            }());
+            (function () {
+                var guidFor = Ember.guidFor, sendEvent = Ember.sendEvent;
+                var ObserverSet = Ember._ObserverSet = function () {
+                        this.clear();
+                    };
+                ObserverSet.prototype.add = function (sender, keyName, eventName) {
+                    var observerSet = this.observerSet, observers = this.observers, senderGuid = guidFor(sender), keySet = observerSet[senderGuid], index;
+                    if (!keySet) {
+                        observerSet[senderGuid] = keySet = {};
+                    }
+                    index = keySet[keyName];
+                    if (index === undefined) {
+                        index = observers.push({
+                            sender: sender,
+                            keyName: keyName,
+                            eventName: eventName,
+                            listeners: []
+                        }) - 1;
+                        keySet[keyName] = index;
+                    }
+                    return observers[index].listeners;
+                };
+                ObserverSet.prototype.flush = function () {
+                    var observers = this.observers, i, len, observer, sender;
+                    this.clear();
+                    for (i = 0, len = observers.length; i < len; ++i) {
+                        observer = observers[i];
+                        sender = observer.sender;
+                        if (sender.isDestroying || sender.isDestroyed) {
+                            continue;
+                        }
+                        sendEvent(sender, observer.eventName, [
+                            sender,
+                            observer.keyName
+                        ], observer.listeners);
+                    }
+                };
+                ObserverSet.prototype.clear = function () {
+                    this.observerSet = {};
+                    this.observers = [];
+                };
+            }());
+            (function () {
+                var metaFor = Ember.meta, guidFor = Ember.guidFor, tryFinally = Ember.tryFinally, sendEvent = Ember.sendEvent, listenersUnion = Ember.listenersUnion, listenersDiff = Ember.listenersDiff, ObserverSet = Ember._ObserverSet, beforeObserverSet = new ObserverSet(), observerSet = new ObserverSet(), deferred = 0;
+                var propertyWillChange = Ember.propertyWillChange = function (obj, keyName) {
+                        var m = metaFor(obj, false), watching = m.watching[keyName] > 0 || keyName === 'length', proto = m.proto, desc = m.descs[keyName];
+                        if (!watching) {
+                            return;
+                        }
+                        if (proto === obj) {
+                            return;
+                        }
+                        if (desc && desc.willChange) {
+                            desc.willChange(obj, keyName);
+                        }
+                        dependentKeysWillChange(obj, keyName, m);
+                        chainsWillChange(obj, keyName, m);
+                        notifyBeforeObservers(obj, keyName);
+                    };
+                var propertyDidChange = Ember.propertyDidChange = function (obj, keyName) {
+                        var m = metaFor(obj, false), watching = m.watching[keyName] > 0 || keyName === 'length', proto = m.proto, desc = m.descs[keyName];
+                        if (proto === obj) {
+                            return;
+                        }
+                        if (desc && desc.didChange) {
+                            desc.didChange(obj, keyName);
+                        }
+                        if (!watching && keyName !== 'length') {
+                            return;
+                        }
+                        dependentKeysDidChange(obj, keyName, m);
+                        chainsDidChange(obj, keyName, m);
+                        notifyObservers(obj, keyName);
+                    };
+                var WILL_SEEN, DID_SEEN;
+                function dependentKeysWillChange(obj, depKey, meta) {
+                    if (obj.isDestroying) {
+                        return;
+                    }
+                    var seen = WILL_SEEN, top = !seen;
+                    if (top) {
+                        seen = WILL_SEEN = {};
+                    }
+                    iterDeps(propertyWillChange, obj, depKey, seen, meta);
+                    if (top) {
+                        WILL_SEEN = null;
+                    }
+                }
+                function dependentKeysDidChange(obj, depKey, meta) {
+                    if (obj.isDestroying) {
+                        return;
+                    }
+                    var seen = DID_SEEN, top = !seen;
+                    if (top) {
+                        seen = DID_SEEN = {};
+                    }
+                    iterDeps(propertyDidChange, obj, depKey, seen, meta);
+                    if (top) {
+                        DID_SEEN = null;
+                    }
+                }
+                function iterDeps(method, obj, depKey, seen, meta) {
+                    var guid = guidFor(obj);
+                    if (!seen[guid])
+                        seen[guid] = {};
+                    if (seen[guid][depKey])
+                        return;
+                    seen[guid][depKey] = true;
+                    var deps = meta.deps;
+                    deps = deps && deps[depKey];
+                    if (deps) {
+                        for (var key in deps) {
+                            var desc = meta.descs[key];
+                            if (desc && desc._suspended === obj)
+                                continue;
+                            method(obj, key);
+                        }
+                    }
+                }
+                var chainsWillChange = function (obj, keyName, m, arg) {
+                    if (!m.hasOwnProperty('chainWatchers')) {
+                        return;
+                    }
+                    var nodes = m.chainWatchers;
+                    nodes = nodes[keyName];
+                    if (!nodes) {
+                        return;
+                    }
+                    for (var i = 0, l = nodes.length; i < l; i++) {
+                        nodes[i].willChange(arg);
+                    }
+                };
+                var chainsDidChange = function (obj, keyName, m, arg) {
+                    if (!m.hasOwnProperty('chainWatchers')) {
+                        return;
+                    }
+                    var nodes = m.chainWatchers;
+                    nodes = nodes[keyName];
+                    if (!nodes) {
+                        return;
+                    }
+                    for (var i = nodes.length - 1; i >= 0; i--) {
+                        nodes[i].didChange(arg);
+                    }
+                };
+                Ember.overrideChains = function (obj, keyName, m) {
+                    chainsDidChange(obj, keyName, m, true);
+                };
+                var beginPropertyChanges = Ember.beginPropertyChanges = function () {
+                        deferred++;
+                    };
+                var endPropertyChanges = Ember.endPropertyChanges = function () {
+                        deferred--;
+                        if (deferred <= 0) {
+                            beforeObserverSet.clear();
+                            observerSet.flush();
+                        }
+                    };
+                var changeProperties = Ember.changeProperties = function (cb, binding) {
+                        beginPropertyChanges();
+                        tryFinally(cb, endPropertyChanges, binding);
+                    };
+                var notifyBeforeObservers = function (obj, keyName) {
+                    if (obj.isDestroying) {
+                        return;
+                    }
+                    var eventName = keyName + ':before', listeners, diff;
+                    if (deferred) {
+                        listeners = beforeObserverSet.add(obj, keyName, eventName);
+                        diff = listenersDiff(obj, eventName, listeners);
+                        sendEvent(obj, eventName, [
+                            obj,
+                            keyName
+                        ], diff);
+                    } else {
+                        sendEvent(obj, eventName, [
+                            obj,
+                            keyName
+                        ]);
+                    }
+                };
+                var notifyObservers = function (obj, keyName) {
+                    if (obj.isDestroying) {
+                        return;
+                    }
+                    var eventName = keyName + ':change', listeners;
+                    if (deferred) {
+                        listeners = observerSet.add(obj, keyName, eventName);
+                        listenersUnion(obj, eventName, listeners);
+                    } else {
+                        sendEvent(obj, eventName, [
+                            obj,
+                            keyName
+                        ]);
+                    }
+                };
+            }());
+            (function () {
+                var META_KEY = Ember.META_KEY, MANDATORY_SETTER = Ember.ENV.MANDATORY_SETTER, IS_GLOBAL = /^([A-Z$]|([0-9][A-Z$]))/, propertyWillChange = Ember.propertyWillChange, propertyDidChange = Ember.propertyDidChange, getPath = Ember._getPath;
+                var set = function set(obj, keyName, value, tolerant) {
+                    if (typeof obj === 'string') {
+                        Ember.assert('Path \'' + obj + '\' must be global if no obj is given.', IS_GLOBAL.test(obj));
+                        value = keyName;
+                        keyName = obj;
+                        obj = null;
+                    }
+                    if (!obj || keyName.indexOf('.') !== -1) {
+                        return setPath(obj, keyName, value, tolerant);
+                    }
+                    Ember.assert('You need to provide an object and key to `set`.', !!obj && keyName !== undefined);
+                    Ember.assert('calling set on destroyed object', !obj.isDestroyed);
+                    var meta = obj[META_KEY], desc = meta && meta.descs[keyName], isUnknown, currentValue;
+                    if (desc) {
+                        desc.set(obj, keyName, value);
+                    } else {
+                        isUnknown = 'object' === typeof obj && !(keyName in obj);
+                        if (isUnknown && 'function' === typeof obj.setUnknownProperty) {
+                            obj.setUnknownProperty(keyName, value);
+                        } else if (meta && meta.watching[keyName] > 0) {
+                            if (MANDATORY_SETTER) {
+                                currentValue = meta.values[keyName];
+                            } else {
+                                currentValue = obj[keyName];
+                            }
+                            if (value !== currentValue) {
+                                Ember.propertyWillChange(obj, keyName);
+                                if (MANDATORY_SETTER) {
+                                    if (currentValue === undefined && !(keyName in obj)) {
+                                        Ember.defineProperty(obj, keyName, null, value);
+                                    } else {
+                                        meta.values[keyName] = value;
+                                    }
+                                } else {
+                                    obj[keyName] = value;
+                                }
+                                Ember.propertyDidChange(obj, keyName);
+                            }
+                        } else {
+                            obj[keyName] = value;
+                        }
+                    }
+                    return value;
+                };
+                if (Ember.config.overrideAccessors) {
+                    Ember.set = set;
+                    Ember.config.overrideAccessors();
+                    set = Ember.set;
+                }
+                function setPath(root, path, value, tolerant) {
+                    var keyName;
+                    keyName = path.slice(path.lastIndexOf('.') + 1);
+                    path = path.slice(0, path.length - (keyName.length + 1));
+                    if (path !== 'this') {
+                        root = getPath(root, path);
+                    }
+                    if (!keyName || keyName.length === 0) {
+                        throw new Error('You passed an empty path');
+                    }
+                    if (!root) {
+                        if (tolerant) {
+                            return;
+                        } else {
+                            throw new Error('Object in path ' + path + ' could not be found or was destroyed.');
+                        }
+                    }
+                    return set(root, keyName, value);
+                }
+                Ember.set = set;
+                Ember.setPath = Ember.deprecateFunc('setPath is deprecated since set now supports paths', Ember.set);
+                Ember.trySet = function (root, path, value) {
+                    return set(root, path, value, true);
+                };
+                Ember.trySetPath = Ember.deprecateFunc('trySetPath has been renamed to trySet', Ember.trySet);
+            }());
+            (function () {
+                var META_KEY = Ember.META_KEY, metaFor = Ember.meta, objectDefineProperty = Ember.platform.defineProperty;
+                var MANDATORY_SETTER = Ember.ENV.MANDATORY_SETTER;
+                var Descriptor = Ember.Descriptor = function () {
+                    };
+                var MANDATORY_SETTER_FUNCTION = Ember.MANDATORY_SETTER_FUNCTION = function (value) {
+                        Ember.assert('You must use Ember.set() to access this property (of ' + this + ')', false);
+                    };
+                var DEFAULT_GETTER_FUNCTION = Ember.DEFAULT_GETTER_FUNCTION = function (name) {
+                        return function () {
+                            var meta = this[META_KEY];
+                            return meta && meta.values[name];
+                        };
+                    };
+                Ember.defineProperty = function (obj, keyName, desc, data, meta) {
+                    var descs, existingDesc, watching, value;
+                    if (!meta)
+                        meta = metaFor(obj);
+                    descs = meta.descs;
+                    existingDesc = meta.descs[keyName];
+                    watching = meta.watching[keyName] > 0;
+                    if (existingDesc instanceof Ember.Descriptor) {
+                        existingDesc.teardown(obj, keyName);
+                    }
+                    if (desc instanceof Ember.Descriptor) {
+                        value = desc;
+                        descs[keyName] = desc;
                         if (MANDATORY_SETTER && watching) {
-                            meta.values[keyName] = data;
                             objectDefineProperty(obj, keyName, {
                                 configurable: true,
                                 enumerable: true,
-                                set: function () {
-                                    Ember.assert('Must use Ember.set() to access this property', false);
-                                },
-                                get: function () {
-                                    var meta = this[META_KEY];
-                                    return meta && meta.values[keyName];
-                                }
+                                writable: true,
+                                value: undefined
                             });
                         } else {
-                            obj[keyName] = data;
+                            obj[keyName] = undefined;
                         }
+                        desc.setup(obj, keyName);
                     } else {
-                        value = desc;
-                        objectDefineProperty(obj, keyName, desc);
-                    }
-                }
-                if (watching) {
-                    Ember.overrideChains(obj, keyName, meta);
-                }
-                if (obj.didDefineProperty) {
-                    obj.didDefineProperty(obj, keyName, value);
-                }
-                return this;
-            };
-        }());
-        (function () {
-            var AFTER_OBSERVERS = ':change';
-            var BEFORE_OBSERVERS = ':before';
-            var guidFor = Ember.guidFor;
-            var deferred = 0;
-            var array_Slice = [].slice;
-            var ObserverSet = function () {
-                this.targetSet = {};
-            };
-            ObserverSet.prototype.add = function (target, path) {
-                var targetSet = this.targetSet, targetGuid = Ember.guidFor(target), pathSet = targetSet[targetGuid];
-                if (!pathSet) {
-                    targetSet[targetGuid] = pathSet = {};
-                }
-                if (pathSet[path]) {
-                    return false;
-                } else {
-                    return pathSet[path] = true;
-                }
-            };
-            ObserverSet.prototype.clear = function () {
-                this.targetSet = {};
-            };
-            var DeferredEventQueue = function () {
-                this.targetSet = {};
-                this.queue = [];
-            };
-            DeferredEventQueue.prototype.push = function (target, eventName, keyName) {
-                var targetSet = this.targetSet, queue = this.queue, targetGuid = Ember.guidFor(target), eventNameSet = targetSet[targetGuid], index;
-                if (!eventNameSet) {
-                    targetSet[targetGuid] = eventNameSet = {};
-                }
-                index = eventNameSet[eventName];
-                if (index === undefined) {
-                    eventNameSet[eventName] = queue.push(Ember.deferEvent(target, eventName, [
-                        target,
-                        keyName
-                    ])) - 1;
-                } else {
-                    queue[index] = Ember.deferEvent(target, eventName, [
-                        target,
-                        keyName
-                    ]);
-                }
-            };
-            DeferredEventQueue.prototype.flush = function () {
-                var queue = this.queue;
-                this.queue = [];
-                this.targetSet = {};
-                for (var i = 0, len = queue.length; i < len; ++i) {
-                    queue[i]();
-                }
-            };
-            var queue = new DeferredEventQueue(), beforeObserverSet = new ObserverSet();
-            function notifyObservers(obj, eventName, keyName, forceNotification) {
-                if (deferred && !forceNotification) {
-                    queue.push(obj, eventName, keyName);
-                } else {
-                    Ember.sendEvent(obj, eventName, [
-                        obj,
-                        keyName
-                    ]);
-                }
-            }
-            function flushObserverQueue() {
-                beforeObserverSet.clear();
-                queue.flush();
-            }
-            Ember.beginPropertyChanges = function () {
-                deferred++;
-                return this;
-            };
-            Ember.endPropertyChanges = function () {
-                deferred--;
-                if (deferred <= 0)
-                    flushObserverQueue();
-            };
-            Ember.changeProperties = function (cb, binding) {
-                Ember.beginPropertyChanges();
-                try {
-                    cb.call(binding);
-                } finally {
-                    Ember.endPropertyChanges();
-                }
-            };
-            Ember.setProperties = function (self, hash) {
-                Ember.changeProperties(function () {
-                    for (var prop in hash) {
-                        if (hash.hasOwnProperty(prop))
-                            Ember.set(self, prop, hash[prop]);
-                    }
-                });
-                return self;
-            };
-            function changeEvent(keyName) {
-                return keyName + AFTER_OBSERVERS;
-            }
-            function beforeEvent(keyName) {
-                return keyName + BEFORE_OBSERVERS;
-            }
-            Ember.addObserver = function (obj, path, target, method) {
-                Ember.addListener(obj, changeEvent(path), target, method);
-                Ember.watch(obj, path);
-                return this;
-            };
-            Ember.observersFor = function (obj, path) {
-                return Ember.listenersFor(obj, changeEvent(path));
-            };
-            Ember.removeObserver = function (obj, path, target, method) {
-                Ember.unwatch(obj, path);
-                Ember.removeListener(obj, changeEvent(path), target, method);
-                return this;
-            };
-            Ember.addBeforeObserver = function (obj, path, target, method) {
-                Ember.addListener(obj, beforeEvent(path), target, method);
-                Ember.watch(obj, path);
-                return this;
-            };
-            Ember._suspendBeforeObserver = function (obj, path, target, method, callback) {
-                return Ember._suspendListener(obj, beforeEvent(path), target, method, callback);
-            };
-            Ember._suspendObserver = function (obj, path, target, method, callback) {
-                return Ember._suspendListener(obj, changeEvent(path), target, method, callback);
-            };
-            var map = Ember.ArrayPolyfills.map;
-            Ember._suspendBeforeObservers = function (obj, paths, target, method, callback) {
-                var events = map.call(paths, beforeEvent);
-                return Ember._suspendListeners(obj, events, target, method, callback);
-            };
-            Ember._suspendObservers = function (obj, paths, target, method, callback) {
-                var events = map.call(paths, changeEvent);
-                return Ember._suspendListeners(obj, events, target, method, callback);
-            };
-            Ember.beforeObserversFor = function (obj, path) {
-                return Ember.listenersFor(obj, beforeEvent(path));
-            };
-            Ember.removeBeforeObserver = function (obj, path, target, method) {
-                Ember.unwatch(obj, path);
-                Ember.removeListener(obj, beforeEvent(path), target, method);
-                return this;
-            };
-            Ember.notifyObservers = function (obj, keyName) {
-                if (obj.isDestroying) {
-                    return;
-                }
-                notifyObservers(obj, changeEvent(keyName), keyName);
-            };
-            Ember.notifyBeforeObservers = function (obj, keyName) {
-                if (obj.isDestroying) {
-                    return;
-                }
-                var guid, set, forceNotification = false;
-                if (deferred) {
-                    if (beforeObserverSet.add(obj, keyName)) {
-                        forceNotification = true;
-                    } else {
-                        return;
-                    }
-                }
-                notifyObservers(obj, beforeEvent(keyName), keyName, forceNotification);
-            };
-        }());
-        (function () {
-            var guidFor = Ember.guidFor, metaFor = Ember.meta, get = Ember.get, set = Ember.set, normalizeTuple = Ember.normalizeTuple, GUID_KEY = Ember.GUID_KEY, META_KEY = Ember.META_KEY, notifyObservers = Ember.notifyObservers, forEach = Ember.ArrayPolyfills.forEach, FIRST_KEY = /^([^\.\*]+)/, IS_PATH = /[\.\*]/;
-            var MANDATORY_SETTER = Ember.ENV.MANDATORY_SETTER, o_defineProperty = Ember.platform.defineProperty;
-            function firstKey(path) {
-                return path.match(FIRST_KEY)[0];
-            }
-            function isKeyName(path) {
-                return path === '*' || !IS_PATH.test(path);
-            }
-            var DEP_SKIP = { __emberproto__: true };
-            function iterDeps(method, obj, depKey, seen, meta) {
-                var guid = guidFor(obj);
-                if (!seen[guid])
-                    seen[guid] = {};
-                if (seen[guid][depKey])
-                    return;
-                seen[guid][depKey] = true;
-                var deps = meta.deps;
-                deps = deps && deps[depKey];
-                if (deps) {
-                    for (var key in deps) {
-                        if (DEP_SKIP[key])
-                            continue;
-                        method(obj, key);
-                    }
-                }
-            }
-            var WILL_SEEN, DID_SEEN;
-            function dependentKeysWillChange(obj, depKey, meta) {
-                if (obj.isDestroying) {
-                    return;
-                }
-                var seen = WILL_SEEN, top = !seen;
-                if (top) {
-                    seen = WILL_SEEN = {};
-                }
-                iterDeps(propertyWillChange, obj, depKey, seen, meta);
-                if (top) {
-                    WILL_SEEN = null;
-                }
-            }
-            function dependentKeysDidChange(obj, depKey, meta) {
-                if (obj.isDestroying) {
-                    return;
-                }
-                var seen = DID_SEEN, top = !seen;
-                if (top) {
-                    seen = DID_SEEN = {};
-                }
-                iterDeps(propertyDidChange, obj, depKey, seen, meta);
-                if (top) {
-                    DID_SEEN = null;
-                }
-            }
-            function addChainWatcher(obj, keyName, node) {
-                if (!obj || 'object' !== typeof obj)
-                    return;
-                var m = metaFor(obj);
-                var nodes = m.chainWatchers;
-                if (!nodes || nodes.__emberproto__ !== obj) {
-                    nodes = m.chainWatchers = { __emberproto__: obj };
-                }
-                if (!nodes[keyName]) {
-                    nodes[keyName] = {};
-                }
-                nodes[keyName][guidFor(node)] = node;
-                Ember.watch(obj, keyName);
-            }
-            function removeChainWatcher(obj, keyName, node) {
-                if (!obj || 'object' !== typeof obj) {
-                    return;
-                }
-                var m = metaFor(obj, false), nodes = m.chainWatchers;
-                if (!nodes || nodes.__emberproto__ !== obj) {
-                    return;
-                }
-                if (nodes[keyName]) {
-                    delete nodes[keyName][guidFor(node)];
-                }
-                Ember.unwatch(obj, keyName);
-            }
-            var pendingQueue = [];
-            function flushPendingChains() {
-                if (pendingQueue.length === 0) {
-                    return;
-                }
-                var queue = pendingQueue;
-                pendingQueue = [];
-                forEach.call(queue, function (q) {
-                    q[0].add(q[1]);
-                });
-                Ember.warn('Watching an undefined global, Ember expects watched globals to be setup by the time the run loop is flushed, check for typos', pendingQueue.length === 0);
-            }
-            function isProto(pvalue) {
-                return metaFor(pvalue, false).proto === pvalue;
-            }
-            var ChainNode = function (parent, key, value, separator) {
-                var obj;
-                this._parent = parent;
-                this._key = key;
-                this._watching = value === undefined;
-                this._value = value;
-                this._separator = separator || '.';
-                this._paths = {};
-                if (this._watching) {
-                    this._object = parent.value();
-                    if (this._object) {
-                        addChainWatcher(this._object, this._key, this);
-                    }
-                }
-                if (this._parent && this._parent._key === '@each') {
-                    this.value();
-                }
-            };
-            var ChainNodePrototype = ChainNode.prototype;
-            ChainNodePrototype.value = function () {
-                if (this._value === undefined && this._watching) {
-                    var obj = this._parent.value();
-                    this._value = obj && !isProto(obj) ? get(obj, this._key) : undefined;
-                }
-                return this._value;
-            };
-            ChainNodePrototype.destroy = function () {
-                if (this._watching) {
-                    var obj = this._object;
-                    if (obj) {
-                        removeChainWatcher(obj, this._key, this);
-                    }
-                    this._watching = false;
-                }
-            };
-            ChainNodePrototype.copy = function (obj) {
-                var ret = new ChainNode(null, null, obj, this._separator), paths = this._paths, path;
-                for (path in paths) {
-                    if (paths[path] <= 0) {
-                        continue;
-                    }
-                    ret.add(path);
-                }
-                return ret;
-            };
-            ChainNodePrototype.add = function (path) {
-                var obj, tuple, key, src, separator, paths;
-                paths = this._paths;
-                paths[path] = (paths[path] || 0) + 1;
-                obj = this.value();
-                tuple = normalizeTuple(obj, path);
-                if (tuple[0] && tuple[0] === obj) {
-                    path = tuple[1];
-                    key = firstKey(path);
-                    path = path.slice(key.length + 1);
-                } else if (!tuple[0]) {
-                    pendingQueue.push([
-                        this,
-                        path
-                    ]);
-                    tuple.length = 0;
-                    return;
-                } else {
-                    src = tuple[0];
-                    key = path.slice(0, 0 - (tuple[1].length + 1));
-                    separator = path.slice(key.length, key.length + 1);
-                    path = tuple[1];
-                }
-                tuple.length = 0;
-                this.chain(key, path, src, separator);
-            };
-            ChainNodePrototype.remove = function (path) {
-                var obj, tuple, key, src, paths;
-                paths = this._paths;
-                if (paths[path] > 0) {
-                    paths[path]--;
-                }
-                obj = this.value();
-                tuple = normalizeTuple(obj, path);
-                if (tuple[0] === obj) {
-                    path = tuple[1];
-                    key = firstKey(path);
-                    path = path.slice(key.length + 1);
-                } else {
-                    src = tuple[0];
-                    key = path.slice(0, 0 - (tuple[1].length + 1));
-                    path = tuple[1];
-                }
-                tuple.length = 0;
-                this.unchain(key, path);
-            };
-            ChainNodePrototype.count = 0;
-            ChainNodePrototype.chain = function (key, path, src, separator) {
-                var chains = this._chains, node;
-                if (!chains) {
-                    chains = this._chains = {};
-                }
-                node = chains[key];
-                if (!node) {
-                    node = chains[key] = new ChainNode(this, key, src, separator);
-                }
-                node.count++;
-                if (path && path.length > 0) {
-                    key = firstKey(path);
-                    path = path.slice(key.length + 1);
-                    node.chain(key, path);
-                }
-            };
-            ChainNodePrototype.unchain = function (key, path) {
-                var chains = this._chains, node = chains[key];
-                if (path && path.length > 1) {
-                    key = firstKey(path);
-                    path = path.slice(key.length + 1);
-                    node.unchain(key, path);
-                }
-                node.count--;
-                if (node.count <= 0) {
-                    delete chains[node._key];
-                    node.destroy();
-                }
-            };
-            ChainNodePrototype.willChange = function () {
-                var chains = this._chains;
-                if (chains) {
-                    for (var key in chains) {
-                        if (!chains.hasOwnProperty(key)) {
-                            continue;
+                        descs[keyName] = undefined;
+                        if (desc == null) {
+                            value = data;
+                            if (MANDATORY_SETTER && watching) {
+                                meta.values[keyName] = data;
+                                objectDefineProperty(obj, keyName, {
+                                    configurable: true,
+                                    enumerable: true,
+                                    set: MANDATORY_SETTER_FUNCTION,
+                                    get: DEFAULT_GETTER_FUNCTION(keyName)
+                                });
+                            } else {
+                                obj[keyName] = data;
+                            }
+                        } else {
+                            value = desc;
+                            objectDefineProperty(obj, keyName, desc);
                         }
-                        chains[key].willChange();
                     }
-                }
-                if (this._parent) {
-                    this._parent.chainWillChange(this, this._key, 1);
-                }
-            };
-            ChainNodePrototype.chainWillChange = function (chain, path, depth) {
-                if (this._key) {
-                    path = this._key + this._separator + path;
-                }
-                if (this._parent) {
-                    this._parent.chainWillChange(this, path, depth + 1);
-                } else {
-                    if (depth > 1) {
-                        Ember.propertyWillChange(this.value(), path);
+                    if (watching) {
+                        Ember.overrideChains(obj, keyName, meta);
                     }
-                    path = 'this.' + path;
-                    if (this._paths[path] > 0) {
-                        Ember.propertyWillChange(this.value(), path);
+                    if (obj.didDefineProperty) {
+                        obj.didDefineProperty(obj, keyName, value);
                     }
-                }
-            };
-            ChainNodePrototype.chainDidChange = function (chain, path, depth) {
-                if (this._key) {
-                    path = this._key + this._separator + path;
-                }
-                if (this._parent) {
-                    this._parent.chainDidChange(this, path, depth + 1);
-                } else {
-                    if (depth > 1) {
-                        Ember.propertyDidChange(this.value(), path);
-                    }
-                    path = 'this.' + path;
-                    if (this._paths[path] > 0) {
-                        Ember.propertyDidChange(this.value(), path);
-                    }
-                }
-            };
-            ChainNodePrototype.didChange = function (suppressEvent) {
-                if (this._watching) {
-                    var obj = this._parent.value();
-                    if (obj !== this._object) {
-                        removeChainWatcher(this._object, this._key, this);
-                        this._object = obj;
-                        addChainWatcher(obj, this._key, this);
-                    }
-                    this._value = undefined;
-                    if (this._parent && this._parent._key === '@each')
-                        this.value();
-                }
-                var chains = this._chains;
-                if (chains) {
-                    for (var key in chains) {
-                        if (!chains.hasOwnProperty(key)) {
-                            continue;
-                        }
-                        chains[key].didChange(suppressEvent);
-                    }
-                }
-                if (suppressEvent) {
-                    return;
-                }
-                if (this._parent) {
-                    this._parent.chainDidChange(this, this._key, 1);
-                }
-            };
-            function chainsFor(obj) {
-                var m = metaFor(obj), ret = m.chains;
-                if (!ret) {
-                    ret = m.chains = new ChainNode(null, null, obj);
-                } else if (ret.value() !== obj) {
-                    ret = m.chains = ret.copy(obj);
-                }
-                return ret;
-            }
-            function notifyChains(obj, m, keyName, methodName, arg) {
-                var nodes = m.chainWatchers;
-                if (!nodes || nodes.__emberproto__ !== obj) {
-                    return;
-                }
-                nodes = nodes[keyName];
-                if (!nodes) {
-                    return;
-                }
-                for (var key in nodes) {
-                    if (!nodes.hasOwnProperty(key)) {
-                        continue;
-                    }
-                    nodes[key][methodName](arg);
-                }
-            }
-            Ember.overrideChains = function (obj, keyName, m) {
-                notifyChains(obj, m, keyName, 'didChange', true);
-            };
-            function chainsWillChange(obj, keyName, m) {
-                notifyChains(obj, m, keyName, 'willChange');
-            }
-            function chainsDidChange(obj, keyName, m) {
-                notifyChains(obj, m, keyName, 'didChange');
-            }
-            Ember.watch = function (obj, keyName) {
-                if (keyName === 'length' && Ember.typeOf(obj) === 'array') {
                     return this;
-                }
-                var m = metaFor(obj), watching = m.watching, desc;
-                if (!watching[keyName]) {
-                    watching[keyName] = 1;
-                    if (isKeyName(keyName)) {
+                };
+            }());
+            (function () {
+                var changeProperties = Ember.changeProperties, set = Ember.set;
+                Ember.setProperties = function (self, hash) {
+                    changeProperties(function () {
+                        for (var prop in hash) {
+                            if (hash.hasOwnProperty(prop)) {
+                                set(self, prop, hash[prop]);
+                            }
+                        }
+                    });
+                    return self;
+                };
+            }());
+            (function () {
+                var metaFor = Ember.meta, isArray = Ember.isArray, MANDATORY_SETTER = Ember.ENV.MANDATORY_SETTER, o_defineProperty = Ember.platform.defineProperty;
+                Ember.watchKey = function (obj, keyName) {
+                    if (keyName === 'length' && isArray(obj)) {
+                        return this;
+                    }
+                    var m = metaFor(obj), watching = m.watching, desc;
+                    if (!watching[keyName]) {
+                        watching[keyName] = 1;
                         desc = m.descs[keyName];
                         if (desc && desc.willWatch) {
                             desc.willWatch(obj, keyName);
@@ -16005,36 +16245,18 @@ if ( typeof define === "function" && define.amd && define.amd.jQuery ) {
                             o_defineProperty(obj, keyName, {
                                 configurable: true,
                                 enumerable: true,
-                                set: function () {
-                                    Ember.assert('Must use Ember.set() to access this property', false);
-                                },
-                                get: function () {
-                                    var meta = this[META_KEY];
-                                    return meta && meta.values[keyName];
-                                }
+                                set: Ember.MANDATORY_SETTER_FUNCTION,
+                                get: Ember.DEFAULT_GETTER_FUNCTION(keyName)
                             });
                         }
                     } else {
-                        chainsFor(obj).add(keyName);
+                        watching[keyName] = (watching[keyName] || 0) + 1;
                     }
-                } else {
-                    watching[keyName] = (watching[keyName] || 0) + 1;
-                }
-                return this;
-            };
-            Ember.isWatching = function isWatching(obj, key) {
-                var meta = obj[META_KEY];
-                return (meta && meta.watching[key]) > 0;
-            };
-            Ember.watch.flushPending = flushPendingChains;
-            Ember.unwatch = function (obj, keyName) {
-                if (keyName === 'length' && Ember.typeOf(obj) === 'array') {
-                    return this;
-                }
-                var m = metaFor(obj), watching = m.watching, desc;
-                if (watching[keyName] === 1) {
-                    watching[keyName] = 0;
-                    if (isKeyName(keyName)) {
+                };
+                Ember.unwatchKey = function (obj, keyName) {
+                    var m = metaFor(obj), watching = m.watching, desc;
+                    if (watching[keyName] === 1) {
+                        watching[keyName] = 0;
                         desc = m.descs[keyName];
                         if (desc && desc.didUnwatch) {
                             desc.didUnwatch(obj, keyName);
@@ -16051,3420 +16273,4457 @@ if ( typeof define === "function" && define.amd && define.amd.jQuery ) {
                             });
                             delete m.values[keyName];
                         }
-                    } else {
-                        chainsFor(obj).remove(keyName);
+                    } else if (watching[keyName] > 1) {
+                        watching[keyName]--;
                     }
-                } else if (watching[keyName] > 1) {
-                    watching[keyName]--;
-                }
-                return this;
-            };
-            Ember.rewatch = function (obj) {
-                var m = metaFor(obj, false), chains = m.chains;
-                if (GUID_KEY in obj && !obj.hasOwnProperty(GUID_KEY)) {
-                    Ember.generateGuid(obj, 'ember');
-                }
-                if (chains && chains.value() !== obj) {
-                    m.chains = chains.copy(obj);
-                }
-                return this;
-            };
-            Ember.finishChains = function (obj) {
-                var m = metaFor(obj, false), chains = m.chains;
-                if (chains) {
-                    if (chains.value() !== obj) {
-                        m.chains = chains = chains.copy(obj);
-                    }
-                    chains.didChange(true);
-                }
-            };
-            function propertyWillChange(obj, keyName, value) {
-                var m = metaFor(obj, false), watching = m.watching[keyName] > 0 || keyName === 'length', proto = m.proto, desc = m.descs[keyName];
-                if (!watching) {
-                    return;
-                }
-                if (proto === obj) {
-                    return;
-                }
-                if (desc && desc.willChange) {
-                    desc.willChange(obj, keyName);
-                }
-                dependentKeysWillChange(obj, keyName, m);
-                chainsWillChange(obj, keyName, m);
-                Ember.notifyBeforeObservers(obj, keyName);
-            }
-            Ember.propertyWillChange = propertyWillChange;
-            function propertyDidChange(obj, keyName) {
-                var m = metaFor(obj, false), watching = m.watching[keyName] > 0 || keyName === 'length', proto = m.proto, desc = m.descs[keyName];
-                if (proto === obj) {
-                    return;
-                }
-                if (desc && desc.didChange) {
-                    desc.didChange(obj, keyName);
-                }
-                if (!watching && keyName !== 'length') {
-                    return;
-                }
-                dependentKeysDidChange(obj, keyName, m);
-                chainsDidChange(obj, keyName, m);
-                Ember.notifyObservers(obj, keyName);
-            }
-            Ember.propertyDidChange = propertyDidChange;
-            var NODE_STACK = [];
-            Ember.destroy = function (obj) {
-                var meta = obj[META_KEY], node, nodes, key, nodeObject;
-                if (meta) {
-                    obj[META_KEY] = null;
-                    node = meta.chains;
-                    if (node) {
-                        NODE_STACK.push(node);
-                        while (NODE_STACK.length > 0) {
-                            node = NODE_STACK.pop();
-                            nodes = node._chains;
-                            if (nodes) {
-                                for (key in nodes) {
-                                    if (nodes.hasOwnProperty(key)) {
-                                        NODE_STACK.push(nodes[key]);
-                                    }
-                                }
-                            }
-                            if (node._watching) {
-                                nodeObject = node._object;
-                                if (nodeObject) {
-                                    removeChainWatcher(nodeObject, node._key, node);
-                                }
-                            }
-                        }
-                    }
-                }
-            };
-        }());
-        (function () {
-            Ember.warn('Computed properties will soon be cacheable by default. To enable this in your app, set `ENV.CP_DEFAULT_CACHEABLE = true`.', Ember.CP_DEFAULT_CACHEABLE);
-            var get = Ember.get, metaFor = Ember.meta, guidFor = Ember.guidFor, a_slice = [].slice, o_create = Ember.create, META_KEY = Ember.META_KEY, watch = Ember.watch, unwatch = Ember.unwatch;
-            function keysForDep(obj, depsMeta, depKey) {
-                var keys = depsMeta[depKey];
-                if (!keys) {
-                    keys = depsMeta[depKey] = { __emberproto__: obj };
-                } else if (keys.__emberproto__ !== obj) {
-                    keys = depsMeta[depKey] = o_create(keys);
-                    keys.__emberproto__ = obj;
-                }
-                return keys;
-            }
-            function metaForDeps(obj, meta) {
-                var deps = meta.deps;
-                if (!deps) {
-                    deps = meta.deps = { __emberproto__: obj };
-                } else if (deps.__emberproto__ !== obj) {
-                    deps = meta.deps = o_create(deps);
-                    deps.__emberproto__ = obj;
-                }
-                return deps;
-            }
-            function addDependentKeys(desc, obj, keyName, meta) {
-                var depKeys = desc._dependentKeys, depsMeta, idx, len, depKey, keys;
-                if (!depKeys)
-                    return;
-                depsMeta = metaForDeps(obj, meta);
-                for (idx = 0, len = depKeys.length; idx < len; idx++) {
-                    depKey = depKeys[idx];
-                    keys = keysForDep(obj, depsMeta, depKey);
-                    keys[keyName] = (keys[keyName] || 0) + 1;
-                    watch(obj, depKey);
-                }
-            }
-            function removeDependentKeys(desc, obj, keyName, meta) {
-                var depKeys = desc._dependentKeys, depsMeta, idx, len, depKey, keys;
-                if (!depKeys)
-                    return;
-                depsMeta = metaForDeps(obj, meta);
-                for (idx = 0, len = depKeys.length; idx < len; idx++) {
-                    depKey = depKeys[idx];
-                    keys = keysForDep(obj, depsMeta, depKey);
-                    keys[keyName] = (keys[keyName] || 0) - 1;
-                    unwatch(obj, depKey);
-                }
-            }
-            function ComputedProperty(func, opts) {
-                this.func = func;
-                this._cacheable = opts && opts.cacheable !== undefined ? opts.cacheable : Ember.CP_DEFAULT_CACHEABLE;
-                this._dependentKeys = opts && opts.dependentKeys;
-            }
-            Ember.ComputedProperty = ComputedProperty;
-            ComputedProperty.prototype = new Ember.Descriptor();
-            var ComputedPropertyPrototype = ComputedProperty.prototype;
-            ComputedPropertyPrototype.cacheable = function (aFlag) {
-                this._cacheable = aFlag !== false;
-                return this;
-            };
-            ComputedPropertyPrototype.volatile = function () {
-                return this.cacheable(false);
-            };
-            ComputedPropertyPrototype.property = function () {
-                var args = [];
-                for (var i = 0, l = arguments.length; i < l; i++) {
-                    args.push(arguments[i]);
-                }
-                this._dependentKeys = args;
-                return this;
-            };
-            ComputedPropertyPrototype.meta = function (meta) {
-                if (arguments.length === 0) {
-                    return this._meta || {};
-                } else {
-                    this._meta = meta;
                     return this;
+                };
+            }());
+            (function () {
+                var metaFor = Ember.meta, get = Ember.get, normalizeTuple = Ember.normalizeTuple, forEach = Ember.ArrayPolyfills.forEach, warn = Ember.warn, watchKey = Ember.watchKey, unwatchKey = Ember.unwatchKey, propertyWillChange = Ember.propertyWillChange, propertyDidChange = Ember.propertyDidChange, FIRST_KEY = /^([^\.\*]+)/;
+                function firstKey(path) {
+                    return path.match(FIRST_KEY)[0];
                 }
-            };
-            ComputedPropertyPrototype.willWatch = function (obj, keyName) {
-                var meta = obj[META_KEY];
-                Ember.assert('watch should have setup meta to be writable', meta.source === obj);
-                if (!(keyName in meta.cache)) {
-                    addDependentKeys(this, obj, keyName, meta);
-                }
-            };
-            ComputedPropertyPrototype.didUnwatch = function (obj, keyName) {
-                var meta = obj[META_KEY];
-                Ember.assert('unwatch should have setup meta to be writable', meta.source === obj);
-                if (!(keyName in meta.cache)) {
-                    removeDependentKeys(this, obj, keyName, meta);
-                }
-            };
-            ComputedPropertyPrototype.didChange = function (obj, keyName) {
-                if (this._cacheable && this._suspended !== obj) {
-                    var meta = metaFor(obj);
-                    if (keyName in meta.cache) {
-                        delete meta.cache[keyName];
-                        if (!meta.watching[keyName]) {
-                            removeDependentKeys(this, obj, keyName, meta);
-                        }
-                    }
-                }
-            };
-            ComputedPropertyPrototype.get = function (obj, keyName) {
-                var ret, cache, meta;
-                if (this._cacheable) {
-                    meta = metaFor(obj);
-                    cache = meta.cache;
-                    if (keyName in cache) {
-                        return cache[keyName];
-                    }
-                    ret = cache[keyName] = this.func.call(obj, keyName);
-                    if (!meta.watching[keyName]) {
-                        addDependentKeys(this, obj, keyName, meta);
-                    }
-                } else {
-                    ret = this.func.call(obj, keyName);
-                }
-                return ret;
-            };
-            ComputedPropertyPrototype.set = function (obj, keyName, value) {
-                var cacheable = this._cacheable, meta = metaFor(obj, cacheable), watched = meta.watching[keyName], oldSuspended = this._suspended, hadCachedValue, ret;
-                this._suspended = obj;
-                if (watched) {
-                    Ember.propertyWillChange(obj, keyName);
-                }
-                if (cacheable) {
-                    if (keyName in meta.cache) {
-                        delete meta.cache[keyName];
-                        hadCachedValue = true;
-                    }
-                }
-                ret = this.func.call(obj, keyName, value);
-                if (cacheable) {
-                    if (!watched && !hadCachedValue) {
-                        addDependentKeys(this, obj, keyName, meta);
-                    }
-                    meta.cache[keyName] = ret;
-                }
-                if (watched) {
-                    Ember.propertyDidChange(obj, keyName);
-                }
-                this._suspended = oldSuspended;
-                return ret;
-            };
-            ComputedPropertyPrototype.setup = function (obj, keyName) {
-                var meta = obj[META_KEY];
-                if (meta && meta.watching[keyName]) {
-                    addDependentKeys(this, obj, keyName, metaFor(obj));
-                }
-            };
-            ComputedPropertyPrototype.teardown = function (obj, keyName) {
-                var meta = metaFor(obj);
-                if (meta.watching[keyName] || keyName in meta.cache) {
-                    removeDependentKeys(this, obj, keyName, meta);
-                }
-                if (this._cacheable) {
-                    delete meta.cache[keyName];
-                }
-                return null;
-            };
-            Ember.computed = function (func) {
-                var args;
-                if (arguments.length > 1) {
-                    args = a_slice.call(arguments, 0, -1);
-                    func = a_slice.call(arguments, -1)[0];
-                }
-                var cp = new ComputedProperty(func);
-                if (args) {
-                    cp.property.apply(cp, args);
-                }
-                return cp;
-            };
-            Ember.cacheFor = function cacheFor(obj, key) {
-                var cache = metaFor(obj, false).cache;
-                if (cache && key in cache) {
-                    return cache[key];
-                }
-            };
-            Ember.computed.not = function (dependentKey) {
-                return Ember.computed(dependentKey, function (key) {
-                    return !get(this, dependentKey);
-                }).cacheable();
-            };
-            Ember.computed.empty = function (dependentKey) {
-                return Ember.computed(dependentKey, function (key) {
-                    var val = get(this, dependentKey);
-                    return val === undefined || val === null || val === '' || Ember.isArray(val) && get(val, 'length') === 0;
-                }).cacheable();
-            };
-            Ember.computed.bool = function (dependentKey) {
-                return Ember.computed(dependentKey, function (key) {
-                    return !!get(this, dependentKey);
-                }).cacheable();
-            };
-        }());
-        (function () {
-            var o_create = Ember.create, meta = Ember.meta, metaPath = Ember.metaPath, guidFor = Ember.guidFor, a_slice = [].slice;
-            function actionSetFor(obj, eventName, target, writable) {
-                return metaPath(obj, [
-                    'listeners',
-                    eventName,
-                    guidFor(target)
-                ], writable);
-            }
-            function targetSetFor(obj, eventName) {
-                var listenerSet = meta(obj, false).listeners;
-                if (!listenerSet) {
-                    return false;
-                }
-                return listenerSet[eventName] || false;
-            }
-            var SKIP_PROPERTIES = { __ember_source__: true };
-            function iterateSet(obj, eventName, callback, params) {
-                var targetSet = targetSetFor(obj, eventName);
-                if (!targetSet) {
-                    return false;
-                }
-                for (var targetGuid in targetSet) {
-                    if (SKIP_PROPERTIES[targetGuid]) {
-                        continue;
-                    }
-                    var actionSet = targetSet[targetGuid];
-                    if (actionSet) {
-                        for (var methodGuid in actionSet) {
-                            if (SKIP_PROPERTIES[methodGuid]) {
-                                continue;
-                            }
-                            var action = actionSet[methodGuid];
-                            if (action) {
-                                if (callback(action, params, obj) === true) {
-                                    return true;
-                                }
-                            }
-                        }
-                    }
-                }
-                return false;
-            }
-            function invokeAction(action, params, sender) {
-                var method = action.method, target = action.target;
-                if (!target) {
-                    target = sender;
-                }
-                if ('string' === typeof method) {
-                    method = target[method];
-                }
-                if (params) {
-                    method.apply(target, params);
-                } else {
-                    method.apply(target);
-                }
-            }
-            function addListener(obj, eventName, target, method) {
-                Ember.assert('You must pass at least an object and event name to Ember.addListener', !!obj && !!eventName);
-                if (!method && 'function' === typeof target) {
-                    method = target;
-                    target = null;
-                }
-                var actionSet = actionSetFor(obj, eventName, target, true), methodGuid = guidFor(method);
-                if (!actionSet[methodGuid]) {
-                    actionSet[methodGuid] = {
-                        target: target,
-                        method: method
-                    };
-                }
-                if ('function' === typeof obj.didAddListener) {
-                    obj.didAddListener(eventName, target, method);
-                }
-            }
-            function removeListener(obj, eventName, target, method) {
-                Ember.assert('You must pass at least an object and event name to Ember.removeListener', !!obj && !!eventName);
-                if (!method && 'function' === typeof target) {
-                    method = target;
-                    target = null;
-                }
-                var actionSet = actionSetFor(obj, eventName, target, true), methodGuid = guidFor(method);
-                if (actionSet && actionSet[methodGuid]) {
-                    actionSet[methodGuid] = null;
-                }
-                if ('function' === typeof obj.didRemoveListener) {
-                    obj.didRemoveListener(eventName, target, method);
-                }
-            }
-            function suspendListener(obj, eventName, target, method, callback) {
-                if (!method && 'function' === typeof target) {
-                    method = target;
-                    target = null;
-                }
-                var actionSet = actionSetFor(obj, eventName, target, true), methodGuid = guidFor(method), action = actionSet && actionSet[methodGuid];
-                actionSet[methodGuid] = null;
-                try {
-                    return callback.call(target);
-                } finally {
-                    actionSet[methodGuid] = action;
-                }
-            }
-            function suspendListeners(obj, eventNames, target, method, callback) {
-                if (!method && 'function' === typeof target) {
-                    method = target;
-                    target = null;
-                }
-                var oldActions = [], actionSets = [], eventName, actionSet, methodGuid, action, i, l;
-                for (i = 0, l = eventNames.length; i < l; i++) {
-                    eventName = eventNames[i];
-                    actionSet = actionSetFor(obj, eventName, target, true), methodGuid = guidFor(method);
-                    oldActions.push(actionSet && actionSet[methodGuid]);
-                    actionSets.push(actionSet);
-                    actionSet[methodGuid] = null;
-                }
-                try {
-                    return callback.call(target);
-                } finally {
-                    for (i = 0, l = oldActions.length; i < l; i++) {
-                        eventName = eventNames[i];
-                        actionSets[i][methodGuid] = oldActions[i];
-                    }
-                }
-            }
-            function watchedEvents(obj) {
-                var listeners = meta(obj, false).listeners, ret = [];
-                if (listeners) {
-                    for (var eventName in listeners) {
-                        if (!SKIP_PROPERTIES[eventName] && listeners[eventName]) {
-                            ret.push(eventName);
-                        }
-                    }
-                }
-                return ret;
-            }
-            function sendEvent(obj, eventName, params) {
-                if (obj !== Ember && 'function' === typeof obj.sendEvent) {
-                    obj.sendEvent(eventName, params);
-                }
-                iterateSet(obj, eventName, invokeAction, params);
-                return true;
-            }
-            function deferEvent(obj, eventName, params) {
-                var actions = [];
-                iterateSet(obj, eventName, function (action) {
-                    actions.push(action);
-                });
-                return function () {
-                    if (obj.isDestroyed) {
+                var pendingQueue = [];
+                Ember.flushPendingChains = function () {
+                    if (pendingQueue.length === 0) {
                         return;
                     }
-                    if (obj !== Ember && 'function' === typeof obj.sendEvent) {
-                        obj.sendEvent(eventName, params);
+                    var queue = pendingQueue;
+                    pendingQueue = [];
+                    forEach.call(queue, function (q) {
+                        q[0].add(q[1]);
+                    });
+                    warn('Watching an undefined global, Ember expects watched globals to be setup by the time the run loop is flushed, check for typos', pendingQueue.length === 0);
+                };
+                function addChainWatcher(obj, keyName, node) {
+                    if (!obj || 'object' !== typeof obj) {
+                        return;
                     }
-                    for (var i = 0, len = actions.length; i < len; ++i) {
-                        invokeAction(actions[i], params, obj);
+                    var m = metaFor(obj), nodes = m.chainWatchers;
+                    if (!m.hasOwnProperty('chainWatchers')) {
+                        nodes = m.chainWatchers = {};
+                    }
+                    if (!nodes[keyName]) {
+                        nodes[keyName] = [];
+                    }
+                    nodes[keyName].push(node);
+                    watchKey(obj, keyName);
+                }
+                var removeChainWatcher = Ember.removeChainWatcher = function (obj, keyName, node) {
+                        if (!obj || 'object' !== typeof obj) {
+                            return;
+                        }
+                        var m = metaFor(obj, false);
+                        if (!m.hasOwnProperty('chainWatchers')) {
+                            return;
+                        }
+                        var nodes = m.chainWatchers;
+                        if (nodes[keyName]) {
+                            nodes = nodes[keyName];
+                            for (var i = 0, l = nodes.length; i < l; i++) {
+                                if (nodes[i] === node) {
+                                    nodes.splice(i, 1);
+                                }
+                            }
+                        }
+                        unwatchKey(obj, keyName);
+                    };
+                function isProto(pvalue) {
+                    return metaFor(pvalue, false).proto === pvalue;
+                }
+                var ChainNode = Ember._ChainNode = function (parent, key, value) {
+                        var obj;
+                        this._parent = parent;
+                        this._key = key;
+                        this._watching = value === undefined;
+                        this._value = value;
+                        this._paths = {};
+                        if (this._watching) {
+                            this._object = parent.value();
+                            if (this._object) {
+                                addChainWatcher(this._object, this._key, this);
+                            }
+                        }
+                        if (this._parent && this._parent._key === '@each') {
+                            this.value();
+                        }
+                    };
+                var ChainNodePrototype = ChainNode.prototype;
+                ChainNodePrototype.value = function () {
+                    if (this._value === undefined && this._watching) {
+                        var obj = this._parent.value();
+                        this._value = obj && !isProto(obj) ? get(obj, this._key) : undefined;
+                    }
+                    return this._value;
+                };
+                ChainNodePrototype.destroy = function () {
+                    if (this._watching) {
+                        var obj = this._object;
+                        if (obj) {
+                            removeChainWatcher(obj, this._key, this);
+                        }
+                        this._watching = false;
                     }
                 };
-            }
-            function hasListeners(obj, eventName) {
-                if (iterateSet(obj, eventName, function () {
-                        return true;
-                    })) {
-                    return true;
-                }
-                var set = metaPath(obj, ['listeners'], true);
-                set[eventName] = null;
-                return false;
-            }
-            function listenersFor(obj, eventName) {
-                var ret = [];
-                iterateSet(obj, eventName, function (action) {
-                    ret.push([
-                        action.target,
-                        action.method
-                    ]);
-                });
-                return ret;
-            }
-            Ember.addListener = addListener;
-            Ember.removeListener = removeListener;
-            Ember._suspendListener = suspendListener;
-            Ember._suspendListeners = suspendListeners;
-            Ember.sendEvent = sendEvent;
-            Ember.hasListeners = hasListeners;
-            Ember.watchedEvents = watchedEvents;
-            Ember.listenersFor = listenersFor;
-            Ember.deferEvent = deferEvent;
-        }());
-        (function () {
-            var slice = [].slice, forEach = Ember.ArrayPolyfills.forEach;
-            function invoke(target, method, args, ignore) {
-                if (method === undefined) {
-                    method = target;
-                    target = undefined;
-                }
-                if ('string' === typeof method) {
-                    method = target[method];
-                }
-                if (args && ignore > 0) {
-                    args = args.length > ignore ? slice.call(args, ignore) : null;
-                }
-                if ('function' === typeof Ember.onerror) {
-                    try {
-                        return method.apply(target || this, args || []);
-                    } catch (error) {
-                        Ember.onerror(error);
+                ChainNodePrototype.copy = function (obj) {
+                    var ret = new ChainNode(null, null, obj), paths = this._paths, path;
+                    for (path in paths) {
+                        if (paths[path] <= 0) {
+                            continue;
+                        }
+                        ret.add(path);
                     }
-                } else {
-                    return method.apply(target || this, args || []);
+                    return ret;
+                };
+                ChainNodePrototype.add = function (path) {
+                    var obj, tuple, key, src, paths;
+                    paths = this._paths;
+                    paths[path] = (paths[path] || 0) + 1;
+                    obj = this.value();
+                    tuple = normalizeTuple(obj, path);
+                    if (tuple[0] && tuple[0] === obj) {
+                        path = tuple[1];
+                        key = firstKey(path);
+                        path = path.slice(key.length + 1);
+                    } else if (!tuple[0]) {
+                        pendingQueue.push([
+                            this,
+                            path
+                        ]);
+                        tuple.length = 0;
+                        return;
+                    } else {
+                        src = tuple[0];
+                        key = path.slice(0, 0 - (tuple[1].length + 1));
+                        path = tuple[1];
+                    }
+                    tuple.length = 0;
+                    this.chain(key, path, src);
+                };
+                ChainNodePrototype.remove = function (path) {
+                    var obj, tuple, key, src, paths;
+                    paths = this._paths;
+                    if (paths[path] > 0) {
+                        paths[path]--;
+                    }
+                    obj = this.value();
+                    tuple = normalizeTuple(obj, path);
+                    if (tuple[0] === obj) {
+                        path = tuple[1];
+                        key = firstKey(path);
+                        path = path.slice(key.length + 1);
+                    } else {
+                        src = tuple[0];
+                        key = path.slice(0, 0 - (tuple[1].length + 1));
+                        path = tuple[1];
+                    }
+                    tuple.length = 0;
+                    this.unchain(key, path);
+                };
+                ChainNodePrototype.count = 0;
+                ChainNodePrototype.chain = function (key, path, src) {
+                    var chains = this._chains, node;
+                    if (!chains) {
+                        chains = this._chains = {};
+                    }
+                    node = chains[key];
+                    if (!node) {
+                        node = chains[key] = new ChainNode(this, key, src);
+                    }
+                    node.count++;
+                    if (path && path.length > 0) {
+                        key = firstKey(path);
+                        path = path.slice(key.length + 1);
+                        node.chain(key, path);
+                    }
+                };
+                ChainNodePrototype.unchain = function (key, path) {
+                    var chains = this._chains, node = chains[key];
+                    if (path && path.length > 1) {
+                        key = firstKey(path);
+                        path = path.slice(key.length + 1);
+                        node.unchain(key, path);
+                    }
+                    node.count--;
+                    if (node.count <= 0) {
+                        delete chains[node._key];
+                        node.destroy();
+                    }
+                };
+                ChainNodePrototype.willChange = function () {
+                    var chains = this._chains;
+                    if (chains) {
+                        for (var key in chains) {
+                            if (!chains.hasOwnProperty(key)) {
+                                continue;
+                            }
+                            chains[key].willChange();
+                        }
+                    }
+                    if (this._parent) {
+                        this._parent.chainWillChange(this, this._key, 1);
+                    }
+                };
+                ChainNodePrototype.chainWillChange = function (chain, path, depth) {
+                    if (this._key) {
+                        path = this._key + '.' + path;
+                    }
+                    if (this._parent) {
+                        this._parent.chainWillChange(this, path, depth + 1);
+                    } else {
+                        if (depth > 1) {
+                            propertyWillChange(this.value(), path);
+                        }
+                        path = 'this.' + path;
+                        if (this._paths[path] > 0) {
+                            propertyWillChange(this.value(), path);
+                        }
+                    }
+                };
+                ChainNodePrototype.chainDidChange = function (chain, path, depth) {
+                    if (this._key) {
+                        path = this._key + '.' + path;
+                    }
+                    if (this._parent) {
+                        this._parent.chainDidChange(this, path, depth + 1);
+                    } else {
+                        if (depth > 1) {
+                            propertyDidChange(this.value(), path);
+                        }
+                        path = 'this.' + path;
+                        if (this._paths[path] > 0) {
+                            propertyDidChange(this.value(), path);
+                        }
+                    }
+                };
+                ChainNodePrototype.didChange = function (suppressEvent) {
+                    if (this._watching) {
+                        var obj = this._parent.value();
+                        if (obj !== this._object) {
+                            removeChainWatcher(this._object, this._key, this);
+                            this._object = obj;
+                            addChainWatcher(obj, this._key, this);
+                        }
+                        this._value = undefined;
+                        if (this._parent && this._parent._key === '@each')
+                            this.value();
+                    }
+                    var chains = this._chains;
+                    if (chains) {
+                        for (var key in chains) {
+                            if (!chains.hasOwnProperty(key)) {
+                                continue;
+                            }
+                            chains[key].didChange(suppressEvent);
+                        }
+                    }
+                    if (suppressEvent) {
+                        return;
+                    }
+                    if (this._parent) {
+                        this._parent.chainDidChange(this, this._key, 1);
+                    }
+                };
+                Ember.finishChains = function (obj) {
+                    var m = metaFor(obj, false), chains = m.chains;
+                    if (chains) {
+                        if (chains.value() !== obj) {
+                            m.chains = chains = chains.copy(obj);
+                        }
+                        chains.didChange(true);
+                    }
+                };
+            }());
+            (function () {
+                var metaFor = Ember.meta, isArray = Ember.isArray, ChainNode = Ember._ChainNode;
+                function chainsFor(obj) {
+                    var m = metaFor(obj), ret = m.chains;
+                    if (!ret) {
+                        ret = m.chains = new ChainNode(null, null, obj);
+                    } else if (ret.value() !== obj) {
+                        ret = m.chains = ret.copy(obj);
+                    }
+                    return ret;
                 }
-            }
-            var timerMark;
-            var RunLoop = function (prev) {
-                this._prev = prev || null;
-                this.onceTimers = {};
-            };
-            RunLoop.prototype = {
-                end: function () {
-                    this.flush();
-                },
-                prev: function () {
-                    return this._prev;
-                },
-                schedule: function (queueName, target, method) {
-                    var queues = this._queues, queue;
-                    if (!queues) {
-                        queues = this._queues = {};
+                Ember.watchPath = function (obj, keyPath) {
+                    if (keyPath === 'length' && isArray(obj)) {
+                        return;
                     }
-                    queue = queues[queueName];
-                    if (!queue) {
-                        queue = queues[queueName] = [];
+                    var m = metaFor(obj), watching = m.watching;
+                    if (!watching[keyPath]) {
+                        watching[keyPath] = 1;
+                        chainsFor(obj).add(keyPath);
+                    } else {
+                        watching[keyPath] = (watching[keyPath] || 0) + 1;
                     }
-                    var args = arguments.length > 3 ? slice.call(arguments, 3) : null;
-                    queue.push({
-                        target: target,
-                        method: method,
-                        args: args
-                    });
+                };
+                Ember.unwatchPath = function (obj, keyPath) {
+                    var m = metaFor(obj), watching = m.watching, desc;
+                    if (watching[keyPath] === 1) {
+                        watching[keyPath] = 0;
+                        chainsFor(obj).remove(keyPath);
+                    } else if (watching[keyPath] > 1) {
+                        watching[keyPath]--;
+                    }
                     return this;
-                },
-                flush: function (queueName) {
-                    var queueNames, idx, len, queue, log;
-                    if (!this._queues) {
+                };
+            }());
+            (function () {
+                var metaFor = Ember.meta, GUID_KEY = Ember.GUID_KEY, META_KEY = Ember.META_KEY, removeChainWatcher = Ember.removeChainWatcher, watchKey = Ember.watchKey, unwatchKey = Ember.unwatchKey, watchPath = Ember.watchPath, unwatchPath = Ember.unwatchPath, isArray = Ember.isArray, generateGuid = Ember.generateGuid, IS_PATH = /[\.\*]/;
+                function isKeyName(path) {
+                    return path === '*' || !IS_PATH.test(path);
+                }
+                Ember.watch = function (obj, keyPath) {
+                    if (keyPath === 'length' && isArray(obj)) {
+                        return;
+                    }
+                    if (isKeyName(keyPath)) {
+                        watchKey(obj, keyPath);
+                    } else {
+                        watchPath(obj, keyPath);
+                    }
+                };
+                Ember.isWatching = function isWatching(obj, key) {
+                    var meta = obj[META_KEY];
+                    return (meta && meta.watching[key]) > 0;
+                };
+                Ember.watch.flushPending = Ember.flushPendingChains;
+                Ember.unwatch = function (obj, keyPath) {
+                    if (keyPath === 'length' && isArray(obj)) {
                         return this;
                     }
-                    function iter(item) {
-                        invoke(item.target, item.method, item.args);
+                    if (isKeyName(keyPath)) {
+                        unwatchKey(obj, keyPath);
+                    } else {
+                        unwatchPath(obj, keyPath);
                     }
-                    Ember.watch.flushPending();
-                    if (queueName) {
-                        while (this._queues && (queue = this._queues[queueName])) {
-                            this._queues[queueName] = null;
-                            if (queueName === 'sync') {
-                                log = Ember.LOG_BINDINGS;
-                                if (log) {
-                                    Ember.Logger.log('Begin: Flush Sync Queue');
+                };
+                Ember.rewatch = function (obj) {
+                    var m = metaFor(obj, false), chains = m.chains;
+                    if (GUID_KEY in obj && !obj.hasOwnProperty(GUID_KEY)) {
+                        generateGuid(obj, 'ember');
+                    }
+                    if (chains && chains.value() !== obj) {
+                        m.chains = chains.copy(obj);
+                    }
+                    return this;
+                };
+                var NODE_STACK = [];
+                Ember.destroy = function (obj) {
+                    var meta = obj[META_KEY], node, nodes, key, nodeObject;
+                    if (meta) {
+                        obj[META_KEY] = null;
+                        node = meta.chains;
+                        if (node) {
+                            NODE_STACK.push(node);
+                            while (NODE_STACK.length > 0) {
+                                node = NODE_STACK.pop();
+                                nodes = node._chains;
+                                if (nodes) {
+                                    for (key in nodes) {
+                                        if (nodes.hasOwnProperty(key)) {
+                                            NODE_STACK.push(nodes[key]);
+                                        }
+                                    }
                                 }
-                                Ember.beginPropertyChanges();
-                                try {
-                                    forEach.call(queue, iter);
-                                } finally {
-                                    Ember.endPropertyChanges();
+                                if (node._watching) {
+                                    nodeObject = node._object;
+                                    if (nodeObject) {
+                                        removeChainWatcher(nodeObject, node._key, node);
+                                    }
                                 }
-                                if (log) {
-                                    Ember.Logger.log('End: Flush Sync Queue');
-                                }
-                            } else {
-                                forEach.call(queue, iter);
                             }
+                        }
+                    }
+                };
+            }());
+            (function () {
+                Ember.warn('The CP_DEFAULT_CACHEABLE flag has been removed and computed properties are always cached by default. Use `volatile` if you don\'t want caching.', Ember.ENV.CP_DEFAULT_CACHEABLE !== false);
+                var get = Ember.get, set = Ember.set, metaFor = Ember.meta, a_slice = [].slice, o_create = Ember.create, META_KEY = Ember.META_KEY, watch = Ember.watch, unwatch = Ember.unwatch;
+                function keysForDep(obj, depsMeta, depKey) {
+                    var keys = depsMeta[depKey];
+                    if (!keys) {
+                        keys = depsMeta[depKey] = {};
+                    } else if (!depsMeta.hasOwnProperty(depKey)) {
+                        keys = depsMeta[depKey] = o_create(keys);
+                    }
+                    return keys;
+                }
+                function metaForDeps(obj, meta) {
+                    return keysForDep(obj, meta, 'deps');
+                }
+                function addDependentKeys(desc, obj, keyName, meta) {
+                    var depKeys = desc._dependentKeys, depsMeta, idx, len, depKey, keys;
+                    if (!depKeys)
+                        return;
+                    depsMeta = metaForDeps(obj, meta);
+                    for (idx = 0, len = depKeys.length; idx < len; idx++) {
+                        depKey = depKeys[idx];
+                        keys = keysForDep(obj, depsMeta, depKey);
+                        keys[keyName] = (keys[keyName] || 0) + 1;
+                        watch(obj, depKey);
+                    }
+                }
+                function removeDependentKeys(desc, obj, keyName, meta) {
+                    var depKeys = desc._dependentKeys, depsMeta, idx, len, depKey, keys;
+                    if (!depKeys)
+                        return;
+                    depsMeta = metaForDeps(obj, meta);
+                    for (idx = 0, len = depKeys.length; idx < len; idx++) {
+                        depKey = depKeys[idx];
+                        keys = keysForDep(obj, depsMeta, depKey);
+                        keys[keyName] = (keys[keyName] || 0) - 1;
+                        unwatch(obj, depKey);
+                    }
+                }
+                function ComputedProperty(func, opts) {
+                    this.func = func;
+                    this._cacheable = opts && opts.cacheable !== undefined ? opts.cacheable : true;
+                    this._dependentKeys = opts && opts.dependentKeys;
+                    this._readOnly = opts && (opts.readOnly !== undefined || !!opts.readOnly);
+                }
+                Ember.ComputedProperty = ComputedProperty;
+                ComputedProperty.prototype = new Ember.Descriptor();
+                var ComputedPropertyPrototype = ComputedProperty.prototype;
+                ComputedPropertyPrototype.cacheable = function (aFlag) {
+                    this._cacheable = aFlag !== false;
+                    return this;
+                };
+                ComputedPropertyPrototype.volatile = function () {
+                    return this.cacheable(false);
+                };
+                ComputedPropertyPrototype.readOnly = function (readOnly) {
+                    this._readOnly = readOnly === undefined || !!readOnly;
+                    return this;
+                };
+                ComputedPropertyPrototype.property = function () {
+                    var args = [];
+                    for (var i = 0, l = arguments.length; i < l; i++) {
+                        args.push(arguments[i]);
+                    }
+                    this._dependentKeys = args;
+                    return this;
+                };
+                ComputedPropertyPrototype.meta = function (meta) {
+                    if (arguments.length === 0) {
+                        return this._meta || {};
+                    } else {
+                        this._meta = meta;
+                        return this;
+                    }
+                };
+                ComputedPropertyPrototype.willWatch = function (obj, keyName) {
+                    var meta = obj[META_KEY];
+                    Ember.assert('watch should have setup meta to be writable', meta.source === obj);
+                    if (!(keyName in meta.cache)) {
+                        addDependentKeys(this, obj, keyName, meta);
+                    }
+                };
+                ComputedPropertyPrototype.didUnwatch = function (obj, keyName) {
+                    var meta = obj[META_KEY];
+                    Ember.assert('unwatch should have setup meta to be writable', meta.source === obj);
+                    if (!(keyName in meta.cache)) {
+                        removeDependentKeys(this, obj, keyName, meta);
+                    }
+                };
+                ComputedPropertyPrototype.didChange = function (obj, keyName) {
+                    if (this._cacheable && this._suspended !== obj) {
+                        var meta = metaFor(obj);
+                        if (keyName in meta.cache) {
+                            delete meta.cache[keyName];
+                            if (!meta.watching[keyName]) {
+                                removeDependentKeys(this, obj, keyName, meta);
+                            }
+                        }
+                    }
+                };
+                ComputedPropertyPrototype.get = function (obj, keyName) {
+                    var ret, cache, meta;
+                    if (this._cacheable) {
+                        meta = metaFor(obj);
+                        cache = meta.cache;
+                        if (keyName in cache) {
+                            return cache[keyName];
+                        }
+                        ret = cache[keyName] = this.func.call(obj, keyName);
+                        if (!meta.watching[keyName]) {
+                            addDependentKeys(this, obj, keyName, meta);
                         }
                     } else {
-                        queueNames = Ember.run.queues;
-                        len = queueNames.length;
-                        idx = 0;
-                        outerloop:
-                            while (idx < len) {
-                                queueName = queueNames[idx];
-                                queue = this._queues && this._queues[queueName];
-                                delete this._queues[queueName];
-                                if (queue) {
-                                    if (queueName === 'sync') {
-                                        log = Ember.LOG_BINDINGS;
-                                        if (log) {
-                                            Ember.Logger.log('Begin: Flush Sync Queue');
-                                        }
-                                        Ember.beginPropertyChanges();
-                                        try {
-                                            forEach.call(queue, iter);
-                                        } finally {
-                                            Ember.endPropertyChanges();
-                                        }
-                                        if (log) {
-                                            Ember.Logger.log('End: Flush Sync Queue');
-                                        }
-                                    } else {
-                                        forEach.call(queue, iter);
-                                    }
-                                }
-                                for (var i = 0; i <= idx; i++) {
-                                    if (this._queues && this._queues[queueNames[i]]) {
-                                        idx = i;
-                                        continue outerloop;
-                                    }
-                                }
-                                idx++;
-                            }
+                        ret = this.func.call(obj, keyName);
                     }
-                    timerMark = null;
-                    return this;
-                }
-            };
-            Ember.RunLoop = RunLoop;
-            Ember.run = function (target, method) {
-                var ret, loop;
-                run.begin();
-                try {
-                    if (target || method) {
-                        ret = invoke(target, method, arguments, 2);
+                    return ret;
+                };
+                ComputedPropertyPrototype.set = function (obj, keyName, value) {
+                    var cacheable = this._cacheable, func = this.func, meta = metaFor(obj, cacheable), watched = meta.watching[keyName], oldSuspended = this._suspended, hadCachedValue = false, cache = meta.cache, cachedValue, ret;
+                    if (this._readOnly) {
+                        throw new Error('Cannot Set: ' + keyName + ' on: ' + obj.toString());
                     }
-                } finally {
-                    run.end();
-                }
-                return ret;
-            };
-            var run = Ember.run;
-            Ember.run.begin = function () {
-                run.currentRunLoop = new RunLoop(run.currentRunLoop);
-            };
-            Ember.run.end = function () {
-                Ember.assert('must have a current run loop', run.currentRunLoop);
-                try {
-                    run.currentRunLoop.end();
-                } finally {
-                    run.currentRunLoop = run.currentRunLoop.prev();
-                }
-            };
-            Ember.run.queues = [
-                'sync',
-                'actions',
-                'destroy',
-                'timers'
-            ];
-            Ember.run.schedule = function (queue, target, method) {
-                var loop = run.autorun();
-                loop.schedule.apply(loop, arguments);
-            };
-            var scheduledAutorun;
-            function autorun() {
-                scheduledAutorun = null;
-                if (run.currentRunLoop) {
-                    run.end();
-                }
-            }
-            Ember.run.hasScheduledTimers = function () {
-                return !!(scheduledAutorun || scheduledLater || scheduledNext);
-            };
-            Ember.run.cancelTimers = function () {
-                if (scheduledAutorun) {
-                    clearTimeout(scheduledAutorun);
-                    scheduledAutorun = null;
-                }
-                if (scheduledLater) {
-                    clearTimeout(scheduledLater);
-                    scheduledLater = null;
-                }
-                if (scheduledNext) {
-                    clearTimeout(scheduledNext);
-                    scheduledNext = null;
-                }
-                timers = {};
-            };
-            Ember.run.autorun = function () {
-                if (!run.currentRunLoop) {
-                    Ember.assert('You have turned on testing mode, which disabled the run-loop\'s autorun. You will need to wrap any code with asynchronous side-effects in an Ember.run', !Ember.testing);
-                    run.begin();
-                    if (!scheduledAutorun) {
-                        scheduledAutorun = setTimeout(autorun, 1);
-                    }
-                }
-                return run.currentRunLoop;
-            };
-            Ember.run.sync = function () {
-                run.autorun();
-                run.currentRunLoop.flush('sync');
-            };
-            var timers = {};
-            var scheduledLater;
-            function invokeLaterTimers() {
-                scheduledLater = null;
-                var now = +new Date(), earliest = -1;
-                for (var key in timers) {
-                    if (!timers.hasOwnProperty(key)) {
-                        continue;
-                    }
-                    var timer = timers[key];
-                    if (timer && timer.expires) {
-                        if (now >= timer.expires) {
-                            delete timers[key];
-                            invoke(timer.target, timer.method, timer.args, 2);
+                    this._suspended = obj;
+                    try {
+                        if (cacheable && cache.hasOwnProperty(keyName)) {
+                            cachedValue = cache[keyName];
+                            hadCachedValue = true;
+                        }
+                        if (func.wrappedFunction) {
+                            func = func.wrappedFunction;
+                        }
+                        if (func.length === 3) {
+                            ret = func.call(obj, keyName, value, cachedValue);
+                        } else if (func.length === 2) {
+                            ret = func.call(obj, keyName, value);
                         } else {
-                            if (earliest < 0 || timer.expires < earliest)
-                                earliest = timer.expires;
+                            Ember.defineProperty(obj, keyName, null, cachedValue);
+                            Ember.set(obj, keyName, value);
+                            return;
+                        }
+                        if (hadCachedValue && cachedValue === ret) {
+                            return;
+                        }
+                        if (watched) {
+                            Ember.propertyWillChange(obj, keyName);
+                        }
+                        if (hadCachedValue) {
+                            delete cache[keyName];
+                        }
+                        if (cacheable) {
+                            if (!watched && !hadCachedValue) {
+                                addDependentKeys(this, obj, keyName, meta);
+                            }
+                            cache[keyName] = ret;
+                        }
+                        if (watched) {
+                            Ember.propertyDidChange(obj, keyName);
+                        }
+                    } finally {
+                        this._suspended = oldSuspended;
+                    }
+                    return ret;
+                };
+                ComputedPropertyPrototype.setup = function (obj, keyName) {
+                    var meta = obj[META_KEY];
+                    if (meta && meta.watching[keyName]) {
+                        addDependentKeys(this, obj, keyName, metaFor(obj));
+                    }
+                };
+                ComputedPropertyPrototype.teardown = function (obj, keyName) {
+                    var meta = metaFor(obj);
+                    if (meta.watching[keyName] || keyName in meta.cache) {
+                        removeDependentKeys(this, obj, keyName, meta);
+                    }
+                    if (this._cacheable) {
+                        delete meta.cache[keyName];
+                    }
+                    return null;
+                };
+                Ember.computed = function (func) {
+                    var args;
+                    if (arguments.length > 1) {
+                        args = a_slice.call(arguments, 0, -1);
+                        func = a_slice.call(arguments, -1)[0];
+                    }
+                    if (typeof func !== 'function') {
+                        throw new Error('Computed Property declared without a property function');
+                    }
+                    var cp = new ComputedProperty(func);
+                    if (args) {
+                        cp.property.apply(cp, args);
+                    }
+                    return cp;
+                };
+                Ember.cacheFor = function cacheFor(obj, key) {
+                    var cache = metaFor(obj, false).cache;
+                    if (cache && key in cache) {
+                        return cache[key];
+                    }
+                };
+                function getProperties(self, propertyNames) {
+                    var ret = {};
+                    for (var i = 0; i < propertyNames.length; i++) {
+                        ret[propertyNames[i]] = get(self, propertyNames[i]);
+                    }
+                    return ret;
+                }
+                function registerComputed(name, macro) {
+                    Ember.computed[name] = function (dependentKey) {
+                        var args = a_slice.call(arguments);
+                        return Ember.computed(dependentKey, function () {
+                            return macro.apply(this, args);
+                        });
+                    };
+                }
+                function registerComputedWithProperties(name, macro) {
+                    Ember.computed[name] = function () {
+                        var properties = a_slice.call(arguments);
+                        var computed = Ember.computed(function () {
+                                return macro.apply(this, [getProperties(this, properties)]);
+                            });
+                        return computed.property.apply(computed, properties);
+                    };
+                }
+                registerComputed('empty', function (dependentKey) {
+                    return Ember.isEmpty(get(this, dependentKey));
+                });
+                registerComputed('notEmpty', function (dependentKey) {
+                    return !Ember.isEmpty(get(this, dependentKey));
+                });
+                registerComputed('none', function (dependentKey) {
+                    return Ember.isNone(get(this, dependentKey));
+                });
+                registerComputed('not', function (dependentKey) {
+                    return !get(this, dependentKey);
+                });
+                registerComputed('bool', function (dependentKey) {
+                    return !!get(this, dependentKey);
+                });
+                registerComputed('match', function (dependentKey, regexp) {
+                    var value = get(this, dependentKey);
+                    return typeof value === 'string' ? !!value.match(regexp) : false;
+                });
+                registerComputed('equal', function (dependentKey, value) {
+                    return get(this, dependentKey) === value;
+                });
+                registerComputed('gt', function (dependentKey, value) {
+                    return get(this, dependentKey) > value;
+                });
+                registerComputed('gte', function (dependentKey, value) {
+                    return get(this, dependentKey) >= value;
+                });
+                registerComputed('lt', function (dependentKey, value) {
+                    return get(this, dependentKey) < value;
+                });
+                registerComputed('lte', function (dependentKey, value) {
+                    return get(this, dependentKey) <= value;
+                });
+                registerComputedWithProperties('and', function (properties) {
+                    for (var key in properties) {
+                        if (properties.hasOwnProperty(key) && !properties[key]) {
+                            return false;
                         }
                     }
-                }
-                if (earliest > 0) {
-                    scheduledLater = setTimeout(invokeLaterTimers, earliest - +new Date());
-                }
-            }
-            Ember.run.later = function (target, method) {
-                var args, expires, timer, guid, wait;
-                if (arguments.length === 2 && 'function' === typeof target) {
-                    wait = method;
-                    method = target;
-                    target = undefined;
-                    args = [
-                        target,
-                        method
-                    ];
-                } else {
-                    args = slice.call(arguments);
-                    wait = args.pop();
-                }
-                expires = +new Date() + wait;
-                timer = {
-                    target: target,
-                    method: method,
-                    expires: expires,
-                    args: args
+                    return true;
+                });
+                registerComputedWithProperties('or', function (properties) {
+                    for (var key in properties) {
+                        if (properties.hasOwnProperty(key) && properties[key]) {
+                            return true;
+                        }
+                    }
+                    return false;
+                });
+                registerComputedWithProperties('any', function (properties) {
+                    for (var key in properties) {
+                        if (properties.hasOwnProperty(key) && properties[key]) {
+                            return properties[key];
+                        }
+                    }
+                    return null;
+                });
+                registerComputedWithProperties('map', function (properties) {
+                    var res = [];
+                    for (var key in properties) {
+                        if (properties.hasOwnProperty(key)) {
+                            if (Ember.isNone(properties[key])) {
+                                res.push(null);
+                            } else {
+                                res.push(properties[key]);
+                            }
+                        }
+                    }
+                    return res;
+                });
+                Ember.computed.alias = function (dependentKey) {
+                    return Ember.computed(dependentKey, function (key, value) {
+                        if (arguments.length > 1) {
+                            set(this, dependentKey, value);
+                            return value;
+                        } else {
+                            return get(this, dependentKey);
+                        }
+                    });
                 };
-                guid = Ember.guidFor(timer);
-                timers[guid] = timer;
-                run.once(timers, invokeLaterTimers);
-                return guid;
-            };
-            function invokeOnceTimer(guid, onceTimers) {
-                if (onceTimers[this.tguid]) {
-                    delete onceTimers[this.tguid][this.mguid];
+                Ember.computed.defaultTo = function (defaultPath) {
+                    return Ember.computed(function (key, newValue, cachedValue) {
+                        var result;
+                        if (arguments.length === 1) {
+                            return cachedValue != null ? cachedValue : get(this, defaultPath);
+                        }
+                        return newValue != null ? newValue : get(this, defaultPath);
+                    });
+                };
+            }());
+            (function () {
+                var AFTER_OBSERVERS = ':change';
+                var BEFORE_OBSERVERS = ':before';
+                var guidFor = Ember.guidFor;
+                function changeEvent(keyName) {
+                    return keyName + AFTER_OBSERVERS;
                 }
-                if (timers[guid]) {
-                    invoke(this.target, this.method, this.args, 2);
+                function beforeEvent(keyName) {
+                    return keyName + BEFORE_OBSERVERS;
                 }
-                delete timers[guid];
-            }
-            function scheduleOnce(queue, target, method, args) {
-                var tguid = Ember.guidFor(target), mguid = Ember.guidFor(method), onceTimers = run.autorun().onceTimers, guid = onceTimers[tguid] && onceTimers[tguid][mguid], timer;
-                if (guid && timers[guid]) {
-                    timers[guid].args = args;
-                } else {
+                Ember.addObserver = function (obj, path, target, method) {
+                    Ember.addListener(obj, changeEvent(path), target, method);
+                    Ember.watch(obj, path);
+                    return this;
+                };
+                Ember.observersFor = function (obj, path) {
+                    return Ember.listenersFor(obj, changeEvent(path));
+                };
+                Ember.removeObserver = function (obj, path, target, method) {
+                    Ember.unwatch(obj, path);
+                    Ember.removeListener(obj, changeEvent(path), target, method);
+                    return this;
+                };
+                Ember.addBeforeObserver = function (obj, path, target, method) {
+                    Ember.addListener(obj, beforeEvent(path), target, method);
+                    Ember.watch(obj, path);
+                    return this;
+                };
+                Ember._suspendBeforeObserver = function (obj, path, target, method, callback) {
+                    return Ember._suspendListener(obj, beforeEvent(path), target, method, callback);
+                };
+                Ember._suspendObserver = function (obj, path, target, method, callback) {
+                    return Ember._suspendListener(obj, changeEvent(path), target, method, callback);
+                };
+                var map = Ember.ArrayPolyfills.map;
+                Ember._suspendBeforeObservers = function (obj, paths, target, method, callback) {
+                    var events = map.call(paths, beforeEvent);
+                    return Ember._suspendListeners(obj, events, target, method, callback);
+                };
+                Ember._suspendObservers = function (obj, paths, target, method, callback) {
+                    var events = map.call(paths, changeEvent);
+                    return Ember._suspendListeners(obj, events, target, method, callback);
+                };
+                Ember.beforeObserversFor = function (obj, path) {
+                    return Ember.listenersFor(obj, beforeEvent(path));
+                };
+                Ember.removeBeforeObserver = function (obj, path, target, method) {
+                    Ember.unwatch(obj, path);
+                    Ember.removeListener(obj, beforeEvent(path), target, method);
+                    return this;
+                };
+            }());
+            (function () {
+                var slice = [].slice, forEach = Ember.ArrayPolyfills.forEach;
+                function invoke(target, method, args, ignore) {
+                    if (method === undefined) {
+                        method = target;
+                        target = undefined;
+                    }
+                    if ('string' === typeof method) {
+                        method = target[method];
+                    }
+                    if (args && ignore > 0) {
+                        args = args.length > ignore ? slice.call(args, ignore) : null;
+                    }
+                    return Ember.handleErrors(function () {
+                        return method.apply(target || this, args || []);
+                    }, this);
+                }
+                var timerMark;
+                var RunLoop = function (prev) {
+                    this._prev = prev || null;
+                    this.onceTimers = {};
+                };
+                RunLoop.prototype = {
+                    end: function () {
+                        this.flush();
+                    },
+                    prev: function () {
+                        return this._prev;
+                    },
+                    schedule: function (queueName, target, method) {
+                        var queues = this._queues, queue;
+                        if (!queues) {
+                            queues = this._queues = {};
+                        }
+                        queue = queues[queueName];
+                        if (!queue) {
+                            queue = queues[queueName] = [];
+                        }
+                        var args = arguments.length > 3 ? slice.call(arguments, 3) : null;
+                        queue.push({
+                            target: target,
+                            method: method,
+                            args: args
+                        });
+                        return this;
+                    },
+                    flush: function (queueName) {
+                        var queueNames, idx, len, queue, log;
+                        if (!this._queues) {
+                            return this;
+                        }
+                        function iter(item) {
+                            invoke(item.target, item.method, item.args);
+                        }
+                        function tryable() {
+                            forEach.call(queue, iter);
+                        }
+                        Ember.watch.flushPending();
+                        if (queueName) {
+                            while (this._queues && (queue = this._queues[queueName])) {
+                                this._queues[queueName] = null;
+                                if (queueName === 'sync') {
+                                    log = Ember.LOG_BINDINGS;
+                                    if (log) {
+                                        Ember.Logger.log('Begin: Flush Sync Queue');
+                                    }
+                                    Ember.beginPropertyChanges();
+                                    Ember.tryFinally(tryable, Ember.endPropertyChanges);
+                                    if (log) {
+                                        Ember.Logger.log('End: Flush Sync Queue');
+                                    }
+                                } else {
+                                    forEach.call(queue, iter);
+                                }
+                            }
+                        } else {
+                            queueNames = Ember.run.queues;
+                            len = queueNames.length;
+                            idx = 0;
+                            outerloop:
+                                while (idx < len) {
+                                    queueName = queueNames[idx];
+                                    queue = this._queues && this._queues[queueName];
+                                    delete this._queues[queueName];
+                                    if (queue) {
+                                        if (queueName === 'sync') {
+                                            log = Ember.LOG_BINDINGS;
+                                            if (log) {
+                                                Ember.Logger.log('Begin: Flush Sync Queue');
+                                            }
+                                            Ember.beginPropertyChanges();
+                                            Ember.tryFinally(tryable, Ember.endPropertyChanges);
+                                            if (log) {
+                                                Ember.Logger.log('End: Flush Sync Queue');
+                                            }
+                                        } else {
+                                            forEach.call(queue, iter);
+                                        }
+                                    }
+                                    for (var i = 0; i <= idx; i++) {
+                                        if (this._queues && this._queues[queueNames[i]]) {
+                                            idx = i;
+                                            continue outerloop;
+                                        }
+                                    }
+                                    idx++;
+                                }
+                        }
+                        timerMark = null;
+                        return this;
+                    }
+                };
+                Ember.RunLoop = RunLoop;
+                Ember.run = function (target, method) {
+                    var args = arguments;
+                    run.begin();
+                    function tryable() {
+                        if (target || method) {
+                            return invoke(target, method, args, 2);
+                        }
+                    }
+                    return Ember.tryFinally(tryable, run.end);
+                };
+                var run = Ember.run;
+                Ember.run.begin = function () {
+                    run.currentRunLoop = new RunLoop(run.currentRunLoop);
+                };
+                Ember.run.end = function () {
+                    Ember.assert('must have a current run loop', run.currentRunLoop);
+                    function tryable() {
+                        run.currentRunLoop.end();
+                    }
+                    function finalizer() {
+                        run.currentRunLoop = run.currentRunLoop.prev();
+                    }
+                    Ember.tryFinally(tryable, finalizer);
+                };
+                Ember.run.queues = [
+                    'sync',
+                    'actions',
+                    'destroy'
+                ];
+                Ember.run.schedule = function (queue, target, method) {
+                    var loop = run.autorun();
+                    loop.schedule.apply(loop, arguments);
+                };
+                var scheduledAutorun;
+                function autorun() {
+                    scheduledAutorun = null;
+                    if (run.currentRunLoop) {
+                        run.end();
+                    }
+                }
+                Ember.run.hasScheduledTimers = function () {
+                    return !!(scheduledAutorun || scheduledLater);
+                };
+                Ember.run.cancelTimers = function () {
+                    if (scheduledAutorun) {
+                        clearTimeout(scheduledAutorun);
+                        scheduledAutorun = null;
+                    }
+                    if (scheduledLater) {
+                        clearTimeout(scheduledLater);
+                        scheduledLater = null;
+                    }
+                    timers = {};
+                };
+                Ember.run.autorun = function () {
+                    if (!run.currentRunLoop) {
+                        Ember.assert('You have turned on testing mode, which disabled the run-loop\'s autorun. You will need to wrap any code with asynchronous side-effects in an Ember.run', !Ember.testing);
+                        run.begin();
+                        if (!scheduledAutorun) {
+                            scheduledAutorun = setTimeout(autorun, 1);
+                        }
+                    }
+                    return run.currentRunLoop;
+                };
+                Ember.run.sync = function () {
+                    run.autorun();
+                    run.currentRunLoop.flush('sync');
+                };
+                var timers = {};
+                var scheduledLater, scheduledLaterExpires;
+                function invokeLaterTimers() {
+                    scheduledLater = null;
+                    run(function () {
+                        var now = +new Date(), earliest = -1;
+                        for (var key in timers) {
+                            if (!timers.hasOwnProperty(key)) {
+                                continue;
+                            }
+                            var timer = timers[key];
+                            if (timer && timer.expires) {
+                                if (now >= timer.expires) {
+                                    delete timers[key];
+                                    invoke(timer.target, timer.method, timer.args, 2);
+                                } else {
+                                    if (earliest < 0 || timer.expires < earliest) {
+                                        earliest = timer.expires;
+                                    }
+                                }
+                            }
+                        }
+                        if (earliest > 0) {
+                            scheduledLater = setTimeout(invokeLaterTimers, earliest - now);
+                            scheduledLaterExpires = earliest;
+                        }
+                    });
+                }
+                Ember.run.later = function (target, method) {
+                    var args, expires, timer, guid, wait;
+                    if (arguments.length === 2 && 'function' === typeof target) {
+                        wait = method;
+                        method = target;
+                        target = undefined;
+                        args = [
+                            target,
+                            method
+                        ];
+                    } else {
+                        args = slice.call(arguments);
+                        wait = args.pop();
+                    }
+                    expires = +new Date() + wait;
                     timer = {
                         target: target,
                         method: method,
-                        args: args,
-                        tguid: tguid,
-                        mguid: mguid
+                        expires: expires,
+                        args: args
                     };
                     guid = Ember.guidFor(timer);
                     timers[guid] = timer;
-                    if (!onceTimers[tguid]) {
-                        onceTimers[tguid] = {};
+                    if (scheduledLater && expires < scheduledLaterExpires) {
+                        clearTimeout(scheduledLater);
+                        scheduledLater = null;
                     }
-                    onceTimers[tguid][mguid] = guid;
-                    run.schedule(queue, timer, invokeOnceTimer, guid, onceTimers);
+                    if (!scheduledLater) {
+                        scheduledLater = setTimeout(invokeLaterTimers, wait);
+                        scheduledLaterExpires = expires;
+                    }
+                    return guid;
+                };
+                function invokeOnceTimer(guid, onceTimers) {
+                    if (onceTimers[this.tguid]) {
+                        delete onceTimers[this.tguid][this.mguid];
+                    }
+                    if (timers[guid]) {
+                        invoke(this.target, this.method, this.args);
+                    }
+                    delete timers[guid];
                 }
-                return guid;
-            }
-            Ember.run.once = function (target, method) {
-                return scheduleOnce('actions', target, method, slice.call(arguments));
-            };
-            Ember.run.scheduleOnce = function (queue, target, method) {
-                return scheduleOnce(queue, target, method, slice.call(arguments));
-            };
-            var scheduledNext;
-            function invokeNextTimers() {
-                scheduledNext = null;
-                for (var key in timers) {
-                    if (!timers.hasOwnProperty(key)) {
-                        continue;
-                    }
-                    var timer = timers[key];
-                    if (timer.next) {
-                        delete timers[key];
-                        invoke(timer.target, timer.method, timer.args, 2);
-                    }
-                }
-            }
-            Ember.run.next = function (target, method) {
-                var guid, timer = {
-                        target: target,
-                        method: method,
-                        args: slice.call(arguments),
-                        next: true
-                    };
-                guid = Ember.guidFor(timer);
-                timers[guid] = timer;
-                if (!scheduledNext) {
-                    scheduledNext = setTimeout(invokeNextTimers, 1);
-                }
-                return guid;
-            };
-            Ember.run.cancel = function (timer) {
-                delete timers[timer];
-            };
-        }());
-        (function () {
-            Ember.LOG_BINDINGS = false || !!Ember.ENV.LOG_BINDINGS;
-            var get = Ember.get, set = Ember.set, guidFor = Ember.guidFor, isGlobalPath = Ember.isGlobalPath;
-            function getWithGlobals(obj, path) {
-                return get(isGlobalPath(path) ? window : obj, path);
-            }
-            var Binding = function (toPath, fromPath) {
-                this._direction = 'fwd';
-                this._from = fromPath;
-                this._to = toPath;
-                this._directionMap = Ember.Map.create();
-            };
-            Binding.prototype = {
-                copy: function () {
-                    var copy = new Binding(this._to, this._from);
-                    if (this._oneWay) {
-                        copy._oneWay = true;
-                    }
-                    return copy;
-                },
-                from: function (path) {
-                    this._from = path;
-                    return this;
-                },
-                to: function (path) {
-                    this._to = path;
-                    return this;
-                },
-                oneWay: function () {
-                    this._oneWay = true;
-                    return this;
-                },
-                toString: function () {
-                    var oneWay = this._oneWay ? '[oneWay]' : '';
-                    return 'Ember.Binding<' + guidFor(this) + '>(' + this._from + ' -> ' + this._to + ')' + oneWay;
-                },
-                connect: function (obj) {
-                    Ember.assert('Must pass a valid object to Ember.Binding.connect()', !!obj);
-                    var fromPath = this._from, toPath = this._to;
-                    Ember.trySet(obj, toPath, getWithGlobals(obj, fromPath));
-                    Ember.addObserver(obj, fromPath, this, this.fromDidChange);
-                    if (!this._oneWay) {
-                        Ember.addObserver(obj, toPath, this, this.toDidChange);
-                    }
-                    this._readyToSync = true;
-                    return this;
-                },
-                disconnect: function (obj) {
-                    Ember.assert('Must pass a valid object to Ember.Binding.disconnect()', !!obj);
-                    var twoWay = !this._oneWay;
-                    Ember.removeObserver(obj, this._from, this, this.fromDidChange);
-                    if (twoWay) {
-                        Ember.removeObserver(obj, this._to, this, this.toDidChange);
-                    }
-                    this._readyToSync = false;
-                    return this;
-                },
-                fromDidChange: function (target) {
-                    this._scheduleSync(target, 'fwd');
-                },
-                toDidChange: function (target) {
-                    this._scheduleSync(target, 'back');
-                },
-                _scheduleSync: function (obj, dir) {
-                    var directionMap = this._directionMap;
-                    var existingDir = directionMap.get(obj);
-                    if (!existingDir) {
-                        Ember.run.schedule('sync', this, this._sync, obj);
-                        directionMap.set(obj, dir);
-                    }
-                    if (existingDir === 'back' && dir === 'fwd') {
-                        directionMap.set(obj, 'fwd');
-                    }
-                },
-                _sync: function (obj) {
-                    var log = Ember.LOG_BINDINGS;
-                    if (obj.isDestroyed || !this._readyToSync) {
-                        return;
-                    }
-                    var directionMap = this._directionMap;
-                    var direction = directionMap.get(obj);
-                    var fromPath = this._from, toPath = this._to;
-                    directionMap.remove(obj);
-                    if (direction === 'fwd') {
-                        var fromValue = getWithGlobals(obj, this._from);
-                        if (log) {
-                            Ember.Logger.log(' ', this.toString(), '->', fromValue, obj);
+                function scheduleOnce(queue, target, method, args) {
+                    var tguid = Ember.guidFor(target), mguid = Ember.guidFor(method), onceTimers = run.autorun().onceTimers, guid = onceTimers[tguid] && onceTimers[tguid][mguid], timer;
+                    if (guid && timers[guid]) {
+                        timers[guid].args = args;
+                    } else {
+                        timer = {
+                            target: target,
+                            method: method,
+                            args: args,
+                            tguid: tguid,
+                            mguid: mguid
+                        };
+                        guid = Ember.guidFor(timer);
+                        timers[guid] = timer;
+                        if (!onceTimers[tguid]) {
+                            onceTimers[tguid] = {};
                         }
+                        onceTimers[tguid][mguid] = guid;
+                        run.schedule(queue, timer, invokeOnceTimer, guid, onceTimers);
+                    }
+                    return guid;
+                }
+                Ember.run.once = function (target, method) {
+                    return scheduleOnce('actions', target, method, slice.call(arguments, 2));
+                };
+                Ember.run.scheduleOnce = function (queue, target, method, args) {
+                    return scheduleOnce(queue, target, method, slice.call(arguments, 3));
+                };
+                Ember.run.next = function () {
+                    var args = slice.call(arguments);
+                    args.push(1);
+                    return run.later.apply(this, args);
+                };
+                Ember.run.cancel = function (timer) {
+                    delete timers[timer];
+                };
+            }());
+            (function () {
+                Ember.LOG_BINDINGS = false || !!Ember.ENV.LOG_BINDINGS;
+                var get = Ember.get, set = Ember.set, guidFor = Ember.guidFor, IS_GLOBAL = /^([A-Z$]|([0-9][A-Z$]))/;
+                var isGlobalPath = Ember.isGlobalPath = function (path) {
+                        return IS_GLOBAL.test(path);
+                    };
+                function getWithGlobals(obj, path) {
+                    return get(isGlobalPath(path) ? Ember.lookup : obj, path);
+                }
+                var Binding = function (toPath, fromPath) {
+                    this._direction = 'fwd';
+                    this._from = fromPath;
+                    this._to = toPath;
+                    this._directionMap = Ember.Map.create();
+                };
+                Binding.prototype = {
+                    copy: function () {
+                        var copy = new Binding(this._to, this._from);
                         if (this._oneWay) {
-                            Ember.trySet(obj, toPath, fromValue);
-                        } else {
-                            Ember._suspendObserver(obj, toPath, this, this.toDidChange, function () {
+                            copy._oneWay = true;
+                        }
+                        return copy;
+                    },
+                    from: function (path) {
+                        this._from = path;
+                        return this;
+                    },
+                    to: function (path) {
+                        this._to = path;
+                        return this;
+                    },
+                    oneWay: function () {
+                        this._oneWay = true;
+                        return this;
+                    },
+                    toString: function () {
+                        var oneWay = this._oneWay ? '[oneWay]' : '';
+                        return 'Ember.Binding<' + guidFor(this) + '>(' + this._from + ' -> ' + this._to + ')' + oneWay;
+                    },
+                    connect: function (obj) {
+                        Ember.assert('Must pass a valid object to Ember.Binding.connect()', !!obj);
+                        var fromPath = this._from, toPath = this._to;
+                        Ember.trySet(obj, toPath, getWithGlobals(obj, fromPath));
+                        Ember.addObserver(obj, fromPath, this, this.fromDidChange);
+                        if (!this._oneWay) {
+                            Ember.addObserver(obj, toPath, this, this.toDidChange);
+                        }
+                        this._readyToSync = true;
+                        return this;
+                    },
+                    disconnect: function (obj) {
+                        Ember.assert('Must pass a valid object to Ember.Binding.disconnect()', !!obj);
+                        var twoWay = !this._oneWay;
+                        Ember.removeObserver(obj, this._from, this, this.fromDidChange);
+                        if (twoWay) {
+                            Ember.removeObserver(obj, this._to, this, this.toDidChange);
+                        }
+                        this._readyToSync = false;
+                        return this;
+                    },
+                    fromDidChange: function (target) {
+                        this._scheduleSync(target, 'fwd');
+                    },
+                    toDidChange: function (target) {
+                        this._scheduleSync(target, 'back');
+                    },
+                    _scheduleSync: function (obj, dir) {
+                        var directionMap = this._directionMap;
+                        var existingDir = directionMap.get(obj);
+                        if (!existingDir) {
+                            Ember.run.schedule('sync', this, this._sync, obj);
+                            directionMap.set(obj, dir);
+                        }
+                        if (existingDir === 'back' && dir === 'fwd') {
+                            directionMap.set(obj, 'fwd');
+                        }
+                    },
+                    _sync: function (obj) {
+                        var log = Ember.LOG_BINDINGS;
+                        if (obj.isDestroyed || !this._readyToSync) {
+                            return;
+                        }
+                        var directionMap = this._directionMap;
+                        var direction = directionMap.get(obj);
+                        var fromPath = this._from, toPath = this._to;
+                        directionMap.remove(obj);
+                        if (direction === 'fwd') {
+                            var fromValue = getWithGlobals(obj, this._from);
+                            if (log) {
+                                Ember.Logger.log(' ', this.toString(), '->', fromValue, obj);
+                            }
+                            if (this._oneWay) {
                                 Ember.trySet(obj, toPath, fromValue);
+                            } else {
+                                Ember._suspendObserver(obj, toPath, this, this.toDidChange, function () {
+                                    Ember.trySet(obj, toPath, fromValue);
+                                });
+                            }
+                        } else if (direction === 'back') {
+                            var toValue = get(obj, this._to);
+                            if (log) {
+                                Ember.Logger.log(' ', this.toString(), '<-', toValue, obj);
+                            }
+                            Ember._suspendObserver(obj, fromPath, this, this.fromDidChange, function () {
+                                Ember.trySet(Ember.isGlobalPath(fromPath) ? Ember.lookup : obj, fromPath, toValue);
                             });
                         }
-                    } else if (direction === 'back') {
-                        var toValue = get(obj, this._to);
-                        if (log) {
-                            Ember.Logger.log(' ', this.toString(), '<-', toValue, obj);
+                    }
+                };
+                function mixinProperties(to, from) {
+                    for (var key in from) {
+                        if (from.hasOwnProperty(key)) {
+                            to[key] = from[key];
                         }
-                        Ember._suspendObserver(obj, fromPath, this, this.fromDidChange, function () {
-                            Ember.trySet(Ember.isGlobalPath(fromPath) ? window : obj, fromPath, toValue);
+                    }
+                }
+                mixinProperties(Binding, {
+                    from: function () {
+                        var C = this, binding = new C();
+                        return binding.from.apply(binding, arguments);
+                    },
+                    to: function () {
+                        var C = this, binding = new C();
+                        return binding.to.apply(binding, arguments);
+                    },
+                    oneWay: function (from, flag) {
+                        var C = this, binding = new C(null, from);
+                        return binding.oneWay(flag);
+                    }
+                });
+                Ember.Binding = Binding;
+                Ember.bind = function (obj, to, from) {
+                    return new Ember.Binding(to, from).connect(obj);
+                };
+                Ember.oneWay = function (obj, to, from) {
+                    return new Ember.Binding(to, from).oneWay().connect(obj);
+                };
+            }());
+            (function () {
+                var Mixin, REQUIRED, Alias, a_map = Ember.ArrayPolyfills.map, a_indexOf = Ember.ArrayPolyfills.indexOf, a_forEach = Ember.ArrayPolyfills.forEach, a_slice = [].slice, o_create = Ember.create, defineProperty = Ember.defineProperty, guidFor = Ember.guidFor;
+                function mixinsMeta(obj) {
+                    var m = Ember.meta(obj, true), ret = m.mixins;
+                    if (!ret) {
+                        ret = m.mixins = {};
+                    } else if (!m.hasOwnProperty('mixins')) {
+                        ret = m.mixins = o_create(ret);
+                    }
+                    return ret;
+                }
+                function initMixin(mixin, args) {
+                    if (args && args.length > 0) {
+                        mixin.mixins = a_map.call(args, function (x) {
+                            if (x instanceof Mixin) {
+                                return x;
+                            }
+                            var mixin = new Mixin();
+                            mixin.properties = x;
+                            return mixin;
                         });
                     }
+                    return mixin;
                 }
-            };
-            function mixinProperties(to, from) {
-                for (var key in from) {
-                    if (from.hasOwnProperty(key)) {
-                        to[key] = from[key];
-                    }
+                function isMethod(obj) {
+                    return 'function' === typeof obj && obj.isMethod !== false && obj !== Boolean && obj !== Object && obj !== Number && obj !== Array && obj !== Date && obj !== String;
                 }
-            }
-            mixinProperties(Binding, {
-                from: function () {
-                    var C = this, binding = new C();
-                    return binding.from.apply(binding, arguments);
-                },
-                to: function () {
-                    var C = this, binding = new C();
-                    return binding.to.apply(binding, arguments);
-                },
-                oneWay: function (from, flag) {
-                    var C = this, binding = new C(null, from);
-                    return binding.oneWay(flag);
-                }
-            });
-            Ember.Binding = Binding;
-            Ember.bind = function (obj, to, from) {
-                return new Ember.Binding(to, from).connect(obj);
-            };
-            Ember.oneWay = function (obj, to, from) {
-                return new Ember.Binding(to, from).oneWay().connect(obj);
-            };
-        }());
-        (function () {
-            var Mixin, REQUIRED, Alias, classToString, superClassString, a_map = Ember.ArrayPolyfills.map, a_indexOf = Ember.ArrayPolyfills.indexOf, a_forEach = Ember.ArrayPolyfills.forEach, a_slice = [].slice, EMPTY_META = {}, META_SKIP = {
-                    __emberproto__: true,
-                    __ember_count__: true
-                }, o_create = Ember.create, defineProperty = Ember.defineProperty, guidFor = Ember.guidFor;
-            function mixinsMeta(obj) {
-                var m = Ember.meta(obj, true), ret = m.mixins;
-                if (!ret) {
-                    ret = m.mixins = { __emberproto__: obj };
-                } else if (ret.__emberproto__ !== obj) {
-                    ret = m.mixins = o_create(ret);
-                    ret.__emberproto__ = obj;
-                }
-                return ret;
-            }
-            function initMixin(mixin, args) {
-                if (args && args.length > 0) {
-                    mixin.mixins = a_map.call(args, function (x) {
-                        if (x instanceof Mixin) {
-                            return x;
-                        }
-                        var mixin = new Mixin();
-                        mixin.properties = x;
-                        return mixin;
-                    });
-                }
-                return mixin;
-            }
-            function isMethod(obj) {
-                return 'function' === typeof obj && obj.isMethod !== false && obj !== Boolean && obj !== Object && obj !== Number && obj !== Array && obj !== Date && obj !== String;
-            }
-            function mergeMixins(mixins, m, descs, values, base) {
-                var len = mixins.length, idx, mixin, guid, props, value, key, ovalue, concats;
-                function removeKeys(keyName) {
-                    delete descs[keyName];
-                    delete values[keyName];
-                }
-                for (idx = 0; idx < len; idx++) {
-                    mixin = mixins[idx];
-                    Ember.assert('Expected hash or Mixin instance, got ' + Object.prototype.toString.call(mixin), typeof mixin === 'object' && mixin !== null && Object.prototype.toString.call(mixin) !== '[object Array]');
+                var CONTINUE = {};
+                function mixinProperties(mixinsMeta, mixin) {
+                    var guid;
                     if (mixin instanceof Mixin) {
                         guid = guidFor(mixin);
-                        if (m[guid]) {
+                        if (mixinsMeta[guid]) {
+                            return CONTINUE;
+                        }
+                        mixinsMeta[guid] = mixin;
+                        return mixin.properties;
+                    } else {
+                        return mixin;
+                    }
+                }
+                function concatenatedProperties(props, values, base) {
+                    var concats;
+                    concats = values.concatenatedProperties || base.concatenatedProperties;
+                    if (props.concatenatedProperties) {
+                        concats = concats ? concats.concat(props.concatenatedProperties) : props.concatenatedProperties;
+                    }
+                    return concats;
+                }
+                function giveDescriptorSuper(meta, key, property, values, descs) {
+                    var superProperty;
+                    if (values[key] === undefined) {
+                        superProperty = descs[key];
+                    }
+                    superProperty = superProperty || meta.descs[key];
+                    if (!superProperty || !(superProperty instanceof Ember.ComputedProperty)) {
+                        return property;
+                    }
+                    property = o_create(property);
+                    property.func = Ember.wrap(property.func, superProperty.func);
+                    return property;
+                }
+                function giveMethodSuper(obj, key, method, values, descs) {
+                    var superMethod;
+                    if (descs[key] === undefined) {
+                        superMethod = values[key];
+                    }
+                    superMethod = superMethod || obj[key];
+                    if ('function' !== typeof superMethod) {
+                        return method;
+                    }
+                    return Ember.wrap(method, superMethod);
+                }
+                function applyConcatenatedProperties(obj, key, value, values) {
+                    var baseValue = values[key] || obj[key];
+                    if (baseValue) {
+                        if ('function' === typeof baseValue.concat) {
+                            return baseValue.concat(value);
+                        } else {
+                            return Ember.makeArray(baseValue).concat(value);
+                        }
+                    } else {
+                        return Ember.makeArray(value);
+                    }
+                }
+                function addNormalizedProperty(base, key, value, meta, descs, values, concats) {
+                    if (value instanceof Ember.Descriptor) {
+                        if (value === REQUIRED && descs[key]) {
+                            return CONTINUE;
+                        }
+                        if (value.func) {
+                            value = giveDescriptorSuper(meta, key, value, values, descs);
+                        }
+                        descs[key] = value;
+                        values[key] = undefined;
+                    } else {
+                        if (isMethod(value)) {
+                            value = giveMethodSuper(base, key, value, values, descs);
+                        } else if (concats && a_indexOf.call(concats, key) >= 0 || key === 'concatenatedProperties') {
+                            value = applyConcatenatedProperties(base, key, value, values);
+                        }
+                        descs[key] = undefined;
+                        values[key] = value;
+                    }
+                }
+                function mergeMixins(mixins, m, descs, values, base, keys) {
+                    var mixin, props, key, concats, meta;
+                    function removeKeys(keyName) {
+                        delete descs[keyName];
+                        delete values[keyName];
+                    }
+                    for (var i = 0, l = mixins.length; i < l; i++) {
+                        mixin = mixins[i];
+                        Ember.assert('Expected hash or Mixin instance, got ' + Object.prototype.toString.call(mixin), typeof mixin === 'object' && mixin !== null && Object.prototype.toString.call(mixin) !== '[object Array]');
+                        props = mixinProperties(m, mixin);
+                        if (props === CONTINUE) {
                             continue;
                         }
-                        m[guid] = mixin;
-                        props = mixin.properties;
-                    } else {
-                        props = mixin;
-                    }
-                    if (props) {
-                        concats = values.concatenatedProperties || base.concatenatedProperties;
-                        if (props.concatenatedProperties) {
-                            concats = concats ? concats.concat(props.concatenatedProperties) : props.concatenatedProperties;
-                        }
-                        for (key in props) {
-                            if (!props.hasOwnProperty(key)) {
-                                continue;
-                            }
-                            value = props[key];
-                            if (value instanceof Ember.Descriptor) {
-                                if (value === REQUIRED && descs[key]) {
+                        if (props) {
+                            meta = Ember.meta(base);
+                            concats = concatenatedProperties(props, values, base);
+                            for (key in props) {
+                                if (!props.hasOwnProperty(key)) {
                                     continue;
                                 }
-                                descs[key] = value;
-                                values[key] = undefined;
-                            } else {
-                                if (isMethod(value)) {
-                                    ovalue = descs[key] === undefined && values[key];
-                                    if (!ovalue) {
-                                        ovalue = base[key];
-                                    }
-                                    if ('function' !== typeof ovalue) {
-                                        ovalue = null;
-                                    }
-                                    if (ovalue) {
-                                        var o = value.__ember_observes__, ob = value.__ember_observesBefore__;
-                                        value = Ember.wrap(value, ovalue);
-                                        value.__ember_observes__ = o;
-                                        value.__ember_observesBefore__ = ob;
-                                    }
-                                } else if (concats && a_indexOf.call(concats, key) >= 0 || key === 'concatenatedProperties') {
-                                    var baseValue = values[key] || base[key];
-                                    value = baseValue ? baseValue.concat(value) : Ember.makeArray(value);
+                                keys.push(key);
+                                addNormalizedProperty(base, key, props[key], meta, descs, values, concats);
+                            }
+                            if (props.hasOwnProperty('toString')) {
+                                base.toString = props.toString;
+                            }
+                        } else if (mixin.mixins) {
+                            mergeMixins(mixin.mixins, m, descs, values, base, keys);
+                            if (mixin._without) {
+                                a_forEach.call(mixin._without, removeKeys);
+                            }
+                        }
+                    }
+                }
+                function writableReq(obj) {
+                    var m = Ember.meta(obj), req = m.required;
+                    if (!req || !m.hasOwnProperty('required')) {
+                        req = m.required = req ? o_create(req) : {};
+                    }
+                    return req;
+                }
+                var IS_BINDING = Ember.IS_BINDING = /^.+Binding$/;
+                function detectBinding(obj, key, value, m) {
+                    if (IS_BINDING.test(key)) {
+                        var bindings = m.bindings;
+                        if (!bindings) {
+                            bindings = m.bindings = {};
+                        } else if (!m.hasOwnProperty('bindings')) {
+                            bindings = m.bindings = o_create(m.bindings);
+                        }
+                        bindings[key] = value;
+                    }
+                }
+                function connectBindings(obj, m) {
+                    var bindings = m.bindings, key, binding, to;
+                    if (bindings) {
+                        for (key in bindings) {
+                            binding = bindings[key];
+                            if (binding) {
+                                to = key.slice(0, -7);
+                                if (binding instanceof Ember.Binding) {
+                                    binding = binding.copy();
+                                    binding.to(to);
+                                } else {
+                                    binding = new Ember.Binding(to, binding);
                                 }
-                                descs[key] = undefined;
-                                values[key] = value;
+                                binding.connect(obj);
+                                obj[key] = binding;
                             }
                         }
-                        if (props.hasOwnProperty('toString')) {
-                            base.toString = props.toString;
-                        }
-                    } else if (mixin.mixins) {
-                        mergeMixins(mixin.mixins, m, descs, values, base);
-                        if (mixin._without) {
-                            a_forEach.call(mixin._without, removeKeys);
-                        }
+                        m.bindings = {};
                     }
                 }
-            }
-            function writableReq(obj) {
-                var m = Ember.meta(obj), req = m.required;
-                if (!req || req.__emberproto__ !== obj) {
-                    req = m.required = req ? o_create(req) : { __ember_count__: 0 };
-                    req.__emberproto__ = obj;
+                function finishPartial(obj, m) {
+                    connectBindings(obj, m || Ember.meta(obj));
+                    return obj;
                 }
-                return req;
-            }
-            var IS_BINDING = Ember.IS_BINDING = /^.+Binding$/;
-            function detectBinding(obj, key, value, m) {
-                if (IS_BINDING.test(key)) {
-                    var bindings = m.bindings;
-                    if (!bindings) {
-                        bindings = m.bindings = { __emberproto__: obj };
-                    } else if (bindings.__emberproto__ !== obj) {
-                        bindings = m.bindings = o_create(m.bindings);
-                        bindings.__emberproto__ = obj;
-                    }
-                    bindings[key] = value;
-                }
-            }
-            function connectBindings(obj, m) {
-                var bindings = m.bindings, key, binding, to;
-                if (bindings) {
-                    for (key in bindings) {
-                        binding = key !== '__emberproto__' && bindings[key];
-                        if (binding) {
-                            to = key.slice(0, -7);
-                            if (binding instanceof Ember.Binding) {
-                                binding = binding.copy();
-                                binding.to(to);
-                            } else {
-                                binding = new Ember.Binding(to, binding);
-                            }
-                            binding.connect(obj);
-                            obj[key] = binding;
-                        }
-                    }
-                    m.bindings = { __emberproto__: obj };
-                }
-            }
-            function finishPartial(obj, m) {
-                connectBindings(obj, m || Ember.meta(obj));
-                return obj;
-            }
-            function applyMixin(obj, mixins, partial) {
-                var descs = {}, values = {}, m = Ember.meta(obj), req = m.required, key, value, desc, prevValue, paths, len, idx;
-                mergeMixins(mixins, mixinsMeta(obj), descs, values, obj);
-                for (key in values) {
-                    if (key === 'contructor') {
-                        continue;
-                    }
-                    if (!values.hasOwnProperty(key)) {
-                        continue;
-                    }
-                    desc = descs[key];
-                    value = values[key];
-                    if (desc === REQUIRED) {
-                        if (!(key in obj)) {
-                            Ember.assert('Required property not defined: ' + key, !!partial);
-                            req = writableReq(obj);
-                            req.__ember_count__++;
-                            req[key] = true;
-                        }
+                function followAlias(obj, desc, m, descs, values) {
+                    var altKey = desc.methodName, value;
+                    if (descs[altKey] || values[altKey]) {
+                        value = values[altKey];
+                        desc = descs[altKey];
+                    } else if (m.descs[altKey]) {
+                        desc = m.descs[altKey];
+                        value = undefined;
                     } else {
+                        desc = undefined;
+                        value = obj[altKey];
+                    }
+                    return {
+                        desc: desc,
+                        value: value
+                    };
+                }
+                function updateObservers(obj, key, observer, observerKey, method) {
+                    if ('function' !== typeof observer) {
+                        return;
+                    }
+                    var paths = observer[observerKey];
+                    if (paths) {
+                        for (var i = 0, l = paths.length; i < l; i++) {
+                            Ember[method](obj, paths[i], null, key);
+                        }
+                    }
+                }
+                function replaceObservers(obj, key, observer) {
+                    var prevObserver = obj[key];
+                    updateObservers(obj, key, prevObserver, '__ember_observesBefore__', 'removeBeforeObserver');
+                    updateObservers(obj, key, prevObserver, '__ember_observes__', 'removeObserver');
+                    updateObservers(obj, key, observer, '__ember_observesBefore__', 'addBeforeObserver');
+                    updateObservers(obj, key, observer, '__ember_observes__', 'addObserver');
+                }
+                function applyMixin(obj, mixins, partial) {
+                    var descs = {}, values = {}, m = Ember.meta(obj), key, value, desc, keys = [];
+                    mergeMixins(mixins, mixinsMeta(obj), descs, values, obj, keys);
+                    for (var i = 0, l = keys.length; i < l; i++) {
+                        key = keys[i];
+                        if (key === 'constructor' || !values.hasOwnProperty(key)) {
+                            continue;
+                        }
+                        desc = descs[key];
+                        value = values[key];
+                        if (desc === REQUIRED) {
+                            continue;
+                        }
                         while (desc && desc instanceof Alias) {
-                            var altKey = desc.methodName;
-                            if (descs[altKey] || values[altKey]) {
-                                value = values[altKey];
-                                desc = descs[altKey];
-                            } else if (m.descs[altKey]) {
-                                desc = m.descs[altKey];
-                                value = undefined;
-                            } else {
-                                desc = undefined;
-                                value = obj[altKey];
-                            }
+                            var followed = followAlias(obj, desc, m, descs, values);
+                            desc = followed.desc;
+                            value = followed.value;
                         }
                         if (desc === undefined && value === undefined) {
                             continue;
                         }
-                        prevValue = obj[key];
-                        if ('function' === typeof prevValue) {
-                            if (paths = prevValue.__ember_observesBefore__) {
-                                len = paths.length;
-                                for (idx = 0; idx < len; idx++) {
-                                    Ember.removeBeforeObserver(obj, paths[idx], null, key);
-                                }
-                            } else if (paths = prevValue.__ember_observes__) {
-                                len = paths.length;
-                                for (idx = 0; idx < len; idx++) {
-                                    Ember.removeObserver(obj, paths[idx], null, key);
-                                }
-                            }
-                        }
+                        replaceObservers(obj, key, value);
                         detectBinding(obj, key, value, m);
                         defineProperty(obj, key, desc, value, m);
-                        if ('function' === typeof value) {
-                            if (paths = value.__ember_observesBefore__) {
-                                len = paths.length;
-                                for (idx = 0; idx < len; idx++) {
-                                    Ember.addBeforeObserver(obj, paths[idx], null, key);
-                                }
-                            } else if (paths = value.__ember_observes__) {
-                                len = paths.length;
-                                for (idx = 0; idx < len; idx++) {
-                                    Ember.addObserver(obj, paths[idx], null, key);
-                                }
-                            }
-                        }
-                        if (req && req[key]) {
-                            req = writableReq(obj);
-                            req.__ember_count__--;
-                            req[key] = false;
+                    }
+                    if (!partial) {
+                        finishPartial(obj, m);
+                    }
+                    return obj;
+                }
+                Ember.mixin = function (obj) {
+                    var args = a_slice.call(arguments, 1);
+                    applyMixin(obj, args, false);
+                    return obj;
+                };
+                Ember.Mixin = function () {
+                    return initMixin(this, arguments);
+                };
+                Mixin = Ember.Mixin;
+                Mixin.prototype = {
+                    properties: null,
+                    mixins: null,
+                    ownerConstructor: null
+                };
+                Mixin._apply = applyMixin;
+                Mixin.applyPartial = function (obj) {
+                    var args = a_slice.call(arguments, 1);
+                    return applyMixin(obj, args, true);
+                };
+                Mixin.finishPartial = finishPartial;
+                Ember.anyUnprocessedMixins = false;
+                Mixin.create = function () {
+                    Ember.anyUnprocessedMixins = true;
+                    var M = this;
+                    return initMixin(new M(), arguments);
+                };
+                var MixinPrototype = Mixin.prototype;
+                MixinPrototype.reopen = function () {
+                    var mixin, tmp;
+                    if (this.properties) {
+                        mixin = Mixin.create();
+                        mixin.properties = this.properties;
+                        delete this.properties;
+                        this.mixins = [mixin];
+                    } else if (!this.mixins) {
+                        this.mixins = [];
+                    }
+                    var len = arguments.length, mixins = this.mixins, idx;
+                    for (idx = 0; idx < len; idx++) {
+                        mixin = arguments[idx];
+                        Ember.assert('Expected hash or Mixin instance, got ' + Object.prototype.toString.call(mixin), typeof mixin === 'object' && mixin !== null && Object.prototype.toString.call(mixin) !== '[object Array]');
+                        if (mixin instanceof Mixin) {
+                            mixins.push(mixin);
+                        } else {
+                            tmp = Mixin.create();
+                            tmp.properties = mixin;
+                            mixins.push(tmp);
                         }
                     }
-                }
-                if (!partial) {
-                    finishPartial(obj, m);
-                }
-                if (!partial && req && req.__ember_count__ > 0) {
-                    var keys = [];
-                    for (key in req) {
-                        if (META_SKIP[key]) {
-                            continue;
-                        }
-                        keys.push(key);
+                    return this;
+                };
+                MixinPrototype.apply = function (obj) {
+                    return applyMixin(obj, [this], false);
+                };
+                MixinPrototype.applyPartial = function (obj) {
+                    return applyMixin(obj, [this], true);
+                };
+                function _detect(curMixin, targetMixin, seen) {
+                    var guid = guidFor(curMixin);
+                    if (seen[guid]) {
+                        return false;
                     }
-                    Ember.assert('Required properties not defined: ' + keys.join(','));
-                }
-                return obj;
-            }
-            Ember.mixin = function (obj) {
-                var args = a_slice.call(arguments, 1);
-                applyMixin(obj, args, false);
-                return obj;
-            };
-            Ember.Mixin = function () {
-                return initMixin(this, arguments);
-            };
-            Mixin = Ember.Mixin;
-            Mixin._apply = applyMixin;
-            Mixin.applyPartial = function (obj) {
-                var args = a_slice.call(arguments, 1);
-                return applyMixin(obj, args, true);
-            };
-            Mixin.finishPartial = finishPartial;
-            Mixin.create = function () {
-                classToString.processed = false;
-                var M = this;
-                return initMixin(new M(), arguments);
-            };
-            var MixinPrototype = Mixin.prototype;
-            MixinPrototype.reopen = function () {
-                var mixin, tmp;
-                if (this.properties) {
-                    mixin = Mixin.create();
-                    mixin.properties = this.properties;
-                    delete this.properties;
-                    this.mixins = [mixin];
-                } else if (!this.mixins) {
-                    this.mixins = [];
-                }
-                var len = arguments.length, mixins = this.mixins, idx;
-                for (idx = 0; idx < len; idx++) {
-                    mixin = arguments[idx];
-                    Ember.assert('Expected hash or Mixin instance, got ' + Object.prototype.toString.call(mixin), typeof mixin === 'object' && mixin !== null && Object.prototype.toString.call(mixin) !== '[object Array]');
-                    if (mixin instanceof Mixin) {
-                        mixins.push(mixin);
-                    } else {
-                        tmp = Mixin.create();
-                        tmp.properties = mixin;
-                        mixins.push(tmp);
-                    }
-                }
-                return this;
-            };
-            MixinPrototype.apply = function (obj) {
-                return applyMixin(obj, [this], false);
-            };
-            MixinPrototype.applyPartial = function (obj) {
-                return applyMixin(obj, [this], true);
-            };
-            function _detect(curMixin, targetMixin, seen) {
-                var guid = guidFor(curMixin);
-                if (seen[guid]) {
-                    return false;
-                }
-                seen[guid] = true;
-                if (curMixin === targetMixin) {
-                    return true;
-                }
-                var mixins = curMixin.mixins, loc = mixins ? mixins.length : 0;
-                while (--loc >= 0) {
-                    if (_detect(mixins[loc], targetMixin, seen)) {
+                    seen[guid] = true;
+                    if (curMixin === targetMixin) {
                         return true;
                     }
-                }
-                return false;
-            }
-            MixinPrototype.detect = function (obj) {
-                if (!obj) {
+                    var mixins = curMixin.mixins, loc = mixins ? mixins.length : 0;
+                    while (--loc >= 0) {
+                        if (_detect(mixins[loc], targetMixin, seen)) {
+                            return true;
+                        }
+                    }
                     return false;
                 }
-                if (obj instanceof Mixin) {
-                    return _detect(obj, this, {});
-                }
-                var mixins = Ember.meta(obj, false).mixins;
-                if (mixins) {
-                    return !!mixins[guidFor(this)];
-                }
-                return false;
-            };
-            MixinPrototype.without = function () {
-                var ret = new Mixin(this);
-                ret._without = a_slice.call(arguments);
-                return ret;
-            };
-            function _keys(ret, mixin, seen) {
-                if (seen[guidFor(mixin)]) {
-                    return;
-                }
-                seen[guidFor(mixin)] = true;
-                if (mixin.properties) {
-                    var props = mixin.properties;
-                    for (var key in props) {
-                        if (props.hasOwnProperty(key)) {
-                            ret[key] = true;
+                MixinPrototype.detect = function (obj) {
+                    if (!obj) {
+                        return false;
+                    }
+                    if (obj instanceof Mixin) {
+                        return _detect(obj, this, {});
+                    }
+                    var mixins = Ember.meta(obj, false).mixins;
+                    if (mixins) {
+                        return !!mixins[guidFor(this)];
+                    }
+                    return false;
+                };
+                MixinPrototype.without = function () {
+                    var ret = new Mixin(this);
+                    ret._without = a_slice.call(arguments);
+                    return ret;
+                };
+                function _keys(ret, mixin, seen) {
+                    if (seen[guidFor(mixin)]) {
+                        return;
+                    }
+                    seen[guidFor(mixin)] = true;
+                    if (mixin.properties) {
+                        var props = mixin.properties;
+                        for (var key in props) {
+                            if (props.hasOwnProperty(key)) {
+                                ret[key] = true;
+                            }
                         }
-                    }
-                } else if (mixin.mixins) {
-                    a_forEach.call(mixin.mixins, function (x) {
-                        _keys(ret, x, seen);
-                    });
-                }
-            }
-            MixinPrototype.keys = function () {
-                var keys = {}, seen = {}, ret = [];
-                _keys(keys, this, seen);
-                for (var key in keys) {
-                    if (keys.hasOwnProperty(key)) {
-                        ret.push(key);
+                    } else if (mixin.mixins) {
+                        a_forEach.call(mixin.mixins, function (x) {
+                            _keys(ret, x, seen);
+                        });
                     }
                 }
-                return ret;
-            };
-            var NAME_KEY = Ember.GUID_KEY + '_name';
-            var get = Ember.get;
-            function processNames(paths, root, seen) {
-                var idx = paths.length;
-                for (var key in root) {
-                    if (!root.hasOwnProperty || !root.hasOwnProperty(key)) {
-                        continue;
-                    }
-                    var obj = root[key];
-                    paths[idx] = key;
-                    if (obj && obj.toString === classToString) {
-                        obj[NAME_KEY] = paths.join('.');
-                    } else if (obj && get(obj, 'isNamespace')) {
-                        if (seen[guidFor(obj)]) {
-                            continue;
-                        }
-                        seen[guidFor(obj)] = true;
-                        processNames(paths, obj, seen);
-                    }
-                }
-                paths.length = idx;
-            }
-            function findNamespaces() {
-                var Namespace = Ember.Namespace, obj, isNamespace;
-                if (Namespace.PROCESSED) {
-                    return;
-                }
-                for (var prop in window) {
-                    if (prop === 'globalStorage' && window.StorageList && window.globalStorage instanceof window.StorageList) {
-                        continue;
-                    }
-                    if (window.hasOwnProperty && !window.hasOwnProperty(prop)) {
-                        continue;
-                    }
-                    try {
-                        obj = window[prop];
-                        isNamespace = obj && get(obj, 'isNamespace');
-                    } catch (e) {
-                        continue;
-                    }
-                    if (isNamespace) {
-                        Ember.deprecate('Namespaces should not begin with lowercase.', /^[A-Z]/.test(prop));
-                        obj[NAME_KEY] = prop;
-                    }
-                }
-            }
-            Ember.identifyNamespaces = findNamespaces;
-            superClassString = function (mixin) {
-                var superclass = mixin.superclass;
-                if (superclass) {
-                    if (superclass[NAME_KEY]) {
-                        return superclass[NAME_KEY];
-                    } else {
-                        return superClassString(superclass);
-                    }
-                } else {
-                    return;
-                }
-            };
-            classToString = function () {
-                var Namespace = Ember.Namespace, namespace;
-                if (Namespace) {
-                    if (!this[NAME_KEY] && !classToString.processed) {
-                        if (!Namespace.PROCESSED) {
-                            findNamespaces();
-                            Namespace.PROCESSED = true;
-                        }
-                        classToString.processed = true;
-                        var namespaces = Namespace.NAMESPACES;
-                        for (var i = 0, l = namespaces.length; i < l; i++) {
-                            namespace = namespaces[i];
-                            processNames([namespace.toString()], namespace, {});
-                        }
-                    }
-                }
-                if (this[NAME_KEY]) {
-                    return this[NAME_KEY];
-                } else {
-                    var str = superClassString(this);
-                    if (str) {
-                        return '(subclass of ' + str + ')';
-                    } else {
-                        return '(unknown mixin)';
-                    }
-                }
-            };
-            MixinPrototype.toString = classToString;
-            Mixin.mixins = function (obj) {
-                var ret = [], mixins = Ember.meta(obj, false).mixins, key, mixin;
-                if (mixins) {
-                    for (key in mixins) {
-                        if (META_SKIP[key]) {
-                            continue;
-                        }
-                        mixin = mixins[key];
-                        if (!mixin.properties) {
-                            ret.push(mixins[key]);
-                        }
-                    }
-                }
-                return ret;
-            };
-            REQUIRED = new Ember.Descriptor();
-            REQUIRED.toString = function () {
-                return '(Required Property)';
-            };
-            Ember.required = function () {
-                return REQUIRED;
-            };
-            Alias = function (methodName) {
-                this.methodName = methodName;
-            };
-            Alias.prototype = new Ember.Descriptor();
-            Ember.alias = function (methodName) {
-                return new Alias(methodName);
-            };
-            Ember.observer = function (func) {
-                var paths = a_slice.call(arguments, 1);
-                func.__ember_observes__ = paths;
-                return func;
-            };
-            Ember.immediateObserver = function () {
-                for (var i = 0, l = arguments.length; i < l; i++) {
-                    var arg = arguments[i];
-                    Ember.assert('Immediate observers must observe internal properties only, not properties on other objects.', typeof arg !== 'string' || arg.indexOf('.') === -1);
-                }
-                return Ember.observer.apply(this, arguments);
-            };
-            Ember.beforeObserver = function (func) {
-                var paths = a_slice.call(arguments, 1);
-                func.__ember_observesBefore__ = paths;
-                return func;
-            };
-        }());
-        (function () {
-        }());
-        (function () {
-        }());
-        (function () {
-            var indexOf = Ember.EnumerableUtils.indexOf;
-            var TYPE_MAP = {};
-            var t = 'Boolean Number String Function Array Date RegExp Object'.split(' ');
-            Ember.ArrayPolyfills.forEach.call(t, function (name) {
-                TYPE_MAP['[object ' + name + ']'] = name.toLowerCase();
-            });
-            var toString = Object.prototype.toString;
-            Ember.typeOf = function (item) {
-                var ret;
-                ret = item === null || item === undefined ? String(item) : TYPE_MAP[toString.call(item)] || 'object';
-                if (ret === 'function') {
-                    if (Ember.Object && Ember.Object.detect(item))
-                        ret = 'class';
-                } else if (ret === 'object') {
-                    if (item instanceof Error)
-                        ret = 'error';
-                    else if (Ember.Object && item instanceof Ember.Object)
-                        ret = 'instance';
-                    else
-                        ret = 'object';
-                }
-                return ret;
-            };
-            Ember.none = function (obj) {
-                return obj === null || obj === undefined;
-            };
-            Ember.empty = function (obj) {
-                return obj === null || obj === undefined || obj.length === 0 && typeof obj !== 'function' || typeof obj === 'object' && Ember.get(obj, 'length') === 0;
-            };
-            Ember.compare = function compare(v, w) {
-                if (v === w) {
-                    return 0;
-                }
-                var type1 = Ember.typeOf(v);
-                var type2 = Ember.typeOf(w);
-                var Comparable = Ember.Comparable;
-                if (Comparable) {
-                    if (type1 === 'instance' && Comparable.detect(v.constructor)) {
-                        return v.constructor.compare(v, w);
-                    }
-                    if (type2 === 'instance' && Comparable.detect(w.constructor)) {
-                        return 1 - w.constructor.compare(w, v);
-                    }
-                }
-                var mapping = Ember.ORDER_DEFINITION_MAPPING;
-                if (!mapping) {
-                    var order = Ember.ORDER_DEFINITION;
-                    mapping = Ember.ORDER_DEFINITION_MAPPING = {};
-                    var idx, len;
-                    for (idx = 0, len = order.length; idx < len; ++idx) {
-                        mapping[order[idx]] = idx;
-                    }
-                    delete Ember.ORDER_DEFINITION;
-                }
-                var type1Index = mapping[type1];
-                var type2Index = mapping[type2];
-                if (type1Index < type2Index) {
-                    return -1;
-                }
-                if (type1Index > type2Index) {
-                    return 1;
-                }
-                switch (type1) {
-                case 'boolean':
-                case 'number':
-                    if (v < w) {
-                        return -1;
-                    }
-                    if (v > w) {
-                        return 1;
-                    }
-                    return 0;
-                case 'string':
-                    var comp = v.localeCompare(w);
-                    if (comp < 0) {
-                        return -1;
-                    }
-                    if (comp > 0) {
-                        return 1;
-                    }
-                    return 0;
-                case 'array':
-                    var vLen = v.length;
-                    var wLen = w.length;
-                    var l = Math.min(vLen, wLen);
-                    var r = 0;
-                    var i = 0;
-                    while (r === 0 && i < l) {
-                        r = compare(v[i], w[i]);
-                        i++;
-                    }
-                    if (r !== 0) {
-                        return r;
-                    }
-                    if (vLen < wLen) {
-                        return -1;
-                    }
-                    if (vLen > wLen) {
-                        return 1;
-                    }
-                    return 0;
-                case 'instance':
-                    if (Ember.Comparable && Ember.Comparable.detect(v)) {
-                        return v.compare(v, w);
-                    }
-                    return 0;
-                case 'date':
-                    var vNum = v.getTime();
-                    var wNum = w.getTime();
-                    if (vNum < wNum) {
-                        return -1;
-                    }
-                    if (vNum > wNum) {
-                        return 1;
-                    }
-                    return 0;
-                default:
-                    return 0;
-                }
-            };
-            function _copy(obj, deep, seen, copies) {
-                var ret, loc, key;
-                if ('object' !== typeof obj || obj === null)
-                    return obj;
-                if (deep && (loc = indexOf(seen, obj)) >= 0)
-                    return copies[loc];
-                Ember.assert('Cannot clone an Ember.Object that does not implement Ember.Copyable', !(obj instanceof Ember.Object) || Ember.Copyable && Ember.Copyable.detect(obj));
-                if (Ember.typeOf(obj) === 'array') {
-                    ret = obj.slice();
-                    if (deep) {
-                        loc = ret.length;
-                        while (--loc >= 0)
-                            ret[loc] = _copy(ret[loc], deep, seen, copies);
-                    }
-                } else if (Ember.Copyable && Ember.Copyable.detect(obj)) {
-                    ret = obj.copy(deep, seen, copies);
-                } else {
-                    ret = {};
-                    for (key in obj) {
-                        if (!obj.hasOwnProperty(key))
-                            continue;
-                        ret[key] = deep ? _copy(obj[key], deep, seen, copies) : obj[key];
-                    }
-                }
-                if (deep) {
-                    seen.push(obj);
-                    copies.push(ret);
-                }
-                return ret;
-            }
-            Ember.copy = function (obj, deep) {
-                if ('object' !== typeof obj || obj === null)
-                    return obj;
-                if (Ember.Copyable && Ember.Copyable.detect(obj))
-                    return obj.copy(deep);
-                return _copy(obj, deep, deep ? [] : null, deep ? [] : null);
-            };
-            Ember.inspect = function (obj) {
-                var v, ret = [];
-                for (var key in obj) {
-                    if (obj.hasOwnProperty(key)) {
-                        v = obj[key];
-                        if (v === 'toString') {
-                            continue;
-                        }
-                        if (Ember.typeOf(v) === 'function') {
-                            v = 'function() { ... }';
-                        }
-                        ret.push(key + ': ' + v);
-                    }
-                }
-                return '{' + ret.join(' , ') + '}';
-            };
-            Ember.isEqual = function (a, b) {
-                if (a && 'function' === typeof a.isEqual)
-                    return a.isEqual(b);
-                return a === b;
-            };
-            Ember.ORDER_DEFINITION = Ember.ENV.ORDER_DEFINITION || [
-                'undefined',
-                'null',
-                'boolean',
-                'number',
-                'string',
-                'array',
-                'object',
-                'instance',
-                'function',
-                'class',
-                'date'
-            ];
-            Ember.keys = Object.keys;
-            if (!Ember.keys) {
-                Ember.keys = function (obj) {
-                    var ret = [];
-                    for (var key in obj) {
-                        if (obj.hasOwnProperty(key)) {
+                MixinPrototype.keys = function () {
+                    var keys = {}, seen = {}, ret = [];
+                    _keys(keys, this, seen);
+                    for (var key in keys) {
+                        if (keys.hasOwnProperty(key)) {
                             ret.push(key);
                         }
                     }
                     return ret;
                 };
-            }
-            Ember.Error = function () {
-                var tmp = Error.prototype.constructor.apply(this, arguments);
-                for (var p in tmp) {
-                    if (tmp.hasOwnProperty(p)) {
-                        this[p] = tmp[p];
-                    }
-                }
-                this.message = tmp.message;
-            };
-            Ember.Error.prototype = Ember.create(Error.prototype);
-        }());
-        (function () {
-            var STRING_DASHERIZE_REGEXP = /[ _]/g;
-            var STRING_DASHERIZE_CACHE = {};
-            var STRING_DECAMELIZE_REGEXP = /([a-z])([A-Z])/g;
-            var STRING_CAMELIZE_REGEXP = /(\-|_|\s)+(.)?/g;
-            var STRING_UNDERSCORE_REGEXP_1 = /([a-z\d])([A-Z]+)/g;
-            var STRING_UNDERSCORE_REGEXP_2 = /\-|\s+/g;
-            Ember.STRINGS = {};
-            Ember.String = {
-                fmt: function (str, formats) {
-                    var idx = 0;
-                    return str.replace(/%@([0-9]+)?/g, function (s, argIndex) {
-                        argIndex = argIndex ? parseInt(argIndex, 0) - 1 : idx++;
-                        s = formats[argIndex];
-                        return (s === null ? '(null)' : s === undefined ? '' : s).toString();
-                    });
-                },
-                loc: function (str, formats) {
-                    str = Ember.STRINGS[str] || str;
-                    return Ember.String.fmt(str, formats);
-                },
-                w: function (str) {
-                    return str.split(/\s+/);
-                },
-                decamelize: function (str) {
-                    return str.replace(STRING_DECAMELIZE_REGEXP, '$1_$2').toLowerCase();
-                },
-                dasherize: function (str) {
-                    var cache = STRING_DASHERIZE_CACHE, ret = cache[str];
-                    if (ret) {
+                Mixin.mixins = function (obj) {
+                    var mixins = Ember.meta(obj, false).mixins, ret = [];
+                    if (!mixins) {
                         return ret;
-                    } else {
-                        ret = Ember.String.decamelize(str).replace(STRING_DASHERIZE_REGEXP, '-');
-                        cache[str] = ret;
                     }
-                    return ret;
-                },
-                camelize: function (str) {
-                    return str.replace(STRING_CAMELIZE_REGEXP, function (match, separator, chr) {
-                        return chr ? chr.toUpperCase() : '';
-                    });
-                },
-                classify: function (str) {
-                    var camelized = Ember.String.camelize(str);
-                    return camelized.charAt(0).toUpperCase() + camelized.substr(1);
-                },
-                underscore: function (str) {
-                    return str.replace(STRING_UNDERSCORE_REGEXP_1, '$1_$2').replace(STRING_UNDERSCORE_REGEXP_2, '_').toLowerCase();
-                }
-            };
-        }());
-        (function () {
-            var fmt = Ember.String.fmt, w = Ember.String.w, loc = Ember.String.loc, camelize = Ember.String.camelize, decamelize = Ember.String.decamelize, dasherize = Ember.String.dasherize, underscore = Ember.String.underscore;
-            if (Ember.EXTEND_PROTOTYPES) {
-                String.prototype.fmt = function () {
-                    return fmt(this, arguments);
-                };
-                String.prototype.w = function () {
-                    return w(this);
-                };
-                String.prototype.loc = function () {
-                    return loc(this, arguments);
-                };
-                String.prototype.camelize = function () {
-                    return camelize(this);
-                };
-                String.prototype.decamelize = function () {
-                    return decamelize(this);
-                };
-                String.prototype.dasherize = function () {
-                    return dasherize(this);
-                };
-                String.prototype.underscore = function () {
-                    return underscore(this);
-                };
-            }
-        }());
-        (function () {
-            var a_slice = Array.prototype.slice;
-            if (Ember.EXTEND_PROTOTYPES) {
-                Function.prototype.property = function () {
-                    var ret = Ember.computed(this);
-                    return ret.property.apply(ret, arguments);
-                };
-                Function.prototype.observes = function () {
-                    this.__ember_observes__ = a_slice.call(arguments);
-                    return this;
-                };
-                Function.prototype.observesBefore = function () {
-                    this.__ember_observesBefore__ = a_slice.call(arguments);
-                    return this;
-                };
-            }
-        }());
-        (function () {
-        }());
-        (function () {
-            var get = Ember.get, set = Ember.set;
-            var a_slice = Array.prototype.slice;
-            var a_indexOf = Ember.EnumerableUtils.indexOf;
-            var contexts = [];
-            function popCtx() {
-                return contexts.length === 0 ? {} : contexts.pop();
-            }
-            function pushCtx(ctx) {
-                contexts.push(ctx);
-                return null;
-            }
-            function iter(key, value) {
-                var valueProvided = arguments.length === 2;
-                function i(item) {
-                    var cur = get(item, key);
-                    return valueProvided ? value === cur : !!cur;
-                }
-                return i;
-            }
-            Ember.Enumerable = Ember.Mixin.create({
-                isEnumerable: true,
-                nextObject: Ember.required(Function),
-                firstObject: Ember.computed(function () {
-                    if (get(this, 'length') === 0)
-                        return undefined;
-                    var context = popCtx(), ret;
-                    ret = this.nextObject(0, null, context);
-                    pushCtx(context);
-                    return ret;
-                }).property('[]').cacheable(),
-                lastObject: Ember.computed(function () {
-                    var len = get(this, 'length');
-                    if (len === 0)
-                        return undefined;
-                    var context = popCtx(), idx = 0, cur, last = null;
-                    do {
-                        last = cur;
-                        cur = this.nextObject(idx++, last, context);
-                    } while (cur !== undefined);
-                    pushCtx(context);
-                    return last;
-                }).property('[]').cacheable(),
-                contains: function (obj) {
-                    return this.find(function (item) {
-                        return item === obj;
-                    }) !== undefined;
-                },
-                forEach: function (callback, target) {
-                    if (typeof callback !== 'function')
-                        throw new TypeError();
-                    var len = get(this, 'length'), last = null, context = popCtx();
-                    if (target === undefined)
-                        target = null;
-                    for (var idx = 0; idx < len; idx++) {
-                        var next = this.nextObject(idx, last, context);
-                        callback.call(target, next, idx, this);
-                        last = next;
-                    }
-                    last = null;
-                    context = pushCtx(context);
-                    return this;
-                },
-                getEach: function (key) {
-                    return this.mapProperty(key);
-                },
-                setEach: function (key, value) {
-                    return this.forEach(function (item) {
-                        set(item, key, value);
-                    });
-                },
-                map: function (callback, target) {
-                    var ret = [];
-                    this.forEach(function (x, idx, i) {
-                        ret[idx] = callback.call(target, x, idx, i);
-                    });
-                    return ret;
-                },
-                mapProperty: function (key) {
-                    return this.map(function (next) {
-                        return get(next, key);
-                    });
-                },
-                filter: function (callback, target) {
-                    var ret = [];
-                    this.forEach(function (x, idx, i) {
-                        if (callback.call(target, x, idx, i))
-                            ret.push(x);
-                    });
-                    return ret;
-                },
-                filterProperty: function (key, value) {
-                    return this.filter(iter.apply(this, arguments));
-                },
-                find: function (callback, target) {
-                    var len = get(this, 'length');
-                    if (target === undefined)
-                        target = null;
-                    var last = null, next, found = false, ret;
-                    var context = popCtx();
-                    for (var idx = 0; idx < len && !found; idx++) {
-                        next = this.nextObject(idx, last, context);
-                        if (found = callback.call(target, next, idx, this))
-                            ret = next;
-                        last = next;
-                    }
-                    next = last = null;
-                    context = pushCtx(context);
-                    return ret;
-                },
-                findProperty: function (key, value) {
-                    return this.find(iter.apply(this, arguments));
-                },
-                every: function (callback, target) {
-                    return !this.find(function (x, idx, i) {
-                        return !callback.call(target, x, idx, i);
-                    });
-                },
-                everyProperty: function (key, value) {
-                    return this.every(iter.apply(this, arguments));
-                },
-                some: function (callback, target) {
-                    return !!this.find(function (x, idx, i) {
-                        return !!callback.call(target, x, idx, i);
-                    });
-                },
-                someProperty: function (key, value) {
-                    return this.some(iter.apply(this, arguments));
-                },
-                reduce: function (callback, initialValue, reducerProperty) {
-                    if (typeof callback !== 'function') {
-                        throw new TypeError();
-                    }
-                    var ret = initialValue;
-                    this.forEach(function (item, i) {
-                        ret = callback.call(null, ret, item, i, this, reducerProperty);
-                    }, this);
-                    return ret;
-                },
-                invoke: function (methodName) {
-                    var args, ret = [];
-                    if (arguments.length > 1)
-                        args = a_slice.call(arguments, 1);
-                    this.forEach(function (x, idx) {
-                        var method = x && x[methodName];
-                        if ('function' === typeof method) {
-                            ret[idx] = args ? method.apply(x, args) : method.call(x);
+                    for (var key in mixins) {
+                        var mixin = mixins[key];
+                        if (!mixin.properties) {
+                            ret.push(mixin);
                         }
-                    }, this);
-                    return ret;
-                },
-                toArray: function () {
-                    var ret = [];
-                    this.forEach(function (o, idx) {
-                        ret[idx] = o;
-                    });
-                    return ret;
-                },
-                compact: function () {
-                    return this.without(null);
-                },
-                without: function (value) {
-                    if (!this.contains(value))
-                        return this;
-                    var ret = [];
-                    this.forEach(function (k) {
-                        if (k !== value)
-                            ret[ret.length] = k;
-                    });
-                    return ret;
-                },
-                uniq: function () {
-                    var ret = [];
-                    this.forEach(function (k) {
-                        if (a_indexOf(ret, k) < 0)
-                            ret.push(k);
-                    });
-                    return ret;
-                },
-                '[]': Ember.computed(function (key, value) {
-                    return this;
-                }).property().cacheable(),
-                addEnumerableObserver: function (target, opts) {
-                    var willChange = opts && opts.willChange || 'enumerableWillChange', didChange = opts && opts.didChange || 'enumerableDidChange';
-                    var hasObservers = get(this, 'hasEnumerableObservers');
-                    if (!hasObservers)
-                        Ember.propertyWillChange(this, 'hasEnumerableObservers');
-                    Ember.addListener(this, '@enumerable:before', target, willChange);
-                    Ember.addListener(this, '@enumerable:change', target, didChange);
-                    if (!hasObservers)
-                        Ember.propertyDidChange(this, 'hasEnumerableObservers');
-                    return this;
-                },
-                removeEnumerableObserver: function (target, opts) {
-                    var willChange = opts && opts.willChange || 'enumerableWillChange', didChange = opts && opts.didChange || 'enumerableDidChange';
-                    var hasObservers = get(this, 'hasEnumerableObservers');
-                    if (hasObservers)
-                        Ember.propertyWillChange(this, 'hasEnumerableObservers');
-                    Ember.removeListener(this, '@enumerable:before', target, willChange);
-                    Ember.removeListener(this, '@enumerable:change', target, didChange);
-                    if (hasObservers)
-                        Ember.propertyDidChange(this, 'hasEnumerableObservers');
-                    return this;
-                },
-                hasEnumerableObservers: Ember.computed(function () {
-                    return Ember.hasListeners(this, '@enumerable:change') || Ember.hasListeners(this, '@enumerable:before');
-                }).property().cacheable(),
-                enumerableContentWillChange: function (removing, adding) {
-                    var removeCnt, addCnt, hasDelta;
-                    if ('number' === typeof removing)
-                        removeCnt = removing;
-                    else if (removing)
-                        removeCnt = get(removing, 'length');
-                    else
-                        removeCnt = removing = -1;
-                    if ('number' === typeof adding)
-                        addCnt = adding;
-                    else if (adding)
-                        addCnt = get(adding, 'length');
-                    else
-                        addCnt = adding = -1;
-                    hasDelta = addCnt < 0 || removeCnt < 0 || addCnt - removeCnt !== 0;
-                    if (removing === -1)
-                        removing = null;
-                    if (adding === -1)
-                        adding = null;
-                    Ember.propertyWillChange(this, '[]');
-                    if (hasDelta)
-                        Ember.propertyWillChange(this, 'length');
-                    Ember.sendEvent(this, '@enumerable:before', [
-                        this,
-                        removing,
-                        adding
-                    ]);
-                    return this;
-                },
-                enumerableContentDidChange: function (removing, adding) {
-                    var notify = this.propertyDidChange, removeCnt, addCnt, hasDelta;
-                    if ('number' === typeof removing)
-                        removeCnt = removing;
-                    else if (removing)
-                        removeCnt = get(removing, 'length');
-                    else
-                        removeCnt = removing = -1;
-                    if ('number' === typeof adding)
-                        addCnt = adding;
-                    else if (adding)
-                        addCnt = get(adding, 'length');
-                    else
-                        addCnt = adding = -1;
-                    hasDelta = addCnt < 0 || removeCnt < 0 || addCnt - removeCnt !== 0;
-                    if (removing === -1)
-                        removing = null;
-                    if (adding === -1)
-                        adding = null;
-                    Ember.sendEvent(this, '@enumerable:change', [
-                        this,
-                        removing,
-                        adding
-                    ]);
-                    if (hasDelta)
-                        Ember.propertyDidChange(this, 'length');
-                    Ember.propertyDidChange(this, '[]');
-                    return this;
-                }
-            });
-        }());
-        (function () {
-            var get = Ember.get, set = Ember.set, meta = Ember.meta, map = Ember.EnumerableUtils.map, cacheFor = Ember.cacheFor;
-            function none(obj) {
-                return obj === null || obj === undefined;
-            }
-            Ember.Array = Ember.Mixin.create(Ember.Enumerable, {
-                isSCArray: true,
-                length: Ember.required(),
-                objectAt: function (idx) {
-                    if (idx < 0 || idx >= get(this, 'length'))
-                        return undefined;
-                    return get(this, idx);
-                },
-                objectsAt: function (indexes) {
-                    var self = this;
-                    return map(indexes, function (idx) {
-                        return self.objectAt(idx);
-                    });
-                },
-                nextObject: function (idx) {
-                    return this.objectAt(idx);
-                },
-                '[]': Ember.computed(function (key, value) {
-                    if (value !== undefined)
-                        this.replace(0, get(this, 'length'), value);
-                    return this;
-                }).property().cacheable(),
-                firstObject: Ember.computed(function () {
-                    return this.objectAt(0);
-                }).property().cacheable(),
-                lastObject: Ember.computed(function () {
-                    return this.objectAt(get(this, 'length') - 1);
-                }).property().cacheable(),
-                contains: function (obj) {
-                    return this.indexOf(obj) >= 0;
-                },
-                slice: function (beginIndex, endIndex) {
-                    var ret = [];
-                    var length = get(this, 'length');
-                    if (none(beginIndex))
-                        beginIndex = 0;
-                    if (none(endIndex) || endIndex > length)
-                        endIndex = length;
-                    while (beginIndex < endIndex) {
-                        ret[ret.length] = this.objectAt(beginIndex++);
                     }
                     return ret;
-                },
-                indexOf: function (object, startAt) {
-                    var idx, len = get(this, 'length');
-                    if (startAt === undefined)
-                        startAt = 0;
-                    if (startAt < 0)
-                        startAt += len;
-                    for (idx = startAt; idx < len; idx++) {
-                        if (this.objectAt(idx, true) === object)
-                            return idx;
+                };
+                REQUIRED = new Ember.Descriptor();
+                REQUIRED.toString = function () {
+                    return '(Required Property)';
+                };
+                Ember.required = function () {
+                    return REQUIRED;
+                };
+                Alias = function (methodName) {
+                    this.methodName = methodName;
+                };
+                Alias.prototype = new Ember.Descriptor();
+                Ember.alias = function (methodName) {
+                    return new Alias(methodName);
+                };
+                Ember.deprecateFunc('Ember.alias is deprecated. Please use Ember.aliasMethod or Ember.computed.alias instead.', Ember.alias);
+                Ember.aliasMethod = function (methodName) {
+                    return new Alias(methodName);
+                };
+                Ember.observer = function (func) {
+                    var paths = a_slice.call(arguments, 1);
+                    func.__ember_observes__ = paths;
+                    return func;
+                };
+                Ember.immediateObserver = function () {
+                    for (var i = 0, l = arguments.length; i < l; i++) {
+                        var arg = arguments[i];
+                        Ember.assert('Immediate observers must observe internal properties only, not properties on other objects.', typeof arg !== 'string' || arg.indexOf('.') === -1);
                     }
-                    return -1;
-                },
-                lastIndexOf: function (object, startAt) {
-                    var idx, len = get(this, 'length');
-                    if (startAt === undefined || startAt >= len)
-                        startAt = len - 1;
-                    if (startAt < 0)
-                        startAt += len;
-                    for (idx = startAt; idx >= 0; idx--) {
-                        if (this.objectAt(idx) === object)
-                            return idx;
-                    }
-                    return -1;
-                },
-                addArrayObserver: function (target, opts) {
-                    var willChange = opts && opts.willChange || 'arrayWillChange', didChange = opts && opts.didChange || 'arrayDidChange';
-                    var hasObservers = get(this, 'hasArrayObservers');
-                    if (!hasObservers)
-                        Ember.propertyWillChange(this, 'hasArrayObservers');
-                    Ember.addListener(this, '@array:before', target, willChange);
-                    Ember.addListener(this, '@array:change', target, didChange);
-                    if (!hasObservers)
-                        Ember.propertyDidChange(this, 'hasArrayObservers');
-                    return this;
-                },
-                removeArrayObserver: function (target, opts) {
-                    var willChange = opts && opts.willChange || 'arrayWillChange', didChange = opts && opts.didChange || 'arrayDidChange';
-                    var hasObservers = get(this, 'hasArrayObservers');
-                    if (hasObservers)
-                        Ember.propertyWillChange(this, 'hasArrayObservers');
-                    Ember.removeListener(this, '@array:before', target, willChange);
-                    Ember.removeListener(this, '@array:change', target, didChange);
-                    if (hasObservers)
-                        Ember.propertyDidChange(this, 'hasArrayObservers');
-                    return this;
-                },
-                hasArrayObservers: Ember.computed(function () {
-                    return Ember.hasListeners(this, '@array:change') || Ember.hasListeners(this, '@array:before');
-                }).property().cacheable(),
-                arrayContentWillChange: function (startIdx, removeAmt, addAmt) {
-                    if (startIdx === undefined) {
-                        startIdx = 0;
-                        removeAmt = addAmt = -1;
+                    return Ember.observer.apply(this, arguments);
+                };
+                Ember.beforeObserver = function (func) {
+                    var paths = a_slice.call(arguments, 1);
+                    func.__ember_observesBefore__ = paths;
+                    return func;
+                };
+            }());
+            (function () {
+            }());
+            (function () {
+                define('rsvp', [], function () {
+                    'use strict';
+                    var browserGlobal = typeof window !== 'undefined' ? window : {};
+                    var MutationObserver = browserGlobal.MutationObserver || browserGlobal.WebKitMutationObserver;
+                    var RSVP, async;
+                    if (typeof process !== 'undefined' && {}.toString.call(process) === '[object process]') {
+                        async = function (callback, binding) {
+                            process.nextTick(function () {
+                                callback.call(binding);
+                            });
+                        };
+                    } else if (MutationObserver) {
+                        var queue = [];
+                        var observer = new MutationObserver(function () {
+                                var toProcess = queue.slice();
+                                queue = [];
+                                toProcess.forEach(function (tuple) {
+                                    var callback = tuple[0], binding = tuple[1];
+                                    callback.call(binding);
+                                });
+                            });
+                        var element = document.createElement('div');
+                        observer.observe(element, { attributes: true });
+                        window.addEventListener('unload', function () {
+                            observer.disconnect();
+                            observer = null;
+                        });
+                        async = function (callback, binding) {
+                            queue.push([
+                                callback,
+                                binding
+                            ]);
+                            element.setAttribute('drainQueue', 'drainQueue');
+                        };
                     } else {
-                        if (removeAmt === undefined)
-                            removeAmt = -1;
-                        if (addAmt === undefined)
-                            addAmt = -1;
+                        async = function (callback, binding) {
+                            setTimeout(function () {
+                                callback.call(binding);
+                            }, 1);
+                        };
                     }
-                    if (Ember.isWatching(this, '@each')) {
-                        get(this, '@each');
-                    }
-                    Ember.sendEvent(this, '@array:before', [
-                        this,
-                        startIdx,
-                        removeAmt,
-                        addAmt
-                    ]);
-                    var removing, lim;
-                    if (startIdx >= 0 && removeAmt >= 0 && get(this, 'hasEnumerableObservers')) {
-                        removing = [];
-                        lim = startIdx + removeAmt;
-                        for (var idx = startIdx; idx < lim; idx++)
-                            removing.push(this.objectAt(idx));
-                    } else {
-                        removing = removeAmt;
-                    }
-                    this.enumerableContentWillChange(removing, addAmt);
-                    return this;
-                },
-                arrayContentDidChange: function (startIdx, removeAmt, addAmt) {
-                    if (startIdx === undefined) {
-                        startIdx = 0;
-                        removeAmt = addAmt = -1;
-                    } else {
-                        if (removeAmt === undefined)
-                            removeAmt = -1;
-                        if (addAmt === undefined)
-                            addAmt = -1;
-                    }
-                    var adding, lim;
-                    if (startIdx >= 0 && addAmt >= 0 && get(this, 'hasEnumerableObservers')) {
-                        adding = [];
-                        lim = startIdx + addAmt;
-                        for (var idx = startIdx; idx < lim; idx++)
-                            adding.push(this.objectAt(idx));
-                    } else {
-                        adding = addAmt;
-                    }
-                    this.enumerableContentDidChange(removeAmt, adding);
-                    Ember.sendEvent(this, '@array:change', [
-                        this,
-                        startIdx,
-                        removeAmt,
-                        addAmt
-                    ]);
-                    var length = get(this, 'length'), cachedFirst = cacheFor(this, 'firstObject'), cachedLast = cacheFor(this, 'lastObject');
-                    if (this.objectAt(0) !== cachedFirst) {
-                        Ember.propertyWillChange(this, 'firstObject');
-                        Ember.propertyDidChange(this, 'firstObject');
-                    }
-                    if (this.objectAt(length - 1) !== cachedLast) {
-                        Ember.propertyWillChange(this, 'lastObject');
-                        Ember.propertyDidChange(this, 'lastObject');
-                    }
-                    return this;
-                },
-                '@each': Ember.computed(function () {
-                    if (!this.__each)
-                        this.__each = new Ember.EachProxy(this);
-                    return this.__each;
-                }).property().cacheable()
-            });
-        }());
-        (function () {
-            Ember.Comparable = Ember.Mixin.create({
-                isComparable: true,
-                compare: Ember.required(Function)
-            });
-        }());
-        (function () {
-            var get = Ember.get, set = Ember.set;
-            Ember.Copyable = Ember.Mixin.create({
-                copy: Ember.required(Function),
-                frozenCopy: function () {
-                    if (Ember.Freezable && Ember.Freezable.detect(this)) {
-                        return get(this, 'isFrozen') ? this : this.copy().freeze();
-                    } else {
-                        throw new Error(Ember.String.fmt('%@ does not support freezing', [this]));
-                    }
-                }
-            });
-        }());
-        (function () {
-            var get = Ember.get, set = Ember.set;
-            Ember.Freezable = Ember.Mixin.create({
-                isFrozen: false,
-                freeze: function () {
-                    if (get(this, 'isFrozen'))
-                        return this;
-                    set(this, 'isFrozen', true);
-                    return this;
-                }
-            });
-            Ember.FROZEN_ERROR = 'Frozen object cannot be modified.';
-        }());
-        (function () {
-            var forEach = Ember.EnumerableUtils.forEach;
-            Ember.MutableEnumerable = Ember.Mixin.create(Ember.Enumerable, {
-                addObject: Ember.required(Function),
-                addObjects: function (objects) {
-                    Ember.beginPropertyChanges(this);
-                    forEach(objects, function (obj) {
-                        this.addObject(obj);
-                    }, this);
-                    Ember.endPropertyChanges(this);
-                    return this;
-                },
-                removeObject: Ember.required(Function),
-                removeObjects: function (objects) {
-                    Ember.beginPropertyChanges(this);
-                    forEach(objects, function (obj) {
-                        this.removeObject(obj);
-                    }, this);
-                    Ember.endPropertyChanges(this);
-                    return this;
-                }
-            });
-        }());
-        (function () {
-            var OUT_OF_RANGE_EXCEPTION = 'Index out of range';
-            var EMPTY = [];
-            var get = Ember.get, set = Ember.set, forEach = Ember.EnumerableUtils.forEach;
-            Ember.MutableArray = Ember.Mixin.create(Ember.Array, Ember.MutableEnumerable, {
-                replace: Ember.required(),
-                clear: function () {
-                    var len = get(this, 'length');
-                    if (len === 0)
-                        return this;
-                    this.replace(0, len, EMPTY);
-                    return this;
-                },
-                insertAt: function (idx, object) {
-                    if (idx > get(this, 'length'))
-                        throw new Error(OUT_OF_RANGE_EXCEPTION);
-                    this.replace(idx, 0, [object]);
-                    return this;
-                },
-                removeAt: function (start, len) {
-                    var delta = 0;
-                    if ('number' === typeof start) {
-                        if (start < 0 || start >= get(this, 'length')) {
-                            throw new Error(OUT_OF_RANGE_EXCEPTION);
-                        }
-                        if (len === undefined)
-                            len = 1;
-                        this.replace(start, len, EMPTY);
-                    }
-                    return this;
-                },
-                pushObject: function (obj) {
-                    this.insertAt(get(this, 'length'), obj);
-                    return obj;
-                },
-                pushObjects: function (objects) {
-                    this.replace(get(this, 'length'), 0, objects);
-                    return this;
-                },
-                popObject: function () {
-                    var len = get(this, 'length');
-                    if (len === 0)
-                        return null;
-                    var ret = this.objectAt(len - 1);
-                    this.removeAt(len - 1, 1);
-                    return ret;
-                },
-                shiftObject: function () {
-                    if (get(this, 'length') === 0)
-                        return null;
-                    var ret = this.objectAt(0);
-                    this.removeAt(0);
-                    return ret;
-                },
-                unshiftObject: function (obj) {
-                    this.insertAt(0, obj);
-                    return obj;
-                },
-                unshiftObjects: function (objects) {
-                    this.replace(0, 0, objects);
-                    return this;
-                },
-                reverseObjects: function () {
-                    var len = get(this, 'length');
-                    if (len === 0)
-                        return this;
-                    var objects = this.toArray().reverse();
-                    this.replace(0, len, objects);
-                    return this;
-                },
-                removeObject: function (obj) {
-                    var loc = get(this, 'length') || 0;
-                    while (--loc >= 0) {
-                        var curObject = this.objectAt(loc);
-                        if (curObject === obj)
-                            this.removeAt(loc);
-                    }
-                    return this;
-                },
-                addObject: function (obj) {
-                    if (!this.contains(obj))
-                        this.pushObject(obj);
-                    return this;
-                }
-            });
-        }());
-        (function () {
-            var get = Ember.get, set = Ember.set, defineProperty = Ember.defineProperty;
-            Ember.Observable = Ember.Mixin.create({
-                isObserverable: true,
-                get: function (keyName) {
-                    return get(this, keyName);
-                },
-                getProperties: function () {
-                    var ret = {};
-                    var propertyNames = arguments;
-                    if (arguments.length === 1 && Ember.typeOf(arguments[0]) === 'array') {
-                        propertyNames = arguments[0];
-                    }
-                    for (var i = 0; i < propertyNames.length; i++) {
-                        ret[propertyNames[i]] = get(this, propertyNames[i]);
-                    }
-                    return ret;
-                },
-                set: function (keyName, value) {
-                    set(this, keyName, value);
-                    return this;
-                },
-                setProperties: function (hash) {
-                    return Ember.setProperties(this, hash);
-                },
-                beginPropertyChanges: function () {
-                    Ember.beginPropertyChanges();
-                    return this;
-                },
-                endPropertyChanges: function () {
-                    Ember.endPropertyChanges();
-                    return this;
-                },
-                propertyWillChange: function (keyName) {
-                    Ember.propertyWillChange(this, keyName);
-                    return this;
-                },
-                propertyDidChange: function (keyName) {
-                    Ember.propertyDidChange(this, keyName);
-                    return this;
-                },
-                notifyPropertyChange: function (keyName) {
-                    this.propertyWillChange(keyName);
-                    this.propertyDidChange(keyName);
-                    return this;
-                },
-                addBeforeObserver: function (key, target, method) {
-                    Ember.addBeforeObserver(this, key, target, method);
-                },
-                addObserver: function (key, target, method) {
-                    Ember.addObserver(this, key, target, method);
-                },
-                removeObserver: function (key, target, method) {
-                    Ember.removeObserver(this, key, target, method);
-                },
-                hasObserverFor: function (key) {
-                    return Ember.hasListeners(this, key + ':change');
-                },
-                unknownProperty: function (key) {
-                    return undefined;
-                },
-                setUnknownProperty: function (key, value) {
-                    defineProperty(this, key);
-                    set(this, key, value);
-                },
-                getPath: function (path) {
-                    Ember.deprecate('getPath is deprecated since get now supports paths');
-                    return this.get(path);
-                },
-                setPath: function (path, value) {
-                    Ember.deprecate('setPath is deprecated since set now supports paths');
-                    return this.set(path, value);
-                },
-                getWithDefault: function (keyName, defaultValue) {
-                    return Ember.getWithDefault(this, keyName, defaultValue);
-                },
-                incrementProperty: function (keyName, increment) {
-                    if (!increment) {
-                        increment = 1;
-                    }
-                    set(this, keyName, (get(this, keyName) || 0) + increment);
-                    return get(this, keyName);
-                },
-                decrementProperty: function (keyName, increment) {
-                    if (!increment) {
-                        increment = 1;
-                    }
-                    set(this, keyName, (get(this, keyName) || 0) - increment);
-                    return get(this, keyName);
-                },
-                toggleProperty: function (keyName) {
-                    set(this, keyName, !get(this, keyName));
-                    return get(this, keyName);
-                },
-                cacheFor: function (keyName) {
-                    return Ember.cacheFor(this, keyName);
-                },
-                observersForKey: function (keyName) {
-                    return Ember.observersFor(this, keyName);
-                }
-            });
-        }());
-        (function () {
-            var get = Ember.get, set = Ember.set;
-            Ember.TargetActionSupport = Ember.Mixin.create({
-                target: null,
-                action: null,
-                targetObject: Ember.computed(function () {
-                    var target = get(this, 'target');
-                    if (Ember.typeOf(target) === 'string') {
-                        var value = get(this, target);
-                        if (value === undefined) {
-                            value = get(window, target);
-                        }
-                        return value;
-                    } else {
-                        return target;
-                    }
-                }).property('target').cacheable(),
-                triggerAction: function () {
-                    var action = get(this, 'action'), target = get(this, 'targetObject');
-                    if (target && action) {
-                        var ret;
-                        if (typeof target.send === 'function') {
-                            ret = target.send(action, this);
-                        } else {
-                            if (typeof action === 'string') {
-                                action = target[action];
+                    var Event = function (type, options) {
+                        this.type = type;
+                        for (var option in options) {
+                            if (!options.hasOwnProperty(option)) {
+                                continue;
                             }
-                            ret = action.call(target, this);
+                            this[option] = options[option];
                         }
-                        if (ret !== false)
-                            ret = true;
-                        return ret;
-                    } else {
-                        return false;
-                    }
-                }
-            });
-        }());
-        (function () {
-            Ember.Evented = Ember.Mixin.create({
-                on: function (name, target, method) {
-                    Ember.addListener(this, name, target, method);
-                },
-                one: function (name, target, method) {
-                    if (!method) {
-                        method = target;
-                        target = null;
-                    }
-                    var self = this;
-                    var wrapped = function () {
-                        Ember.removeListener(self, name, target, wrapped);
-                        if ('string' === typeof method) {
-                            method = this[method];
-                        }
-                        method.apply(this, arguments);
                     };
-                    this.on(name, target, wrapped);
-                },
-                trigger: function (name) {
-                    var args = [], i, l;
-                    for (i = 1, l = arguments.length; i < l; i++) {
-                        args.push(arguments[i]);
-                    }
-                    Ember.sendEvent(this, name, args);
-                },
-                fire: function (name) {
-                    Ember.deprecate('Ember.Evented#fire() has been deprecated in favor of trigger() for compatibility with jQuery. It will be removed in 1.0. Please update your code to call trigger() instead.');
-                    this.trigger.apply(this, arguments);
-                },
-                off: function (name, target, method) {
-                    Ember.removeListener(this, name, target, method);
-                },
-                has: function (name) {
-                    return Ember.hasListeners(this, name);
-                }
-            });
-        }());
-        (function () {
-        }());
-        (function () {
-            var classToString = Ember.Mixin.prototype.toString;
-            var set = Ember.set, get = Ember.get;
-            var o_create = Ember.create, o_defineProperty = Ember.platform.defineProperty, a_slice = Array.prototype.slice, meta = Ember.meta, rewatch = Ember.rewatch, finishChains = Ember.finishChains, finishPartial = Ember.Mixin.finishPartial, reopen = Ember.Mixin.prototype.reopen;
-            var undefinedDescriptor = {
-                    configurable: true,
-                    writable: true,
-                    enumerable: false,
-                    value: undefined
-                };
-            function makeCtor() {
-                var wasApplied = false, initMixins;
-                var Class = function () {
-                    if (!wasApplied) {
-                        Class.proto();
-                    }
-                    var m = Ember.meta(this);
-                    m.proto = this;
-                    if (initMixins) {
-                        this.reopen.apply(this, initMixins);
-                        initMixins = null;
-                    }
-                    o_defineProperty(this, Ember.GUID_KEY, undefinedDescriptor);
-                    o_defineProperty(this, '_super', undefinedDescriptor);
-                    finishPartial(this, m);
-                    delete m.proto;
-                    finishChains(this);
-                    this.init.apply(this, arguments);
-                };
-                Class.toString = classToString;
-                Class.willReopen = function () {
-                    if (wasApplied) {
-                        Class.PrototypeMixin = Ember.Mixin.create(Class.PrototypeMixin);
-                    }
-                    wasApplied = false;
-                };
-                Class._initMixins = function (args) {
-                    initMixins = args;
-                };
-                Class.proto = function () {
-                    var superclass = Class.superclass;
-                    if (superclass) {
-                        superclass.proto();
-                    }
-                    if (!wasApplied) {
-                        wasApplied = true;
-                        Class.PrototypeMixin.applyPartial(Class.prototype);
-                        rewatch(Class.prototype);
-                    }
-                    return this.prototype;
-                };
-                return Class;
-            }
-            var CoreObject = makeCtor();
-            CoreObject.PrototypeMixin = Ember.Mixin.create({
-                reopen: function () {
-                    Ember.Mixin._apply(this, arguments, true);
-                    return this;
-                },
-                isInstance: true,
-                init: function () {
-                },
-                isDestroyed: false,
-                isDestroying: false,
-                destroy: function () {
-                    if (this.isDestroying) {
-                        return;
-                    }
-                    this.isDestroying = true;
-                    if (this.willDestroy) {
-                        this.willDestroy();
-                    }
-                    set(this, 'isDestroyed', true);
-                    Ember.run.schedule('destroy', this, this._scheduledDestroy);
-                    return this;
-                },
-                _scheduledDestroy: function () {
-                    Ember.destroy(this);
-                    if (this.didDestroy) {
-                        this.didDestroy();
-                    }
-                },
-                bind: function (to, from) {
-                    if (!(from instanceof Ember.Binding)) {
-                        from = Ember.Binding.from(from);
-                    }
-                    from.to(to).connect(this);
-                    return from;
-                },
-                toString: function () {
-                    return '<' + this.constructor.toString() + ':' + Ember.guidFor(this) + '>';
-                }
-            });
-            if (Ember.config.overridePrototypeMixin) {
-                Ember.config.overridePrototypeMixin(CoreObject.PrototypeMixin);
-            }
-            CoreObject.__super__ = null;
-            var ClassMixin = Ember.Mixin.create({
-                    ClassMixin: Ember.required(),
-                    PrototypeMixin: Ember.required(),
-                    isClass: true,
-                    isMethod: false,
-                    extend: function () {
-                        var Class = makeCtor(), proto;
-                        Class.ClassMixin = Ember.Mixin.create(this.ClassMixin);
-                        Class.PrototypeMixin = Ember.Mixin.create(this.PrototypeMixin);
-                        Class.ClassMixin.ownerConstructor = Class;
-                        Class.PrototypeMixin.ownerConstructor = Class;
-                        reopen.apply(Class.PrototypeMixin, arguments);
-                        Class.superclass = this;
-                        Class.__super__ = this.prototype;
-                        proto = Class.prototype = o_create(this.prototype);
-                        proto.constructor = Class;
-                        Ember.generateGuid(proto, 'ember');
-                        meta(proto).proto = proto;
-                        Class.ClassMixin.apply(Class);
-                        return Class;
-                    },
-                    create: function () {
-                        var C = this;
-                        if (arguments.length > 0) {
-                            this._initMixins(arguments);
+                    var indexOf = function (callbacks, callback) {
+                        for (var i = 0, l = callbacks.length; i < l; i++) {
+                            if (callbacks[i][0] === callback) {
+                                return i;
+                            }
                         }
-                        return new C();
-                    },
-                    reopen: function () {
-                        this.willReopen();
-                        reopen.apply(this.PrototypeMixin, arguments);
-                        return this;
-                    },
-                    reopenClass: function () {
-                        reopen.apply(this.ClassMixin, arguments);
-                        Ember.Mixin._apply(this, arguments, false);
-                        return this;
-                    },
-                    detect: function (obj) {
-                        if ('function' !== typeof obj) {
-                            return false;
+                        return -1;
+                    };
+                    var callbacksFor = function (object) {
+                        var callbacks = object._promiseCallbacks;
+                        if (!callbacks) {
+                            callbacks = object._promiseCallbacks = {};
                         }
-                        while (obj) {
-                            if (obj === this) {
+                        return callbacks;
+                    };
+                    var EventTarget = {
+                            mixin: function (object) {
+                                object.on = this.on;
+                                object.off = this.off;
+                                object.trigger = this.trigger;
+                                return object;
+                            },
+                            on: function (eventNames, callback, binding) {
+                                var allCallbacks = callbacksFor(this), callbacks, eventName;
+                                eventNames = eventNames.split(/\s+/);
+                                binding = binding || this;
+                                while (eventName = eventNames.shift()) {
+                                    callbacks = allCallbacks[eventName];
+                                    if (!callbacks) {
+                                        callbacks = allCallbacks[eventName] = [];
+                                    }
+                                    if (indexOf(callbacks, callback) === -1) {
+                                        callbacks.push([
+                                            callback,
+                                            binding
+                                        ]);
+                                    }
+                                }
+                            },
+                            off: function (eventNames, callback) {
+                                var allCallbacks = callbacksFor(this), callbacks, eventName, index;
+                                eventNames = eventNames.split(/\s+/);
+                                while (eventName = eventNames.shift()) {
+                                    if (!callback) {
+                                        allCallbacks[eventName] = [];
+                                        continue;
+                                    }
+                                    callbacks = allCallbacks[eventName];
+                                    index = indexOf(callbacks, callback);
+                                    if (index !== -1) {
+                                        callbacks.splice(index, 1);
+                                    }
+                                }
+                            },
+                            trigger: function (eventName, options) {
+                                var allCallbacks = callbacksFor(this), callbacks, callbackTuple, callback, binding, event;
+                                if (callbacks = allCallbacks[eventName]) {
+                                    for (var i = 0; i < callbacks.length; i++) {
+                                        callbackTuple = callbacks[i];
+                                        callback = callbackTuple[0];
+                                        binding = callbackTuple[1];
+                                        if (typeof options !== 'object') {
+                                            options = { detail: options };
+                                        }
+                                        event = new Event(eventName, options);
+                                        callback.call(binding, event);
+                                    }
+                                }
+                            }
+                        };
+                    var Promise = function () {
+                        this.on('promise:resolved', function (event) {
+                            this.trigger('success', { detail: event.detail });
+                        }, this);
+                        this.on('promise:failed', function (event) {
+                            this.trigger('error', { detail: event.detail });
+                        }, this);
+                    };
+                    var noop = function () {
+                    };
+                    var invokeCallback = function (type, promise, callback, event) {
+                        var hasCallback = typeof callback === 'function', value, error, succeeded, failed;
+                        if (hasCallback) {
+                            try {
+                                value = callback(event.detail);
+                                succeeded = true;
+                            } catch (e) {
+                                failed = true;
+                                error = e;
+                            }
+                        } else {
+                            value = event.detail;
+                            succeeded = true;
+                        }
+                        if (value && typeof value.then === 'function') {
+                            value.then(function (value) {
+                                promise.resolve(value);
+                            }, function (error) {
+                                promise.reject(error);
+                            });
+                        } else if (hasCallback && succeeded) {
+                            promise.resolve(value);
+                        } else if (failed) {
+                            promise.reject(error);
+                        } else {
+                            promise[type](value);
+                        }
+                    };
+                    Promise.prototype = {
+                        then: function (done, fail) {
+                            var thenPromise = new Promise();
+                            if (this.isResolved) {
+                                RSVP.async(function () {
+                                    invokeCallback('resolve', thenPromise, done, { detail: this.resolvedValue });
+                                }, this);
+                            }
+                            if (this.isRejected) {
+                                RSVP.async(function () {
+                                    invokeCallback('reject', thenPromise, fail, { detail: this.rejectedValue });
+                                }, this);
+                            }
+                            this.on('promise:resolved', function (event) {
+                                invokeCallback('resolve', thenPromise, done, event);
+                            });
+                            this.on('promise:failed', function (event) {
+                                invokeCallback('reject', thenPromise, fail, event);
+                            });
+                            return thenPromise;
+                        },
+                        resolve: function (value) {
+                            resolve(this, value);
+                            this.resolve = noop;
+                            this.reject = noop;
+                        },
+                        reject: function (value) {
+                            reject(this, value);
+                            this.resolve = noop;
+                            this.reject = noop;
+                        }
+                    };
+                    function resolve(promise, value) {
+                        RSVP.async(function () {
+                            promise.trigger('promise:resolved', { detail: value });
+                            promise.isResolved = true;
+                            promise.resolvedValue = value;
+                        });
+                    }
+                    function reject(promise, value) {
+                        RSVP.async(function () {
+                            promise.trigger('promise:failed', { detail: value });
+                            promise.isRejected = true;
+                            promise.rejectedValue = value;
+                        });
+                    }
+                    function all(promises) {
+                        var i, results = [];
+                        var allPromise = new Promise();
+                        var remaining = promises.length;
+                        if (remaining === 0) {
+                            allPromise.resolve([]);
+                        }
+                        var resolver = function (index) {
+                            return function (value) {
+                                resolve(index, value);
+                            };
+                        };
+                        var resolve = function (index, value) {
+                            results[index] = value;
+                            if (--remaining === 0) {
+                                allPromise.resolve(results);
+                            }
+                        };
+                        var reject = function (error) {
+                            allPromise.reject(error);
+                        };
+                        for (i = 0; i < remaining; i++) {
+                            promises[i].then(resolver(i), reject);
+                        }
+                        return allPromise;
+                    }
+                    EventTarget.mixin(Promise.prototype);
+                    RSVP = {
+                        async: async,
+                        Promise: Promise,
+                        Event: Event,
+                        EventTarget: EventTarget,
+                        all: all,
+                        raiseOnUncaughtExceptions: true
+                    };
+                    return RSVP;
+                });
+            }());
+            (function () {
+                define('container', [], function () {
+                    function InheritingDict(parent) {
+                        this.parent = parent;
+                        this.dict = {};
+                    }
+                    InheritingDict.prototype = {
+                        get: function (key) {
+                            var dict = this.dict;
+                            if (dict.hasOwnProperty(key)) {
+                                return dict[key];
+                            }
+                            if (this.parent) {
+                                return this.parent.get(key);
+                            }
+                        },
+                        set: function (key, value) {
+                            this.dict[key] = value;
+                        },
+                        has: function (key) {
+                            var dict = this.dict;
+                            if (dict.hasOwnProperty(key)) {
                                 return true;
                             }
-                            obj = obj.superclass;
-                        }
-                        return false;
-                    },
-                    detectInstance: function (obj) {
-                        return obj instanceof this;
-                    },
-                    metaForProperty: function (key) {
-                        var desc = meta(this.proto(), false).descs[key];
-                        Ember.assert('metaForProperty() could not find a computed property with key \'' + key + '\'.', !!desc && desc instanceof Ember.ComputedProperty);
-                        return desc._meta || {};
-                    },
-                    eachComputedProperty: function (callback, binding) {
-                        var proto = this.proto(), descs = meta(proto).descs, empty = {}, property;
-                        for (var name in descs) {
-                            property = descs[name];
-                            if (property instanceof Ember.ComputedProperty) {
-                                callback.call(binding || this, name, property._meta || empty);
+                            if (this.parent) {
+                                return this.parent.has(key);
+                            }
+                            return false;
+                        },
+                        eachLocal: function (callback, binding) {
+                            var dict = this.dict;
+                            for (var prop in dict) {
+                                if (dict.hasOwnProperty(prop)) {
+                                    callback.call(binding, prop, dict[prop]);
+                                }
                             }
                         }
+                    };
+                    function Container(parent) {
+                        this.parent = parent;
+                        this.children = [];
+                        this.resolver = parent && parent.resolver || function () {
+                        };
+                        this.registry = new InheritingDict(parent && parent.registry);
+                        this.cache = new InheritingDict(parent && parent.cache);
+                        this.typeInjections = new InheritingDict(parent && parent.typeInjections);
+                        this.injections = {};
+                        this._options = new InheritingDict(parent && parent._options);
+                        this._typeOptions = new InheritingDict(parent && parent._typeOptions);
                     }
+                    Container.prototype = {
+                        child: function () {
+                            var container = new Container(this);
+                            this.children.push(container);
+                            return container;
+                        },
+                        set: function (object, key, value) {
+                            object[key] = value;
+                        },
+                        register: function (type, name, factory, options) {
+                            var fullName;
+                            if (type.indexOf(':') !== -1) {
+                                options = factory;
+                                factory = name;
+                                fullName = type;
+                            } else {
+                                Ember.deprecate('register("' + type + '", "' + name + '") is now deprecated in-favour of register("' + type + ':' + name + '");', false);
+                                fullName = type + ':' + name;
+                            }
+                            var normalizedName = this.normalize(fullName);
+                            this.registry.set(normalizedName, factory);
+                            this._options.set(normalizedName, options || {});
+                        },
+                        resolve: function (fullName) {
+                            return this.resolver(fullName) || this.registry.get(fullName);
+                        },
+                        normalize: function (fullName) {
+                            return fullName;
+                        },
+                        lookup: function (fullName, options) {
+                            fullName = this.normalize(fullName);
+                            options = options || {};
+                            if (this.cache.has(fullName) && options.singleton !== false) {
+                                return this.cache.get(fullName);
+                            }
+                            var value = instantiate(this, fullName);
+                            if (!value) {
+                                return;
+                            }
+                            if (isSingleton(this, fullName) && options.singleton !== false) {
+                                this.cache.set(fullName, value);
+                            }
+                            return value;
+                        },
+                        has: function (fullName) {
+                            if (this.cache.has(fullName)) {
+                                return true;
+                            }
+                            return !!factoryFor(this, fullName);
+                        },
+                        optionsForType: function (type, options) {
+                            if (this.parent) {
+                                illegalChildOperation('optionsForType');
+                            }
+                            this._typeOptions.set(type, options);
+                        },
+                        options: function (type, options) {
+                            this.optionsForType(type, options);
+                        },
+                        typeInjection: function (type, property, fullName) {
+                            if (this.parent) {
+                                illegalChildOperation('typeInjection');
+                            }
+                            var injections = this.typeInjections.get(type);
+                            if (!injections) {
+                                injections = [];
+                                this.typeInjections.set(type, injections);
+                            }
+                            injections.push({
+                                property: property,
+                                fullName: fullName
+                            });
+                        },
+                        injection: function (factoryName, property, injectionName) {
+                            if (this.parent) {
+                                illegalChildOperation('injection');
+                            }
+                            if (factoryName.indexOf(':') === -1) {
+                                return this.typeInjection(factoryName, property, injectionName);
+                            }
+                            var injections = this.injections[factoryName] = this.injections[factoryName] || [];
+                            injections.push({
+                                property: property,
+                                fullName: injectionName
+                            });
+                        },
+                        destroy: function () {
+                            this.isDestroyed = true;
+                            for (var i = 0, l = this.children.length; i < l; i++) {
+                                this.children[i].destroy();
+                            }
+                            this.children = [];
+                            eachDestroyable(this, function (item) {
+                                item.isDestroying = true;
+                            });
+                            eachDestroyable(this, function (item) {
+                                item.destroy();
+                            });
+                            delete this.parent;
+                            this.isDestroyed = true;
+                        },
+                        reset: function () {
+                            for (var i = 0, l = this.children.length; i < l; i++) {
+                                resetCache(this.children[i]);
+                            }
+                            resetCache(this);
+                        }
+                    };
+                    function illegalChildOperation(operation) {
+                        throw new Error(operation + ' is not currently supported on child containers');
+                    }
+                    function isSingleton(container, fullName) {
+                        var singleton = option(container, fullName, 'singleton');
+                        return singleton !== false;
+                    }
+                    function buildInjections(container, injections) {
+                        var hash = {};
+                        if (!injections) {
+                            return hash;
+                        }
+                        var injection, lookup;
+                        for (var i = 0, l = injections.length; i < l; i++) {
+                            injection = injections[i];
+                            lookup = container.lookup(injection.fullName);
+                            hash[injection.property] = lookup;
+                        }
+                        return hash;
+                    }
+                    function option(container, fullName, optionName) {
+                        var options = container._options.get(fullName);
+                        if (options && options[optionName] !== undefined) {
+                            return options[optionName];
+                        }
+                        var type = fullName.split(':')[0];
+                        options = container._typeOptions.get(type);
+                        if (options) {
+                            return options[optionName];
+                        }
+                    }
+                    function factoryFor(container, fullName) {
+                        var name = container.normalize(fullName);
+                        return container.resolve(name);
+                    }
+                    function instantiate(container, fullName) {
+                        var factory = factoryFor(container, fullName);
+                        var splitName = fullName.split(':'), type = splitName[0], name = splitName[1], value;
+                        if (option(container, fullName, 'instantiate') === false) {
+                            return factory;
+                        }
+                        if (factory) {
+                            var injections = [];
+                            injections = injections.concat(container.typeInjections.get(type) || []);
+                            injections = injections.concat(container.injections[fullName] || []);
+                            var hash = buildInjections(container, injections);
+                            hash.container = container;
+                            hash._debugContainerKey = fullName;
+                            value = factory.create(hash);
+                            return value;
+                        }
+                    }
+                    function eachDestroyable(container, callback) {
+                        container.cache.eachLocal(function (key, value) {
+                            if (option(container, key, 'instantiate') === false) {
+                                return;
+                            }
+                            callback(value);
+                        });
+                    }
+                    function resetCache(container) {
+                        container.cache.eachLocal(function (key, value) {
+                            if (option(container, key, 'instantiate') === false) {
+                                return;
+                            }
+                            value.destroy();
+                        });
+                        container.cache.dict = {};
+                    }
+                    return Container;
                 });
-            if (Ember.config.overrideClassMixin) {
-                Ember.config.overrideClassMixin(ClassMixin);
-            }
-            CoreObject.ClassMixin = ClassMixin;
-            ClassMixin.apply(CoreObject);
-            Ember.CoreObject = CoreObject;
-        }());
-        (function () {
-            var get = Ember.get, set = Ember.set, guidFor = Ember.guidFor, none = Ember.none;
-            Ember.Set = Ember.CoreObject.extend(Ember.MutableEnumerable, Ember.Copyable, Ember.Freezable, {
-                length: 0,
-                clear: function () {
-                    if (this.isFrozen) {
-                        throw new Error(Ember.FROZEN_ERROR);
-                    }
-                    var len = get(this, 'length');
-                    if (len === 0) {
-                        return this;
-                    }
-                    var guid;
-                    this.enumerableContentWillChange(len, 0);
-                    Ember.propertyWillChange(this, 'firstObject');
-                    Ember.propertyWillChange(this, 'lastObject');
-                    for (var i = 0; i < len; i++) {
-                        guid = guidFor(this[i]);
-                        delete this[guid];
-                        delete this[i];
-                    }
-                    set(this, 'length', 0);
-                    Ember.propertyDidChange(this, 'firstObject');
-                    Ember.propertyDidChange(this, 'lastObject');
-                    this.enumerableContentDidChange(len, 0);
-                    return this;
-                },
-                isEqual: function (obj) {
-                    if (!Ember.Enumerable.detect(obj))
-                        return false;
-                    var loc = get(this, 'length');
-                    if (get(obj, 'length') !== loc)
-                        return false;
-                    while (--loc >= 0) {
-                        if (!obj.contains(this[loc]))
-                            return false;
-                    }
-                    return true;
-                },
-                add: Ember.alias('addObject'),
-                remove: Ember.alias('removeObject'),
-                pop: function () {
-                    if (get(this, 'isFrozen'))
-                        throw new Error(Ember.FROZEN_ERROR);
-                    var obj = this.length > 0 ? this[this.length - 1] : null;
-                    this.remove(obj);
-                    return obj;
-                },
-                push: Ember.alias('addObject'),
-                shift: Ember.alias('pop'),
-                unshift: Ember.alias('push'),
-                addEach: Ember.alias('addObjects'),
-                removeEach: Ember.alias('removeObjects'),
-                init: function (items) {
-                    this._super();
-                    if (items)
-                        this.addObjects(items);
-                },
-                nextObject: function (idx) {
-                    return this[idx];
-                },
-                firstObject: Ember.computed(function () {
-                    return this.length > 0 ? this[0] : undefined;
-                }).property().cacheable(),
-                lastObject: Ember.computed(function () {
-                    return this.length > 0 ? this[this.length - 1] : undefined;
-                }).property().cacheable(),
-                addObject: function (obj) {
-                    if (get(this, 'isFrozen'))
-                        throw new Error(Ember.FROZEN_ERROR);
-                    if (none(obj))
-                        return this;
-                    var guid = guidFor(obj), idx = this[guid], len = get(this, 'length'), added;
-                    if (idx >= 0 && idx < len && this[idx] === obj)
-                        return this;
-                    added = [obj];
-                    this.enumerableContentWillChange(null, added);
-                    Ember.propertyWillChange(this, 'lastObject');
-                    len = get(this, 'length');
-                    this[guid] = len;
-                    this[len] = obj;
-                    set(this, 'length', len + 1);
-                    Ember.propertyDidChange(this, 'lastObject');
-                    this.enumerableContentDidChange(null, added);
-                    return this;
-                },
-                removeObject: function (obj) {
-                    if (get(this, 'isFrozen'))
-                        throw new Error(Ember.FROZEN_ERROR);
-                    if (none(obj))
-                        return this;
-                    var guid = guidFor(obj), idx = this[guid], len = get(this, 'length'), isFirst = idx === 0, isLast = idx === len - 1, last, removed;
-                    if (idx >= 0 && idx < len && this[idx] === obj) {
-                        removed = [obj];
-                        this.enumerableContentWillChange(removed, null);
-                        if (isFirst) {
-                            Ember.propertyWillChange(this, 'firstObject');
-                        }
-                        if (isLast) {
-                            Ember.propertyWillChange(this, 'lastObject');
-                        }
-                        if (idx < len - 1) {
-                            last = this[len - 1];
-                            this[idx] = last;
-                            this[guidFor(last)] = idx;
-                        }
-                        delete this[guid];
-                        delete this[len - 1];
-                        set(this, 'length', len - 1);
-                        if (isFirst) {
-                            Ember.propertyDidChange(this, 'firstObject');
-                        }
-                        if (isLast) {
-                            Ember.propertyDidChange(this, 'lastObject');
-                        }
-                        this.enumerableContentDidChange(removed, null);
-                    }
-                    return this;
-                },
-                contains: function (obj) {
-                    return this[guidFor(obj)] >= 0;
-                },
-                copy: function () {
-                    var C = this.constructor, ret = new C(), loc = get(this, 'length');
-                    set(ret, 'length', loc);
-                    while (--loc >= 0) {
-                        ret[loc] = this[loc];
-                        ret[guidFor(this[loc])] = loc;
-                    }
-                    return ret;
-                },
-                toString: function () {
-                    var len = this.length, idx, array = [];
-                    for (idx = 0; idx < len; idx++) {
-                        array[idx] = this[idx];
-                    }
-                    return 'Ember.Set<%@>'.fmt(array.join(','));
-                }
-            });
-        }());
-        (function () {
-            Ember.Object = Ember.CoreObject.extend(Ember.Observable);
-        }());
-        (function () {
-            var indexOf = Ember.ArrayPolyfills.indexOf;
-            Ember.Namespace = Ember.Object.extend({
-                isNamespace: true,
-                init: function () {
-                    Ember.Namespace.NAMESPACES.push(this);
-                    Ember.Namespace.PROCESSED = false;
-                },
-                toString: function () {
-                    Ember.identifyNamespaces();
-                    return this[Ember.GUID_KEY + '_name'];
-                },
-                destroy: function () {
-                    var namespaces = Ember.Namespace.NAMESPACES;
-                    window[this.toString()] = undefined;
-                    namespaces.splice(indexOf.call(namespaces, this), 1);
-                    this._super();
-                }
-            });
-            Ember.Namespace.NAMESPACES = [Ember];
-            Ember.Namespace.PROCESSED = false;
-        }());
-        (function () {
-            Ember.Application = Ember.Namespace.extend();
-        }());
-        (function () {
-            var get = Ember.get, set = Ember.set;
-            Ember.ArrayProxy = Ember.Object.extend(Ember.MutableArray, {
-                content: null,
-                arrangedContent: Ember.computed('content', function () {
-                    return get(this, 'content');
-                }).cacheable(),
-                objectAtContent: function (idx) {
-                    return get(this, 'arrangedContent').objectAt(idx);
-                },
-                replaceContent: function (idx, amt, objects) {
-                    get(this, 'arrangedContent').replace(idx, amt, objects);
-                },
-                _contentWillChange: Ember.beforeObserver(function () {
-                    this._teardownContent();
-                }, 'content'),
-                _teardownContent: function () {
-                    var content = get(this, 'content');
-                    if (content) {
-                        content.removeArrayObserver(this, {
-                            willChange: 'contentArrayWillChange',
-                            didChange: 'contentArrayDidChange'
-                        });
-                    }
-                },
-                contentArrayWillChange: Ember.K,
-                contentArrayDidChange: Ember.K,
-                _contentDidChange: Ember.observer(function () {
-                    var content = get(this, 'content');
-                    Ember.assert('Can\'t set ArrayProxy\'s content to itself', content !== this);
-                    this._setupContent();
-                }, 'content'),
-                _setupContent: function () {
-                    var content = get(this, 'content');
-                    if (content) {
-                        content.addArrayObserver(this, {
-                            willChange: 'contentArrayWillChange',
-                            didChange: 'contentArrayDidChange'
-                        });
-                    }
-                },
-                _arrangedContentWillChange: Ember.beforeObserver(function () {
-                    var arrangedContent = get(this, 'arrangedContent'), len = arrangedContent ? get(arrangedContent, 'length') : 0;
-                    this.arrangedContentArrayWillChange(this, 0, len, undefined);
-                    this.arrangedContentWillChange(this);
-                    this._teardownArrangedContent(arrangedContent);
-                }, 'arrangedContent'),
-                _arrangedContentDidChange: Ember.observer(function () {
-                    var arrangedContent = get(this, 'arrangedContent'), len = arrangedContent ? get(arrangedContent, 'length') : 0;
-                    Ember.assert('Can\'t set ArrayProxy\'s content to itself', arrangedContent !== this);
-                    this._setupArrangedContent();
-                    this.arrangedContentDidChange(this);
-                    this.arrangedContentArrayDidChange(this, 0, undefined, len);
-                }, 'arrangedContent'),
-                _setupArrangedContent: function () {
-                    var arrangedContent = get(this, 'arrangedContent');
-                    if (arrangedContent) {
-                        arrangedContent.addArrayObserver(this, {
-                            willChange: 'arrangedContentArrayWillChange',
-                            didChange: 'arrangedContentArrayDidChange'
-                        });
-                    }
-                },
-                _teardownArrangedContent: function () {
-                    var arrangedContent = get(this, 'arrangedContent');
-                    if (arrangedContent) {
-                        arrangedContent.removeArrayObserver(this, {
-                            willChange: 'arrangedContentArrayWillChange',
-                            didChange: 'arrangedContentArrayDidChange'
-                        });
-                    }
-                },
-                arrangedContentWillChange: Ember.K,
-                arrangedContentDidChange: Ember.K,
-                objectAt: function (idx) {
-                    return get(this, 'content') && this.objectAtContent(idx);
-                },
-                length: Ember.computed(function () {
-                    var arrangedContent = get(this, 'arrangedContent');
-                    return arrangedContent ? get(arrangedContent, 'length') : 0;
-                }).property().cacheable(),
-                replace: function (idx, amt, objects) {
-                    if (get(this, 'content'))
-                        this.replaceContent(idx, amt, objects);
-                    return this;
-                },
-                arrangedContentArrayWillChange: function (item, idx, removedCnt, addedCnt) {
-                    this.arrayContentWillChange(idx, removedCnt, addedCnt);
-                },
-                arrangedContentArrayDidChange: function (item, idx, removedCnt, addedCnt) {
-                    this.arrayContentDidChange(idx, removedCnt, addedCnt);
-                },
-                init: function () {
-                    this._super();
-                    this._setupContent();
-                    this._setupArrangedContent();
-                },
-                willDestroy: function () {
-                    this._teardownArrangedContent();
-                    this._teardownContent();
-                }
-            });
-        }());
-        (function () {
-            var get = Ember.get, set = Ember.set, fmt = Ember.String.fmt, addBeforeObserver = Ember.addBeforeObserver, addObserver = Ember.addObserver, removeBeforeObserver = Ember.removeBeforeObserver, removeObserver = Ember.removeObserver, propertyWillChange = Ember.propertyWillChange, propertyDidChange = Ember.propertyDidChange;
-            function contentPropertyWillChange(content, contentKey) {
-                var key = contentKey.slice(8);
-                if (key in this) {
-                    return;
-                }
-                propertyWillChange(this, key);
-            }
-            function contentPropertyDidChange(content, contentKey) {
-                var key = contentKey.slice(8);
-                if (key in this) {
-                    return;
-                }
-                propertyDidChange(this, key);
-            }
-            Ember.ObjectProxy = Ember.Object.extend({
-                content: null,
-                _contentDidChange: Ember.observer(function () {
-                    Ember.assert('Can\'t set ObjectProxy\'s content to itself', this.get('content') !== this);
-                }, 'content'),
-                willWatchProperty: function (key) {
-                    var contentKey = 'content.' + key;
-                    addBeforeObserver(this, contentKey, null, contentPropertyWillChange);
-                    addObserver(this, contentKey, null, contentPropertyDidChange);
-                },
-                didUnwatchProperty: function (key) {
-                    var contentKey = 'content.' + key;
-                    removeBeforeObserver(this, contentKey, null, contentPropertyWillChange);
-                    removeObserver(this, contentKey, null, contentPropertyDidChange);
-                },
-                unknownProperty: function (key) {
-                    var content = get(this, 'content');
-                    if (content) {
-                        return get(content, key);
-                    }
-                },
-                setUnknownProperty: function (key, value) {
-                    var content = get(this, 'content');
-                    Ember.assert(fmt('Cannot delegate set(\'%@\', %@) to the \'content\' property of object proxy %@: its \'content\' is undefined.', [
-                        key,
-                        value,
-                        this
-                    ]), content);
-                    return set(content, key, value);
-                }
-            });
-        }());
-        (function () {
-            var set = Ember.set, get = Ember.get, guidFor = Ember.guidFor;
-            var forEach = Ember.EnumerableUtils.forEach;
-            var EachArray = Ember.Object.extend(Ember.Array, {
-                    init: function (content, keyName, owner) {
-                        this._super();
-                        this._keyName = keyName;
-                        this._owner = owner;
-                        this._content = content;
-                    },
-                    objectAt: function (idx) {
-                        var item = this._content.objectAt(idx);
-                        return item && get(item, this._keyName);
-                    },
-                    length: Ember.computed(function () {
-                        var content = this._content;
-                        return content ? get(content, 'length') : 0;
-                    }).property().cacheable()
+            }());
+            (function () {
+                var indexOf = Ember.EnumerableUtils.indexOf;
+                var TYPE_MAP = {};
+                var t = 'Boolean Number String Function Array Date RegExp Object'.split(' ');
+                Ember.ArrayPolyfills.forEach.call(t, function (name) {
+                    TYPE_MAP['[object ' + name + ']'] = name.toLowerCase();
                 });
-            var IS_OBSERVER = /^.+:(before|change)$/;
-            function addObserverForContentKey(content, keyName, proxy, idx, loc) {
-                var objects = proxy._objects, guid;
-                if (!objects)
-                    objects = proxy._objects = {};
-                while (--loc >= idx) {
-                    var item = content.objectAt(loc);
-                    if (item) {
-                        Ember.addBeforeObserver(item, keyName, proxy, 'contentKeyWillChange');
-                        Ember.addObserver(item, keyName, proxy, 'contentKeyDidChange');
-                        guid = guidFor(item);
-                        if (!objects[guid])
-                            objects[guid] = [];
-                        objects[guid].push(loc);
-                    }
-                }
-            }
-            function removeObserverForContentKey(content, keyName, proxy, idx, loc) {
-                var objects = proxy._objects;
-                if (!objects)
-                    objects = proxy._objects = {};
-                var indicies, guid;
-                while (--loc >= idx) {
-                    var item = content.objectAt(loc);
-                    if (item) {
-                        Ember.removeBeforeObserver(item, keyName, proxy, 'contentKeyWillChange');
-                        Ember.removeObserver(item, keyName, proxy, 'contentKeyDidChange');
-                        guid = guidFor(item);
-                        indicies = objects[guid];
-                        indicies[indicies.indexOf(loc)] = null;
-                    }
-                }
-            }
-            Ember.EachProxy = Ember.Object.extend({
-                init: function (content) {
-                    this._super();
-                    this._content = content;
-                    content.addArrayObserver(this);
-                    forEach(Ember.watchedEvents(this), function (eventName) {
-                        this.didAddListener(eventName);
-                    }, this);
-                },
-                unknownProperty: function (keyName, value) {
+                var toString = Object.prototype.toString;
+                Ember.typeOf = function (item) {
                     var ret;
-                    ret = new EachArray(this._content, keyName, this);
-                    Ember.defineProperty(this, keyName, null, ret);
-                    this.beginObservingContentKey(keyName);
-                    return ret;
-                },
-                arrayWillChange: function (content, idx, removedCnt, addedCnt) {
-                    var keys = this._keys, key, array, lim;
-                    lim = removedCnt > 0 ? idx + removedCnt : -1;
-                    Ember.beginPropertyChanges(this);
-                    for (key in keys) {
-                        if (!keys.hasOwnProperty(key)) {
-                            continue;
-                        }
-                        if (lim > 0)
-                            removeObserverForContentKey(content, key, this, idx, lim);
-                        Ember.propertyWillChange(this, key);
-                    }
-                    Ember.propertyWillChange(this._content, '@each');
-                    Ember.endPropertyChanges(this);
-                },
-                arrayDidChange: function (content, idx, removedCnt, addedCnt) {
-                    var keys = this._keys, key, array, lim;
-                    lim = addedCnt > 0 ? idx + addedCnt : -1;
-                    Ember.beginPropertyChanges(this);
-                    for (key in keys) {
-                        if (!keys.hasOwnProperty(key)) {
-                            continue;
-                        }
-                        if (lim > 0)
-                            addObserverForContentKey(content, key, this, idx, lim);
-                        Ember.propertyDidChange(this, key);
-                    }
-                    Ember.propertyDidChange(this._content, '@each');
-                    Ember.endPropertyChanges(this);
-                },
-                didAddListener: function (eventName) {
-                    if (IS_OBSERVER.test(eventName)) {
-                        this.beginObservingContentKey(eventName.slice(0, -7));
-                    }
-                },
-                didRemoveListener: function (eventName) {
-                    if (IS_OBSERVER.test(eventName)) {
-                        this.stopObservingContentKey(eventName.slice(0, -7));
-                    }
-                },
-                beginObservingContentKey: function (keyName) {
-                    var keys = this._keys;
-                    if (!keys)
-                        keys = this._keys = {};
-                    if (!keys[keyName]) {
-                        keys[keyName] = 1;
-                        var content = this._content, len = get(content, 'length');
-                        addObserverForContentKey(content, keyName, this, 0, len);
-                    } else {
-                        keys[keyName]++;
-                    }
-                },
-                stopObservingContentKey: function (keyName) {
-                    var keys = this._keys;
-                    if (keys && keys[keyName] > 0 && --keys[keyName] <= 0) {
-                        var content = this._content, len = get(content, 'length');
-                        removeObserverForContentKey(content, keyName, this, 0, len);
-                    }
-                },
-                contentKeyWillChange: function (obj, keyName) {
-                    Ember.propertyWillChange(this, keyName);
-                },
-                contentKeyDidChange: function (obj, keyName) {
-                    Ember.propertyDidChange(this, keyName);
-                }
-            });
-        }());
-        (function () {
-            var get = Ember.get, set = Ember.set;
-            var NativeArray = Ember.Mixin.create(Ember.MutableArray, Ember.Observable, Ember.Copyable, {
-                    get: function (key) {
-                        if (key === 'length')
-                            return this.length;
-                        else if ('number' === typeof key)
-                            return this[key];
+                    ret = item === null || item === undefined ? String(item) : TYPE_MAP[toString.call(item)] || 'object';
+                    if (ret === 'function') {
+                        if (Ember.Object && Ember.Object.detect(item))
+                            ret = 'class';
+                    } else if (ret === 'object') {
+                        if (item instanceof Error)
+                            ret = 'error';
+                        else if (Ember.Object && item instanceof Ember.Object)
+                            ret = 'instance';
                         else
-                            return this._super(key);
-                    },
-                    objectAt: function (idx) {
-                        return this[idx];
-                    },
-                    replace: function (idx, amt, objects) {
-                        if (this.isFrozen)
-                            throw Ember.FROZEN_ERROR;
-                        var len = objects ? get(objects, 'length') : 0;
-                        this.arrayContentWillChange(idx, amt, len);
-                        if (!objects || objects.length === 0) {
-                            this.splice(idx, amt);
-                        } else {
-                            var args = [
-                                    idx,
-                                    amt
-                                ].concat(objects);
-                            this.splice.apply(this, args);
+                            ret = 'object';
+                    }
+                    return ret;
+                };
+                Ember.compare = function compare(v, w) {
+                    if (v === w) {
+                        return 0;
+                    }
+                    var type1 = Ember.typeOf(v);
+                    var type2 = Ember.typeOf(w);
+                    var Comparable = Ember.Comparable;
+                    if (Comparable) {
+                        if (type1 === 'instance' && Comparable.detect(v.constructor)) {
+                            return v.constructor.compare(v, w);
                         }
-                        this.arrayContentDidChange(idx, amt, len);
+                        if (type2 === 'instance' && Comparable.detect(w.constructor)) {
+                            return 1 - w.constructor.compare(w, v);
+                        }
+                    }
+                    var mapping = Ember.ORDER_DEFINITION_MAPPING;
+                    if (!mapping) {
+                        var order = Ember.ORDER_DEFINITION;
+                        mapping = Ember.ORDER_DEFINITION_MAPPING = {};
+                        var idx, len;
+                        for (idx = 0, len = order.length; idx < len; ++idx) {
+                            mapping[order[idx]] = idx;
+                        }
+                        delete Ember.ORDER_DEFINITION;
+                    }
+                    var type1Index = mapping[type1];
+                    var type2Index = mapping[type2];
+                    if (type1Index < type2Index) {
+                        return -1;
+                    }
+                    if (type1Index > type2Index) {
+                        return 1;
+                    }
+                    switch (type1) {
+                    case 'boolean':
+                    case 'number':
+                        if (v < w) {
+                            return -1;
+                        }
+                        if (v > w) {
+                            return 1;
+                        }
+                        return 0;
+                    case 'string':
+                        var comp = v.localeCompare(w);
+                        if (comp < 0) {
+                            return -1;
+                        }
+                        if (comp > 0) {
+                            return 1;
+                        }
+                        return 0;
+                    case 'array':
+                        var vLen = v.length;
+                        var wLen = w.length;
+                        var l = Math.min(vLen, wLen);
+                        var r = 0;
+                        var i = 0;
+                        while (r === 0 && i < l) {
+                            r = compare(v[i], w[i]);
+                            i++;
+                        }
+                        if (r !== 0) {
+                            return r;
+                        }
+                        if (vLen < wLen) {
+                            return -1;
+                        }
+                        if (vLen > wLen) {
+                            return 1;
+                        }
+                        return 0;
+                    case 'instance':
+                        if (Ember.Comparable && Ember.Comparable.detect(v)) {
+                            return v.compare(v, w);
+                        }
+                        return 0;
+                    case 'date':
+                        var vNum = v.getTime();
+                        var wNum = w.getTime();
+                        if (vNum < wNum) {
+                            return -1;
+                        }
+                        if (vNum > wNum) {
+                            return 1;
+                        }
+                        return 0;
+                    default:
+                        return 0;
+                    }
+                };
+                function _copy(obj, deep, seen, copies) {
+                    var ret, loc, key;
+                    if ('object' !== typeof obj || obj === null)
+                        return obj;
+                    if (deep && (loc = indexOf(seen, obj)) >= 0)
+                        return copies[loc];
+                    Ember.assert('Cannot clone an Ember.Object that does not implement Ember.Copyable', !(obj instanceof Ember.Object) || Ember.Copyable && Ember.Copyable.detect(obj));
+                    if (Ember.typeOf(obj) === 'array') {
+                        ret = obj.slice();
+                        if (deep) {
+                            loc = ret.length;
+                            while (--loc >= 0)
+                                ret[loc] = _copy(ret[loc], deep, seen, copies);
+                        }
+                    } else if (Ember.Copyable && Ember.Copyable.detect(obj)) {
+                        ret = obj.copy(deep, seen, copies);
+                    } else {
+                        ret = {};
+                        for (key in obj) {
+                            if (!obj.hasOwnProperty(key))
+                                continue;
+                            if (key.substring(0, 2) === '__')
+                                continue;
+                            ret[key] = deep ? _copy(obj[key], deep, seen, copies) : obj[key];
+                        }
+                    }
+                    if (deep) {
+                        seen.push(obj);
+                        copies.push(ret);
+                    }
+                    return ret;
+                }
+                Ember.copy = function (obj, deep) {
+                    if ('object' !== typeof obj || obj === null)
+                        return obj;
+                    if (Ember.Copyable && Ember.Copyable.detect(obj))
+                        return obj.copy(deep);
+                    return _copy(obj, deep, deep ? [] : null, deep ? [] : null);
+                };
+                Ember.inspect = function (obj) {
+                    if (typeof obj !== 'object' || obj === null) {
+                        return obj + '';
+                    }
+                    var v, ret = [];
+                    for (var key in obj) {
+                        if (obj.hasOwnProperty(key)) {
+                            v = obj[key];
+                            if (v === 'toString') {
+                                continue;
+                            }
+                            if (Ember.typeOf(v) === 'function') {
+                                v = 'function() { ... }';
+                            }
+                            ret.push(key + ': ' + v);
+                        }
+                    }
+                    return '{' + ret.join(', ') + '}';
+                };
+                Ember.isEqual = function (a, b) {
+                    if (a && 'function' === typeof a.isEqual)
+                        return a.isEqual(b);
+                    return a === b;
+                };
+                Ember.ORDER_DEFINITION = Ember.ENV.ORDER_DEFINITION || [
+                    'undefined',
+                    'null',
+                    'boolean',
+                    'number',
+                    'string',
+                    'array',
+                    'object',
+                    'instance',
+                    'function',
+                    'class',
+                    'date'
+                ];
+                Ember.keys = Object.keys;
+                if (!Ember.keys) {
+                    Ember.keys = function (obj) {
+                        var ret = [];
+                        for (var key in obj) {
+                            if (obj.hasOwnProperty(key)) {
+                                ret.push(key);
+                            }
+                        }
+                        return ret;
+                    };
+                }
+                var errorProps = [
+                        'description',
+                        'fileName',
+                        'lineNumber',
+                        'message',
+                        'name',
+                        'number',
+                        'stack'
+                    ];
+                Ember.Error = function () {
+                    var tmp = Error.prototype.constructor.apply(this, arguments);
+                    for (var idx = 0; idx < errorProps.length; idx++) {
+                        this[errorProps[idx]] = tmp[errorProps[idx]];
+                    }
+                };
+                Ember.Error.prototype = Ember.create(Error.prototype);
+            }());
+            (function () {
+                Ember.RSVP = requireModule('rsvp');
+            }());
+            (function () {
+                var STRING_DASHERIZE_REGEXP = /[ _]/g;
+                var STRING_DASHERIZE_CACHE = {};
+                var STRING_DECAMELIZE_REGEXP = /([a-z])([A-Z])/g;
+                var STRING_CAMELIZE_REGEXP = /(\-|_|\.|\s)+(.)?/g;
+                var STRING_UNDERSCORE_REGEXP_1 = /([a-z\d])([A-Z]+)/g;
+                var STRING_UNDERSCORE_REGEXP_2 = /\-|\s+/g;
+                Ember.STRINGS = {};
+                Ember.String = {
+                    fmt: function (str, formats) {
+                        var idx = 0;
+                        return str.replace(/%@([0-9]+)?/g, function (s, argIndex) {
+                            argIndex = argIndex ? parseInt(argIndex, 0) - 1 : idx++;
+                            s = formats[argIndex];
+                            return (s === null ? '(null)' : s === undefined ? '' : s).toString();
+                        });
+                    },
+                    loc: function (str, formats) {
+                        str = Ember.STRINGS[str] || str;
+                        return Ember.String.fmt(str, formats);
+                    },
+                    w: function (str) {
+                        return str.split(/\s+/);
+                    },
+                    decamelize: function (str) {
+                        return str.replace(STRING_DECAMELIZE_REGEXP, '$1_$2').toLowerCase();
+                    },
+                    dasherize: function (str) {
+                        var cache = STRING_DASHERIZE_CACHE, hit = cache.hasOwnProperty(str), ret;
+                        if (hit) {
+                            return cache[str];
+                        } else {
+                            ret = Ember.String.decamelize(str).replace(STRING_DASHERIZE_REGEXP, '-');
+                            cache[str] = ret;
+                        }
+                        return ret;
+                    },
+                    camelize: function (str) {
+                        return str.replace(STRING_CAMELIZE_REGEXP, function (match, separator, chr) {
+                            return chr ? chr.toUpperCase() : '';
+                        }).replace(/^([A-Z])/, function (match, separator, chr) {
+                            return match.toLowerCase();
+                        });
+                    },
+                    classify: function (str) {
+                        var parts = str.split('.'), out = [];
+                        for (var i = 0, l = parts.length; i < l; i++) {
+                            var camelized = Ember.String.camelize(parts[i]);
+                            out.push(camelized.charAt(0).toUpperCase() + camelized.substr(1));
+                        }
+                        return out.join('.');
+                    },
+                    underscore: function (str) {
+                        return str.replace(STRING_UNDERSCORE_REGEXP_1, '$1_$2').replace(STRING_UNDERSCORE_REGEXP_2, '_').toLowerCase();
+                    },
+                    capitalize: function (str) {
+                        return str.charAt(0).toUpperCase() + str.substr(1);
+                    }
+                };
+            }());
+            (function () {
+                var fmt = Ember.String.fmt, w = Ember.String.w, loc = Ember.String.loc, camelize = Ember.String.camelize, decamelize = Ember.String.decamelize, dasherize = Ember.String.dasherize, underscore = Ember.String.underscore, capitalize = Ember.String.capitalize, classify = Ember.String.classify;
+                if (Ember.EXTEND_PROTOTYPES === true || Ember.EXTEND_PROTOTYPES.String) {
+                    String.prototype.fmt = function () {
+                        return fmt(this, arguments);
+                    };
+                    String.prototype.w = function () {
+                        return w(this);
+                    };
+                    String.prototype.loc = function () {
+                        return loc(this, arguments);
+                    };
+                    String.prototype.camelize = function () {
+                        return camelize(this);
+                    };
+                    String.prototype.decamelize = function () {
+                        return decamelize(this);
+                    };
+                    String.prototype.dasherize = function () {
+                        return dasherize(this);
+                    };
+                    String.prototype.underscore = function () {
+                        return underscore(this);
+                    };
+                    String.prototype.classify = function () {
+                        return classify(this);
+                    };
+                    String.prototype.capitalize = function () {
+                        return capitalize(this);
+                    };
+                }
+            }());
+            (function () {
+                var a_slice = Array.prototype.slice;
+                if (Ember.EXTEND_PROTOTYPES === true || Ember.EXTEND_PROTOTYPES.Function) {
+                    Function.prototype.property = function () {
+                        var ret = Ember.computed(this);
+                        return ret.property.apply(ret, arguments);
+                    };
+                    Function.prototype.observes = function () {
+                        this.__ember_observes__ = a_slice.call(arguments);
+                        return this;
+                    };
+                    Function.prototype.observesBefore = function () {
+                        this.__ember_observesBefore__ = a_slice.call(arguments);
+                        return this;
+                    };
+                }
+            }());
+            (function () {
+            }());
+            (function () {
+                var get = Ember.get, set = Ember.set;
+                var a_slice = Array.prototype.slice;
+                var a_indexOf = Ember.EnumerableUtils.indexOf;
+                var contexts = [];
+                function popCtx() {
+                    return contexts.length === 0 ? {} : contexts.pop();
+                }
+                function pushCtx(ctx) {
+                    contexts.push(ctx);
+                    return null;
+                }
+                function iter(key, value) {
+                    var valueProvided = arguments.length === 2;
+                    function i(item) {
+                        var cur = get(item, key);
+                        return valueProvided ? value === cur : !!cur;
+                    }
+                    return i;
+                }
+                Ember.Enumerable = Ember.Mixin.create({
+                    isEnumerable: true,
+                    nextObject: Ember.required(Function),
+                    firstObject: Ember.computed(function () {
+                        if (get(this, 'length') === 0)
+                            return undefined;
+                        var context = popCtx(), ret;
+                        ret = this.nextObject(0, null, context);
+                        pushCtx(context);
+                        return ret;
+                    }).property('[]'),
+                    lastObject: Ember.computed(function () {
+                        var len = get(this, 'length');
+                        if (len === 0)
+                            return undefined;
+                        var context = popCtx(), idx = 0, cur, last = null;
+                        do {
+                            last = cur;
+                            cur = this.nextObject(idx++, last, context);
+                        } while (cur !== undefined);
+                        pushCtx(context);
+                        return last;
+                    }).property('[]'),
+                    contains: function (obj) {
+                        return this.find(function (item) {
+                            return item === obj;
+                        }) !== undefined;
+                    },
+                    forEach: function (callback, target) {
+                        if (typeof callback !== 'function')
+                            throw new TypeError();
+                        var len = get(this, 'length'), last = null, context = popCtx();
+                        if (target === undefined)
+                            target = null;
+                        for (var idx = 0; idx < len; idx++) {
+                            var next = this.nextObject(idx, last, context);
+                            callback.call(target, next, idx, this);
+                            last = next;
+                        }
+                        last = null;
+                        context = pushCtx(context);
                         return this;
                     },
-                    unknownProperty: function (key, value) {
-                        var ret;
-                        if (value !== undefined && ret === undefined) {
-                            ret = this[key] = value;
+                    getEach: function (key) {
+                        return this.mapProperty(key);
+                    },
+                    setEach: function (key, value) {
+                        return this.forEach(function (item) {
+                            set(item, key, value);
+                        });
+                    },
+                    map: function (callback, target) {
+                        var ret = Ember.A([]);
+                        this.forEach(function (x, idx, i) {
+                            ret[idx] = callback.call(target, x, idx, i);
+                        });
+                        return ret;
+                    },
+                    mapProperty: function (key) {
+                        return this.map(function (next) {
+                            return get(next, key);
+                        });
+                    },
+                    filter: function (callback, target) {
+                        var ret = Ember.A([]);
+                        this.forEach(function (x, idx, i) {
+                            if (callback.call(target, x, idx, i))
+                                ret.push(x);
+                        });
+                        return ret;
+                    },
+                    reject: function (callback, target) {
+                        return this.filter(function () {
+                            return !callback.apply(target, arguments);
+                        });
+                    },
+                    filterProperty: function (key, value) {
+                        return this.filter(iter.apply(this, arguments));
+                    },
+                    rejectProperty: function (key, value) {
+                        var exactValue = function (item) {
+                                return get(item, key) === value;
+                            }, hasValue = function (item) {
+                                return !!get(item, key);
+                            }, use = arguments.length === 2 ? exactValue : hasValue;
+                        return this.reject(use);
+                    },
+                    find: function (callback, target) {
+                        var len = get(this, 'length');
+                        if (target === undefined)
+                            target = null;
+                        var last = null, next, found = false, ret;
+                        var context = popCtx();
+                        for (var idx = 0; idx < len && !found; idx++) {
+                            next = this.nextObject(idx, last, context);
+                            if (found = callback.call(target, next, idx, this))
+                                ret = next;
+                            last = next;
+                        }
+                        next = last = null;
+                        context = pushCtx(context);
+                        return ret;
+                    },
+                    findProperty: function (key, value) {
+                        return this.find(iter.apply(this, arguments));
+                    },
+                    every: function (callback, target) {
+                        return !this.find(function (x, idx, i) {
+                            return !callback.call(target, x, idx, i);
+                        });
+                    },
+                    everyProperty: function (key, value) {
+                        return this.every(iter.apply(this, arguments));
+                    },
+                    some: function (callback, target) {
+                        return !!this.find(function (x, idx, i) {
+                            return !!callback.call(target, x, idx, i);
+                        });
+                    },
+                    someProperty: function (key, value) {
+                        return this.some(iter.apply(this, arguments));
+                    },
+                    reduce: function (callback, initialValue, reducerProperty) {
+                        if (typeof callback !== 'function') {
+                            throw new TypeError();
+                        }
+                        var ret = initialValue;
+                        this.forEach(function (item, i) {
+                            ret = callback.call(null, ret, item, i, this, reducerProperty);
+                        }, this);
+                        return ret;
+                    },
+                    invoke: function (methodName) {
+                        var args, ret = Ember.A([]);
+                        if (arguments.length > 1)
+                            args = a_slice.call(arguments, 1);
+                        this.forEach(function (x, idx) {
+                            var method = x && x[methodName];
+                            if ('function' === typeof method) {
+                                ret[idx] = args ? method.apply(x, args) : method.call(x);
+                            }
+                        }, this);
+                        return ret;
+                    },
+                    toArray: function () {
+                        var ret = Ember.A([]);
+                        this.forEach(function (o, idx) {
+                            ret[idx] = o;
+                        });
+                        return ret;
+                    },
+                    compact: function () {
+                        return this.filter(function (value) {
+                            return value != null;
+                        });
+                    },
+                    without: function (value) {
+                        if (!this.contains(value))
+                            return this;
+                        var ret = Ember.A([]);
+                        this.forEach(function (k) {
+                            if (k !== value)
+                                ret[ret.length] = k;
+                        });
+                        return ret;
+                    },
+                    uniq: function () {
+                        var ret = Ember.A([]);
+                        this.forEach(function (k) {
+                            if (a_indexOf(ret, k) < 0)
+                                ret.push(k);
+                        });
+                        return ret;
+                    },
+                    '[]': Ember.computed(function (key, value) {
+                        return this;
+                    }),
+                    addEnumerableObserver: function (target, opts) {
+                        var willChange = opts && opts.willChange || 'enumerableWillChange', didChange = opts && opts.didChange || 'enumerableDidChange';
+                        var hasObservers = get(this, 'hasEnumerableObservers');
+                        if (!hasObservers)
+                            Ember.propertyWillChange(this, 'hasEnumerableObservers');
+                        Ember.addListener(this, '@enumerable:before', target, willChange);
+                        Ember.addListener(this, '@enumerable:change', target, didChange);
+                        if (!hasObservers)
+                            Ember.propertyDidChange(this, 'hasEnumerableObservers');
+                        return this;
+                    },
+                    removeEnumerableObserver: function (target, opts) {
+                        var willChange = opts && opts.willChange || 'enumerableWillChange', didChange = opts && opts.didChange || 'enumerableDidChange';
+                        var hasObservers = get(this, 'hasEnumerableObservers');
+                        if (hasObservers)
+                            Ember.propertyWillChange(this, 'hasEnumerableObservers');
+                        Ember.removeListener(this, '@enumerable:before', target, willChange);
+                        Ember.removeListener(this, '@enumerable:change', target, didChange);
+                        if (hasObservers)
+                            Ember.propertyDidChange(this, 'hasEnumerableObservers');
+                        return this;
+                    },
+                    hasEnumerableObservers: Ember.computed(function () {
+                        return Ember.hasListeners(this, '@enumerable:change') || Ember.hasListeners(this, '@enumerable:before');
+                    }),
+                    enumerableContentWillChange: function (removing, adding) {
+                        var removeCnt, addCnt, hasDelta;
+                        if ('number' === typeof removing)
+                            removeCnt = removing;
+                        else if (removing)
+                            removeCnt = get(removing, 'length');
+                        else
+                            removeCnt = removing = -1;
+                        if ('number' === typeof adding)
+                            addCnt = adding;
+                        else if (adding)
+                            addCnt = get(adding, 'length');
+                        else
+                            addCnt = adding = -1;
+                        hasDelta = addCnt < 0 || removeCnt < 0 || addCnt - removeCnt !== 0;
+                        if (removing === -1)
+                            removing = null;
+                        if (adding === -1)
+                            adding = null;
+                        Ember.propertyWillChange(this, '[]');
+                        if (hasDelta)
+                            Ember.propertyWillChange(this, 'length');
+                        Ember.sendEvent(this, '@enumerable:before', [
+                            this,
+                            removing,
+                            adding
+                        ]);
+                        return this;
+                    },
+                    enumerableContentDidChange: function (removing, adding) {
+                        var removeCnt, addCnt, hasDelta;
+                        if ('number' === typeof removing)
+                            removeCnt = removing;
+                        else if (removing)
+                            removeCnt = get(removing, 'length');
+                        else
+                            removeCnt = removing = -1;
+                        if ('number' === typeof adding)
+                            addCnt = adding;
+                        else if (adding)
+                            addCnt = get(adding, 'length');
+                        else
+                            addCnt = adding = -1;
+                        hasDelta = addCnt < 0 || removeCnt < 0 || addCnt - removeCnt !== 0;
+                        if (removing === -1)
+                            removing = null;
+                        if (adding === -1)
+                            adding = null;
+                        Ember.sendEvent(this, '@enumerable:change', [
+                            this,
+                            removing,
+                            adding
+                        ]);
+                        if (hasDelta)
+                            Ember.propertyDidChange(this, 'length');
+                        Ember.propertyDidChange(this, '[]');
+                        return this;
+                    }
+                });
+            }());
+            (function () {
+                var get = Ember.get, set = Ember.set, map = Ember.EnumerableUtils.map, cacheFor = Ember.cacheFor;
+                function none(obj) {
+                    return obj === null || obj === undefined;
+                }
+                Ember.Array = Ember.Mixin.create(Ember.Enumerable, {
+                    isSCArray: true,
+                    length: Ember.required(),
+                    objectAt: function (idx) {
+                        if (idx < 0 || idx >= get(this, 'length'))
+                            return undefined;
+                        return get(this, idx);
+                    },
+                    objectsAt: function (indexes) {
+                        var self = this;
+                        return map(indexes, function (idx) {
+                            return self.objectAt(idx);
+                        });
+                    },
+                    nextObject: function (idx) {
+                        return this.objectAt(idx);
+                    },
+                    '[]': Ember.computed(function (key, value) {
+                        if (value !== undefined)
+                            this.replace(0, get(this, 'length'), value);
+                        return this;
+                    }),
+                    firstObject: Ember.computed(function () {
+                        return this.objectAt(0);
+                    }),
+                    lastObject: Ember.computed(function () {
+                        return this.objectAt(get(this, 'length') - 1);
+                    }),
+                    contains: function (obj) {
+                        return this.indexOf(obj) >= 0;
+                    },
+                    slice: function (beginIndex, endIndex) {
+                        var ret = Ember.A([]);
+                        var length = get(this, 'length');
+                        if (none(beginIndex))
+                            beginIndex = 0;
+                        if (none(endIndex) || endIndex > length)
+                            endIndex = length;
+                        if (beginIndex < 0)
+                            beginIndex = length + beginIndex;
+                        if (endIndex < 0)
+                            endIndex = length + endIndex;
+                        while (beginIndex < endIndex) {
+                            ret[ret.length] = this.objectAt(beginIndex++);
                         }
                         return ret;
                     },
                     indexOf: function (object, startAt) {
-                        var idx, len = this.length;
+                        var idx, len = get(this, 'length');
                         if (startAt === undefined)
                             startAt = 0;
-                        else
-                            startAt = startAt < 0 ? Math.ceil(startAt) : Math.floor(startAt);
                         if (startAt < 0)
                             startAt += len;
                         for (idx = startAt; idx < len; idx++) {
-                            if (this[idx] === object)
+                            if (this.objectAt(idx, true) === object)
                                 return idx;
                         }
                         return -1;
                     },
                     lastIndexOf: function (object, startAt) {
-                        var idx, len = this.length;
-                        if (startAt === undefined)
+                        var idx, len = get(this, 'length');
+                        if (startAt === undefined || startAt >= len)
                             startAt = len - 1;
-                        else
-                            startAt = startAt < 0 ? Math.ceil(startAt) : Math.floor(startAt);
                         if (startAt < 0)
                             startAt += len;
                         for (idx = startAt; idx >= 0; idx--) {
-                            if (this[idx] === object)
+                            if (this.objectAt(idx) === object)
                                 return idx;
                         }
                         return -1;
                     },
-                    copy: function () {
-                        return this.slice();
+                    addArrayObserver: function (target, opts) {
+                        var willChange = opts && opts.willChange || 'arrayWillChange', didChange = opts && opts.didChange || 'arrayDidChange';
+                        var hasObservers = get(this, 'hasArrayObservers');
+                        if (!hasObservers)
+                            Ember.propertyWillChange(this, 'hasArrayObservers');
+                        Ember.addListener(this, '@array:before', target, willChange);
+                        Ember.addListener(this, '@array:change', target, didChange);
+                        if (!hasObservers)
+                            Ember.propertyDidChange(this, 'hasArrayObservers');
+                        return this;
+                    },
+                    removeArrayObserver: function (target, opts) {
+                        var willChange = opts && opts.willChange || 'arrayWillChange', didChange = opts && opts.didChange || 'arrayDidChange';
+                        var hasObservers = get(this, 'hasArrayObservers');
+                        if (hasObservers)
+                            Ember.propertyWillChange(this, 'hasArrayObservers');
+                        Ember.removeListener(this, '@array:before', target, willChange);
+                        Ember.removeListener(this, '@array:change', target, didChange);
+                        if (hasObservers)
+                            Ember.propertyDidChange(this, 'hasArrayObservers');
+                        return this;
+                    },
+                    hasArrayObservers: Ember.computed(function () {
+                        return Ember.hasListeners(this, '@array:change') || Ember.hasListeners(this, '@array:before');
+                    }),
+                    arrayContentWillChange: function (startIdx, removeAmt, addAmt) {
+                        if (startIdx === undefined) {
+                            startIdx = 0;
+                            removeAmt = addAmt = -1;
+                        } else {
+                            if (removeAmt === undefined)
+                                removeAmt = -1;
+                            if (addAmt === undefined)
+                                addAmt = -1;
+                        }
+                        if (Ember.isWatching(this, '@each')) {
+                            get(this, '@each');
+                        }
+                        Ember.sendEvent(this, '@array:before', [
+                            this,
+                            startIdx,
+                            removeAmt,
+                            addAmt
+                        ]);
+                        var removing, lim;
+                        if (startIdx >= 0 && removeAmt >= 0 && get(this, 'hasEnumerableObservers')) {
+                            removing = [];
+                            lim = startIdx + removeAmt;
+                            for (var idx = startIdx; idx < lim; idx++)
+                                removing.push(this.objectAt(idx));
+                        } else {
+                            removing = removeAmt;
+                        }
+                        this.enumerableContentWillChange(removing, addAmt);
+                        return this;
+                    },
+                    arrayContentDidChange: function (startIdx, removeAmt, addAmt) {
+                        if (startIdx === undefined) {
+                            startIdx = 0;
+                            removeAmt = addAmt = -1;
+                        } else {
+                            if (removeAmt === undefined)
+                                removeAmt = -1;
+                            if (addAmt === undefined)
+                                addAmt = -1;
+                        }
+                        var adding, lim;
+                        if (startIdx >= 0 && addAmt >= 0 && get(this, 'hasEnumerableObservers')) {
+                            adding = [];
+                            lim = startIdx + addAmt;
+                            for (var idx = startIdx; idx < lim; idx++)
+                                adding.push(this.objectAt(idx));
+                        } else {
+                            adding = addAmt;
+                        }
+                        this.enumerableContentDidChange(removeAmt, adding);
+                        Ember.sendEvent(this, '@array:change', [
+                            this,
+                            startIdx,
+                            removeAmt,
+                            addAmt
+                        ]);
+                        var length = get(this, 'length'), cachedFirst = cacheFor(this, 'firstObject'), cachedLast = cacheFor(this, 'lastObject');
+                        if (this.objectAt(0) !== cachedFirst) {
+                            Ember.propertyWillChange(this, 'firstObject');
+                            Ember.propertyDidChange(this, 'firstObject');
+                        }
+                        if (this.objectAt(length - 1) !== cachedLast) {
+                            Ember.propertyWillChange(this, 'lastObject');
+                            Ember.propertyDidChange(this, 'lastObject');
+                        }
+                        return this;
+                    },
+                    '@each': Ember.computed(function () {
+                        if (!this.__each)
+                            this.__each = new Ember.EachProxy(this);
+                        return this.__each;
+                    })
+                });
+            }());
+            (function () {
+                Ember.Comparable = Ember.Mixin.create({
+                    isComparable: true,
+                    compare: Ember.required(Function)
+                });
+            }());
+            (function () {
+                var get = Ember.get, set = Ember.set;
+                Ember.Copyable = Ember.Mixin.create({
+                    copy: Ember.required(Function),
+                    frozenCopy: function () {
+                        if (Ember.Freezable && Ember.Freezable.detect(this)) {
+                            return get(this, 'isFrozen') ? this : this.copy().freeze();
+                        } else {
+                            throw new Error(Ember.String.fmt('%@ does not support freezing', [this]));
+                        }
                     }
                 });
-            var ignore = ['length'];
-            Ember.EnumerableUtils.forEach(NativeArray.keys(), function (methodName) {
-                if (Array.prototype[methodName])
-                    ignore.push(methodName);
-            });
-            if (ignore.length > 0) {
-                NativeArray = NativeArray.without.apply(NativeArray, ignore);
-            }
-            Ember.NativeArray = NativeArray;
-            Ember.A = function (arr) {
-                if (arr === undefined) {
-                    arr = [];
-                }
-                return Ember.NativeArray.apply(arr);
-            };
-            Ember.NativeArray.activate = function () {
-                NativeArray.apply(Array.prototype);
-                Ember.A = function (arr) {
-                    return arr || [];
+            }());
+            (function () {
+                var get = Ember.get, set = Ember.set;
+                Ember.Freezable = Ember.Mixin.create({
+                    isFrozen: false,
+                    freeze: function () {
+                        if (get(this, 'isFrozen'))
+                            return this;
+                        set(this, 'isFrozen', true);
+                        return this;
+                    }
+                });
+                Ember.FROZEN_ERROR = 'Frozen object cannot be modified.';
+            }());
+            (function () {
+                var forEach = Ember.EnumerableUtils.forEach;
+                Ember.MutableEnumerable = Ember.Mixin.create(Ember.Enumerable, {
+                    addObject: Ember.required(Function),
+                    addObjects: function (objects) {
+                        Ember.beginPropertyChanges(this);
+                        forEach(objects, function (obj) {
+                            this.addObject(obj);
+                        }, this);
+                        Ember.endPropertyChanges(this);
+                        return this;
+                    },
+                    removeObject: Ember.required(Function),
+                    removeObjects: function (objects) {
+                        Ember.beginPropertyChanges(this);
+                        forEach(objects, function (obj) {
+                            this.removeObject(obj);
+                        }, this);
+                        Ember.endPropertyChanges(this);
+                        return this;
+                    }
+                });
+            }());
+            (function () {
+                var OUT_OF_RANGE_EXCEPTION = 'Index out of range';
+                var EMPTY = [];
+                var get = Ember.get, set = Ember.set;
+                Ember.MutableArray = Ember.Mixin.create(Ember.Array, Ember.MutableEnumerable, {
+                    replace: Ember.required(),
+                    clear: function () {
+                        var len = get(this, 'length');
+                        if (len === 0)
+                            return this;
+                        this.replace(0, len, EMPTY);
+                        return this;
+                    },
+                    insertAt: function (idx, object) {
+                        if (idx > get(this, 'length'))
+                            throw new Error(OUT_OF_RANGE_EXCEPTION);
+                        this.replace(idx, 0, [object]);
+                        return this;
+                    },
+                    removeAt: function (start, len) {
+                        if ('number' === typeof start) {
+                            if (start < 0 || start >= get(this, 'length')) {
+                                throw new Error(OUT_OF_RANGE_EXCEPTION);
+                            }
+                            if (len === undefined)
+                                len = 1;
+                            this.replace(start, len, EMPTY);
+                        }
+                        return this;
+                    },
+                    pushObject: function (obj) {
+                        this.insertAt(get(this, 'length'), obj);
+                        return obj;
+                    },
+                    pushObjects: function (objects) {
+                        this.replace(get(this, 'length'), 0, objects);
+                        return this;
+                    },
+                    popObject: function () {
+                        var len = get(this, 'length');
+                        if (len === 0)
+                            return null;
+                        var ret = this.objectAt(len - 1);
+                        this.removeAt(len - 1, 1);
+                        return ret;
+                    },
+                    shiftObject: function () {
+                        if (get(this, 'length') === 0)
+                            return null;
+                        var ret = this.objectAt(0);
+                        this.removeAt(0);
+                        return ret;
+                    },
+                    unshiftObject: function (obj) {
+                        this.insertAt(0, obj);
+                        return obj;
+                    },
+                    unshiftObjects: function (objects) {
+                        this.replace(0, 0, objects);
+                        return this;
+                    },
+                    reverseObjects: function () {
+                        var len = get(this, 'length');
+                        if (len === 0)
+                            return this;
+                        var objects = this.toArray().reverse();
+                        this.replace(0, len, objects);
+                        return this;
+                    },
+                    setObjects: function (objects) {
+                        if (objects.length === 0)
+                            return this.clear();
+                        var len = get(this, 'length');
+                        this.replace(0, len, objects);
+                        return this;
+                    },
+                    removeObject: function (obj) {
+                        var loc = get(this, 'length') || 0;
+                        while (--loc >= 0) {
+                            var curObject = this.objectAt(loc);
+                            if (curObject === obj)
+                                this.removeAt(loc);
+                        }
+                        return this;
+                    },
+                    addObject: function (obj) {
+                        if (!this.contains(obj))
+                            this.pushObject(obj);
+                        return this;
+                    }
+                });
+            }());
+            (function () {
+                var get = Ember.get, set = Ember.set;
+                Ember.Observable = Ember.Mixin.create({
+                    get: function (keyName) {
+                        return get(this, keyName);
+                    },
+                    getProperties: function () {
+                        var ret = {};
+                        var propertyNames = arguments;
+                        if (arguments.length === 1 && Ember.typeOf(arguments[0]) === 'array') {
+                            propertyNames = arguments[0];
+                        }
+                        for (var i = 0; i < propertyNames.length; i++) {
+                            ret[propertyNames[i]] = get(this, propertyNames[i]);
+                        }
+                        return ret;
+                    },
+                    set: function (keyName, value) {
+                        set(this, keyName, value);
+                        return this;
+                    },
+                    setProperties: function (hash) {
+                        return Ember.setProperties(this, hash);
+                    },
+                    beginPropertyChanges: function () {
+                        Ember.beginPropertyChanges();
+                        return this;
+                    },
+                    endPropertyChanges: function () {
+                        Ember.endPropertyChanges();
+                        return this;
+                    },
+                    propertyWillChange: function (keyName) {
+                        Ember.propertyWillChange(this, keyName);
+                        return this;
+                    },
+                    propertyDidChange: function (keyName) {
+                        Ember.propertyDidChange(this, keyName);
+                        return this;
+                    },
+                    notifyPropertyChange: function (keyName) {
+                        this.propertyWillChange(keyName);
+                        this.propertyDidChange(keyName);
+                        return this;
+                    },
+                    addBeforeObserver: function (key, target, method) {
+                        Ember.addBeforeObserver(this, key, target, method);
+                    },
+                    addObserver: function (key, target, method) {
+                        Ember.addObserver(this, key, target, method);
+                    },
+                    removeObserver: function (key, target, method) {
+                        Ember.removeObserver(this, key, target, method);
+                    },
+                    hasObserverFor: function (key) {
+                        return Ember.hasListeners(this, key + ':change');
+                    },
+                    getPath: function (path) {
+                        Ember.deprecate('getPath is deprecated since get now supports paths');
+                        return this.get(path);
+                    },
+                    setPath: function (path, value) {
+                        Ember.deprecate('setPath is deprecated since set now supports paths');
+                        return this.set(path, value);
+                    },
+                    getWithDefault: function (keyName, defaultValue) {
+                        return Ember.getWithDefault(this, keyName, defaultValue);
+                    },
+                    incrementProperty: function (keyName, increment) {
+                        if (!increment) {
+                            increment = 1;
+                        }
+                        set(this, keyName, (get(this, keyName) || 0) + increment);
+                        return get(this, keyName);
+                    },
+                    decrementProperty: function (keyName, increment) {
+                        if (!increment) {
+                            increment = 1;
+                        }
+                        set(this, keyName, (get(this, keyName) || 0) - increment);
+                        return get(this, keyName);
+                    },
+                    toggleProperty: function (keyName) {
+                        set(this, keyName, !get(this, keyName));
+                        return get(this, keyName);
+                    },
+                    cacheFor: function (keyName) {
+                        return Ember.cacheFor(this, keyName);
+                    },
+                    observersForKey: function (keyName) {
+                        return Ember.observersFor(this, keyName);
+                    }
+                });
+            }());
+            (function () {
+                var get = Ember.get, set = Ember.set;
+                Ember.TargetActionSupport = Ember.Mixin.create({
+                    target: null,
+                    action: null,
+                    targetObject: Ember.computed(function () {
+                        var target = get(this, 'target');
+                        if (Ember.typeOf(target) === 'string') {
+                            var value = get(this, target);
+                            if (value === undefined) {
+                                value = get(Ember.lookup, target);
+                            }
+                            return value;
+                        } else {
+                            return target;
+                        }
+                    }).property('target'),
+                    triggerAction: function () {
+                        var action = get(this, 'action'), target = get(this, 'targetObject');
+                        if (target && action) {
+                            var ret;
+                            if (typeof target.send === 'function') {
+                                ret = target.send(action, this);
+                            } else {
+                                if (typeof action === 'string') {
+                                    action = target[action];
+                                }
+                                ret = action.call(target, this);
+                            }
+                            if (ret !== false)
+                                ret = true;
+                            return ret;
+                        } else {
+                            return false;
+                        }
+                    }
+                });
+            }());
+            (function () {
+                Ember.Evented = Ember.Mixin.create({
+                    on: function (name, target, method) {
+                        Ember.addListener(this, name, target, method);
+                        return this;
+                    },
+                    one: function (name, target, method) {
+                        if (!method) {
+                            method = target;
+                            target = null;
+                        }
+                        Ember.addListener(this, name, target, method, true);
+                        return this;
+                    },
+                    trigger: function (name) {
+                        var args = [], i, l;
+                        for (i = 1, l = arguments.length; i < l; i++) {
+                            args.push(arguments[i]);
+                        }
+                        Ember.sendEvent(this, name, args);
+                    },
+                    fire: function (name) {
+                        Ember.deprecate('Ember.Evented#fire() has been deprecated in favor of trigger() for compatibility with jQuery. It will be removed in 1.0. Please update your code to call trigger() instead.');
+                        this.trigger.apply(this, arguments);
+                    },
+                    off: function (name, target, method) {
+                        Ember.removeListener(this, name, target, method);
+                        return this;
+                    },
+                    has: function (name) {
+                        return Ember.hasListeners(this, name);
+                    }
+                });
+            }());
+            (function () {
+                var RSVP = requireModule('rsvp');
+                RSVP.async = function (callback, binding) {
+                    Ember.run.schedule('actions', binding, callback);
                 };
-            };
-            if (Ember.EXTEND_PROTOTYPES)
-                Ember.NativeArray.activate();
-        }());
-        (function () {
-            var get = Ember.get, set = Ember.set;
-            Ember._PromiseChain = Ember.Object.extend({
-                promises: null,
-                failureCallback: Ember.K,
-                successCallback: Ember.K,
-                abortCallback: Ember.K,
-                promiseSuccessCallback: Ember.K,
-                runNextPromise: function () {
-                    if (get(this, 'isDestroyed')) {
-                        return;
+                var get = Ember.get;
+                Ember.DeferredMixin = Ember.Mixin.create({
+                    then: function (doneCallback, failCallback) {
+                        var promise = get(this, 'promise');
+                        return promise.then.apply(promise, arguments);
+                    },
+                    resolve: function (value) {
+                        get(this, 'promise').resolve(value);
+                    },
+                    reject: function (value) {
+                        get(this, 'promise').reject(value);
+                    },
+                    promise: Ember.computed(function () {
+                        return new RSVP.Promise();
+                    })
+                });
+            }());
+            (function () {
+            }());
+            (function () {
+                Ember.Container = requireModule('container');
+                Ember.Container.set = Ember.set;
+            }());
+            (function () {
+                var set = Ember.set, get = Ember.get, o_create = Ember.create, o_defineProperty = Ember.platform.defineProperty, GUID_KEY = Ember.GUID_KEY, guidFor = Ember.guidFor, generateGuid = Ember.generateGuid, meta = Ember.meta, rewatch = Ember.rewatch, finishChains = Ember.finishChains, destroy = Ember.destroy, schedule = Ember.run.schedule, Mixin = Ember.Mixin, applyMixin = Mixin._apply, finishPartial = Mixin.finishPartial, reopen = Mixin.prototype.reopen, MANDATORY_SETTER = Ember.ENV.MANDATORY_SETTER, indexOf = Ember.EnumerableUtils.indexOf;
+                var undefinedDescriptor = {
+                        configurable: true,
+                        writable: true,
+                        enumerable: false,
+                        value: undefined
+                    };
+                function makeCtor() {
+                    var wasApplied = false, initMixins, initProperties;
+                    var Class = function () {
+                        if (!wasApplied) {
+                            Class.proto();
+                        }
+                        o_defineProperty(this, GUID_KEY, undefinedDescriptor);
+                        o_defineProperty(this, '_super', undefinedDescriptor);
+                        var m = meta(this);
+                        m.proto = this;
+                        if (initMixins) {
+                            var mixins = initMixins;
+                            initMixins = null;
+                            this.reopen.apply(this, mixins);
+                        }
+                        if (initProperties) {
+                            var props = initProperties;
+                            initProperties = null;
+                            var concatenatedProperties = this.concatenatedProperties;
+                            for (var i = 0, l = props.length; i < l; i++) {
+                                var properties = props[i];
+                                for (var keyName in properties) {
+                                    if (!properties.hasOwnProperty(keyName)) {
+                                        continue;
+                                    }
+                                    var value = properties[keyName], IS_BINDING = Ember.IS_BINDING;
+                                    if (IS_BINDING.test(keyName)) {
+                                        var bindings = m.bindings;
+                                        if (!bindings) {
+                                            bindings = m.bindings = {};
+                                        } else if (!m.hasOwnProperty('bindings')) {
+                                            bindings = m.bindings = o_create(m.bindings);
+                                        }
+                                        bindings[keyName] = value;
+                                    }
+                                    var desc = m.descs[keyName];
+                                    Ember.assert('Ember.Object.create no longer supports defining computed properties.', !(value instanceof Ember.ComputedProperty));
+                                    Ember.assert('Ember.Object.create no longer supports defining methods that call _super.', !(typeof value === 'function' && value.toString().indexOf('._super') !== -1));
+                                    if (concatenatedProperties && indexOf(concatenatedProperties, keyName) >= 0) {
+                                        var baseValue = this[keyName];
+                                        if (baseValue) {
+                                            if ('function' === typeof baseValue.concat) {
+                                                value = baseValue.concat(value);
+                                            } else {
+                                                value = Ember.makeArray(baseValue).concat(value);
+                                            }
+                                        } else {
+                                            value = Ember.makeArray(value);
+                                        }
+                                    }
+                                    if (desc) {
+                                        desc.set(this, keyName, value);
+                                    } else {
+                                        if (typeof this.setUnknownProperty === 'function' && !(keyName in this)) {
+                                            this.setUnknownProperty(keyName, value);
+                                        } else if (MANDATORY_SETTER) {
+                                            Ember.defineProperty(this, keyName, null, value);
+                                        } else {
+                                            this[keyName] = value;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        finishPartial(this, m);
+                        delete m.proto;
+                        finishChains(this);
+                        this.init.apply(this, arguments);
+                    };
+                    Class.toString = Mixin.prototype.toString;
+                    Class.willReopen = function () {
+                        if (wasApplied) {
+                            Class.PrototypeMixin = Mixin.create(Class.PrototypeMixin);
+                        }
+                        wasApplied = false;
+                    };
+                    Class._initMixins = function (args) {
+                        initMixins = args;
+                    };
+                    Class._initProperties = function (args) {
+                        initProperties = args;
+                    };
+                    Class.proto = function () {
+                        var superclass = Class.superclass;
+                        if (superclass) {
+                            superclass.proto();
+                        }
+                        if (!wasApplied) {
+                            wasApplied = true;
+                            Class.PrototypeMixin.applyPartial(Class.prototype);
+                            rewatch(Class.prototype);
+                        }
+                        return this.prototype;
+                    };
+                    return Class;
+                }
+                var CoreObject = makeCtor();
+                CoreObject.toString = function () {
+                    return 'Ember.CoreObject';
+                };
+                CoreObject.PrototypeMixin = Mixin.create({
+                    reopen: function () {
+                        applyMixin(this, arguments, true);
+                        return this;
+                    },
+                    isInstance: true,
+                    init: function () {
+                    },
+                    concatenatedProperties: null,
+                    isDestroyed: false,
+                    isDestroying: false,
+                    destroy: function () {
+                        if (this._didCallDestroy) {
+                            return;
+                        }
+                        this.isDestroying = true;
+                        this._didCallDestroy = true;
+                        schedule('destroy', this, this._scheduledDestroy);
+                        return this;
+                    },
+                    willDestroy: Ember.K,
+                    _scheduledDestroy: function () {
+                        if (this.willDestroy) {
+                            this.willDestroy();
+                        }
+                        destroy(this);
+                        this.isDestroyed = true;
+                        if (this.didDestroy) {
+                            this.didDestroy();
+                        }
+                    },
+                    bind: function (to, from) {
+                        if (!(from instanceof Ember.Binding)) {
+                            from = Ember.Binding.from(from);
+                        }
+                        from.to(to).connect(this);
+                        return from;
+                    },
+                    toString: function toString() {
+                        var hasToStringExtension = typeof this.toStringExtension === 'function', extension = hasToStringExtension ? ':' + this.toStringExtension() : '';
+                        var ret = '<' + this.constructor.toString() + ':' + guidFor(this) + extension + '>';
+                        this.toString = makeToString(ret);
+                        return ret;
                     }
-                    var item = get(this, 'promises').shiftObject();
-                    if (item) {
-                        var promise = get(item, 'promise') || item;
-                        Ember.assert('Cannot find promise to invoke', Ember.canInvoke(promise, 'then'));
-                        var self = this;
-                        var successCallback = function () {
-                            self.promiseSuccessCallback.call(this, item, arguments);
-                            self.runNextPromise();
-                        };
-                        var failureCallback = get(self, 'failureCallback');
-                        promise.then(successCallback, failureCallback);
-                    } else {
-                        this.successCallback();
-                    }
-                },
-                start: function () {
-                    this.runNextPromise();
-                    return this;
-                },
-                abort: function () {
-                    this.abortCallback();
-                    this.destroy();
-                },
-                init: function () {
-                    set(this, 'promises', Ember.A(get(this, 'promises')));
-                    this._super();
+                });
+                CoreObject.PrototypeMixin.ownerConstructor = CoreObject;
+                function makeToString(ret) {
+                    return function () {
+                        return ret;
+                    };
                 }
-            });
-        }());
-        (function () {
-            var loadHooks = {};
-            var loaded = {};
-            Ember.onLoad = function (name, callback) {
-                var object;
-                loadHooks[name] = loadHooks[name] || Ember.A();
-                loadHooks[name].pushObject(callback);
-                if (object = loaded[name]) {
-                    callback(object);
+                if (Ember.config.overridePrototypeMixin) {
+                    Ember.config.overridePrototypeMixin(CoreObject.PrototypeMixin);
                 }
-            };
-            Ember.runLoadHooks = function (name, object) {
-                var hooks;
-                loaded[name] = object;
-                if (hooks = loadHooks[name]) {
-                    loadHooks[name].forEach(function (callback) {
-                        callback(object);
-                    });
-                }
-            };
-        }());
-        (function () {
-        }());
-        (function () {
-            Ember.ControllerMixin = Ember.Mixin.create({
-                target: null,
-                store: null
-            });
-            Ember.Controller = Ember.Object.extend(Ember.ControllerMixin);
-        }());
-        (function () {
-            var get = Ember.get, set = Ember.set, forEach = Ember.EnumerableUtils.forEach;
-            Ember.SortableMixin = Ember.Mixin.create(Ember.MutableEnumerable, {
-                sortProperties: null,
-                sortAscending: true,
-                addObject: function (obj) {
-                    var content = get(this, 'content');
-                    content.pushObject(obj);
-                },
-                removeObject: function (obj) {
-                    var content = get(this, 'content');
-                    content.removeObject(obj);
-                },
-                orderBy: function (item1, item2) {
-                    var result = 0, sortProperties = get(this, 'sortProperties'), sortAscending = get(this, 'sortAscending');
-                    Ember.assert('you need to define `sortProperties`', !!sortProperties);
-                    forEach(sortProperties, function (propertyName) {
-                        if (result === 0) {
-                            result = Ember.compare(get(item1, propertyName), get(item2, propertyName));
-                            if (result !== 0 && !sortAscending) {
-                                result = -1 * result;
+                CoreObject.__super__ = null;
+                var ClassMixin = Mixin.create({
+                        ClassMixin: Ember.required(),
+                        PrototypeMixin: Ember.required(),
+                        isClass: true,
+                        isMethod: false,
+                        extend: function () {
+                            var Class = makeCtor(), proto;
+                            Class.ClassMixin = Mixin.create(this.ClassMixin);
+                            Class.PrototypeMixin = Mixin.create(this.PrototypeMixin);
+                            Class.ClassMixin.ownerConstructor = Class;
+                            Class.PrototypeMixin.ownerConstructor = Class;
+                            reopen.apply(Class.PrototypeMixin, arguments);
+                            Class.superclass = this;
+                            Class.__super__ = this.prototype;
+                            proto = Class.prototype = o_create(this.prototype);
+                            proto.constructor = Class;
+                            generateGuid(proto, 'ember');
+                            meta(proto).proto = proto;
+                            Class.ClassMixin.apply(Class);
+                            return Class;
+                        },
+                        createWithMixins: function () {
+                            var C = this;
+                            if (arguments.length > 0) {
+                                this._initMixins(arguments);
+                            }
+                            return new C();
+                        },
+                        create: function () {
+                            var C = this;
+                            if (arguments.length > 0) {
+                                this._initProperties(arguments);
+                            }
+                            return new C();
+                        },
+                        reopen: function () {
+                            this.willReopen();
+                            reopen.apply(this.PrototypeMixin, arguments);
+                            return this;
+                        },
+                        reopenClass: function () {
+                            reopen.apply(this.ClassMixin, arguments);
+                            applyMixin(this, arguments, false);
+                            return this;
+                        },
+                        detect: function (obj) {
+                            if ('function' !== typeof obj) {
+                                return false;
+                            }
+                            while (obj) {
+                                if (obj === this) {
+                                    return true;
+                                }
+                                obj = obj.superclass;
+                            }
+                            return false;
+                        },
+                        detectInstance: function (obj) {
+                            return obj instanceof this;
+                        },
+                        metaForProperty: function (key) {
+                            var desc = meta(this.proto(), false).descs[key];
+                            Ember.assert('metaForProperty() could not find a computed property with key \'' + key + '\'.', !!desc && desc instanceof Ember.ComputedProperty);
+                            return desc._meta || {};
+                        },
+                        eachComputedProperty: function (callback, binding) {
+                            var proto = this.proto(), descs = meta(proto).descs, empty = {}, property;
+                            for (var name in descs) {
+                                property = descs[name];
+                                if (property instanceof Ember.ComputedProperty) {
+                                    callback.call(binding || this, name, property._meta || empty);
+                                }
                             }
                         }
                     });
-                    return result;
-                },
-                destroy: function () {
-                    var content = get(this, 'content'), sortProperties = get(this, 'sortProperties');
-                    if (content && sortProperties) {
-                        forEach(content, function (item) {
-                            forEach(sortProperties, function (sortProperty) {
-                                Ember.removeObserver(item, sortProperty, this, 'contentItemSortPropertyDidChange');
-                            }, this);
-                        }, this);
-                    }
-                    return this._super();
-                },
-                isSorted: Ember.computed('sortProperties', function () {
-                    return !!get(this, 'sortProperties');
-                }),
-                arrangedContent: Ember.computed('content', 'sortProperties.@each', function (key, value) {
-                    var content = get(this, 'content'), isSorted = get(this, 'isSorted'), sortProperties = get(this, 'sortProperties'), self = this;
-                    if (content && isSorted) {
-                        content = content.slice();
-                        content.sort(function (item1, item2) {
-                            return self.orderBy(item1, item2);
-                        });
-                        forEach(content, function (item) {
-                            forEach(sortProperties, function (sortProperty) {
-                                Ember.addObserver(item, sortProperty, this, 'contentItemSortPropertyDidChange');
-                            }, this);
-                        }, this);
-                        return Ember.A(content);
-                    }
-                    return content;
-                }).cacheable(),
-                _contentWillChange: Ember.beforeObserver(function () {
-                    var content = get(this, 'content'), sortProperties = get(this, 'sortProperties');
-                    if (content && sortProperties) {
-                        forEach(content, function (item) {
-                            forEach(sortProperties, function (sortProperty) {
-                                Ember.removeObserver(item, sortProperty, this, 'contentItemSortPropertyDidChange');
-                            }, this);
-                        }, this);
-                    }
-                    this._super();
-                }, 'content'),
-                sortAscendingWillChange: Ember.beforeObserver(function () {
-                    this._lastSortAscending = get(this, 'sortAscending');
-                }, 'sortAscending'),
-                sortAscendingDidChange: Ember.observer(function () {
-                    if (get(this, 'sortAscending') !== this._lastSortAscending) {
-                        var arrangedContent = get(this, 'arrangedContent');
-                        arrangedContent.reverseObjects();
-                    }
-                }, 'sortAscending'),
-                contentArrayWillChange: function (array, idx, removedCount, addedCount) {
-                    var isSorted = get(this, 'isSorted');
-                    if (isSorted) {
-                        var arrangedContent = get(this, 'arrangedContent');
-                        var removedObjects = array.slice(idx, idx + removedCount);
-                        var sortProperties = get(this, 'sortProperties');
-                        forEach(removedObjects, function (item) {
-                            arrangedContent.removeObject(item);
-                            forEach(sortProperties, function (sortProperty) {
-                                Ember.removeObserver(item, sortProperty, this, 'contentItemSortPropertyDidChange');
-                            }, this);
-                        });
-                    }
-                    return this._super(array, idx, removedCount, addedCount);
-                },
-                contentArrayDidChange: function (array, idx, removedCount, addedCount) {
-                    var isSorted = get(this, 'isSorted'), sortProperties = get(this, 'sortProperties');
-                    if (isSorted) {
-                        var addedObjects = array.slice(idx, idx + addedCount);
-                        var arrangedContent = get(this, 'arrangedContent');
-                        forEach(addedObjects, function (item) {
-                            this.insertItemSorted(item);
-                            forEach(sortProperties, function (sortProperty) {
-                                Ember.addObserver(item, sortProperty, this, 'contentItemSortPropertyDidChange');
-                            }, this);
-                        }, this);
-                    }
-                    return this._super(array, idx, removedCount, addedCount);
-                },
-                insertItemSorted: function (item) {
-                    var arrangedContent = get(this, 'arrangedContent');
-                    var length = get(arrangedContent, 'length');
-                    var idx = this._binarySearch(item, 0, length);
-                    arrangedContent.insertAt(idx, item);
-                },
-                contentItemSortPropertyDidChange: function (item) {
-                    var arrangedContent = get(this, 'arrangedContent'), index = arrangedContent.indexOf(item);
-                    arrangedContent.removeObject(item);
-                    this.insertItemSorted(item);
-                },
-                _binarySearch: function (item, low, high) {
-                    var mid, midItem, res, arrangedContent;
-                    if (low === high) {
-                        return low;
-                    }
-                    arrangedContent = get(this, 'arrangedContent');
-                    mid = low + Math.floor((high - low) / 2);
-                    midItem = arrangedContent.objectAt(mid);
-                    res = this.orderBy(midItem, item);
-                    if (res < 0) {
-                        return this._binarySearch(item, mid + 1, high);
-                    } else if (res > 0) {
-                        return this._binarySearch(item, low, mid);
-                    }
-                    return mid;
+                ClassMixin.ownerConstructor = CoreObject;
+                if (Ember.config.overrideClassMixin) {
+                    Ember.config.overrideClassMixin(ClassMixin);
                 }
-            });
-        }());
-        (function () {
-            var get = Ember.get, set = Ember.set;
-            Ember.ArrayController = Ember.ArrayProxy.extend(Ember.ControllerMixin, Ember.SortableMixin);
-        }());
-        (function () {
-            Ember.ObjectController = Ember.ObjectProxy.extend(Ember.ControllerMixin);
-        }());
-        (function () {
-        }());
-        (function () {
+                CoreObject.ClassMixin = ClassMixin;
+                ClassMixin.apply(CoreObject);
+                Ember.CoreObject = CoreObject;
+            }());
+            (function () {
+                Ember.Object = Ember.CoreObject.extend(Ember.Observable);
+                Ember.Object.toString = function () {
+                    return 'Ember.Object';
+                };
+            }());
+            (function () {
+                var get = Ember.get, indexOf = Ember.ArrayPolyfills.indexOf;
+                var Namespace = Ember.Namespace = Ember.Object.extend({
+                        isNamespace: true,
+                        init: function () {
+                            Ember.Namespace.NAMESPACES.push(this);
+                            Ember.Namespace.PROCESSED = false;
+                        },
+                        toString: function () {
+                            var name = get(this, 'name');
+                            if (name) {
+                                return name;
+                            }
+                            findNamespaces();
+                            return this[Ember.GUID_KEY + '_name'];
+                        },
+                        nameClasses: function () {
+                            processNamespace([this.toString()], this, {});
+                        },
+                        destroy: function () {
+                            var namespaces = Ember.Namespace.NAMESPACES;
+                            Ember.lookup[this.toString()] = undefined;
+                            namespaces.splice(indexOf.call(namespaces, this), 1);
+                            this._super();
+                        }
+                    });
+                Namespace.reopenClass({
+                    NAMESPACES: [Ember],
+                    NAMESPACES_BY_ID: {},
+                    PROCESSED: false,
+                    processAll: processAllNamespaces,
+                    byName: function (name) {
+                        if (!Ember.BOOTED) {
+                            processAllNamespaces();
+                        }
+                        return NAMESPACES_BY_ID[name];
+                    }
+                });
+                var NAMESPACES_BY_ID = Namespace.NAMESPACES_BY_ID;
+                var hasOwnProp = {}.hasOwnProperty, guidFor = Ember.guidFor;
+                function processNamespace(paths, root, seen) {
+                    var idx = paths.length;
+                    NAMESPACES_BY_ID[paths.join('.')] = root;
+                    for (var key in root) {
+                        if (!hasOwnProp.call(root, key)) {
+                            continue;
+                        }
+                        var obj = root[key];
+                        paths[idx] = key;
+                        if (obj && obj.toString === classToString) {
+                            obj.toString = makeToString(paths.join('.'));
+                            obj[NAME_KEY] = paths.join('.');
+                        } else if (obj && obj.isNamespace) {
+                            if (seen[guidFor(obj)]) {
+                                continue;
+                            }
+                            seen[guidFor(obj)] = true;
+                            processNamespace(paths, obj, seen);
+                        }
+                    }
+                    paths.length = idx;
+                }
+                function findNamespaces() {
+                    var Namespace = Ember.Namespace, lookup = Ember.lookup, obj, isNamespace;
+                    if (Namespace.PROCESSED) {
+                        return;
+                    }
+                    for (var prop in lookup) {
+                        if (prop === 'parent' || prop === 'top' || prop === 'frameElement') {
+                            continue;
+                        }
+                        if (prop === 'globalStorage' && lookup.StorageList && lookup.globalStorage instanceof lookup.StorageList) {
+                            continue;
+                        }
+                        if (lookup.hasOwnProperty && !lookup.hasOwnProperty(prop)) {
+                            continue;
+                        }
+                        try {
+                            obj = Ember.lookup[prop];
+                            isNamespace = obj && obj.isNamespace;
+                        } catch (e) {
+                            continue;
+                        }
+                        if (isNamespace) {
+                            Ember.deprecate('Namespaces should not begin with lowercase.', /^[A-Z]/.test(prop));
+                            obj[NAME_KEY] = prop;
+                        }
+                    }
+                }
+                var NAME_KEY = Ember.NAME_KEY = Ember.GUID_KEY + '_name';
+                function superClassString(mixin) {
+                    var superclass = mixin.superclass;
+                    if (superclass) {
+                        if (superclass[NAME_KEY]) {
+                            return superclass[NAME_KEY];
+                        } else {
+                            return superClassString(superclass);
+                        }
+                    } else {
+                        return;
+                    }
+                }
+                function classToString() {
+                    if (!Ember.BOOTED && !this[NAME_KEY]) {
+                        processAllNamespaces();
+                    }
+                    var ret;
+                    if (this[NAME_KEY]) {
+                        ret = this[NAME_KEY];
+                    } else {
+                        var str = superClassString(this);
+                        if (str) {
+                            ret = '(subclass of ' + str + ')';
+                        } else {
+                            ret = '(unknown mixin)';
+                        }
+                        this.toString = makeToString(ret);
+                    }
+                    return ret;
+                }
+                function processAllNamespaces() {
+                    var unprocessedNamespaces = !Namespace.PROCESSED, unprocessedMixins = Ember.anyUnprocessedMixins;
+                    if (unprocessedNamespaces) {
+                        findNamespaces();
+                        Namespace.PROCESSED = true;
+                    }
+                    if (unprocessedNamespaces || unprocessedMixins) {
+                        var namespaces = Namespace.NAMESPACES, namespace;
+                        for (var i = 0, l = namespaces.length; i < l; i++) {
+                            namespace = namespaces[i];
+                            processNamespace([namespace.toString()], namespace, {});
+                        }
+                        Ember.anyUnprocessedMixins = false;
+                    }
+                }
+                function makeToString(ret) {
+                    return function () {
+                        return ret;
+                    };
+                }
+                Ember.Mixin.prototype.toString = classToString;
+            }());
+            (function () {
+                Ember.Application = Ember.Namespace.extend();
+            }());
+            (function () {
+                var OUT_OF_RANGE_EXCEPTION = 'Index out of range';
+                var EMPTY = [];
+                var get = Ember.get, set = Ember.set;
+                Ember.ArrayProxy = Ember.Object.extend(Ember.MutableArray, {
+                    content: null,
+                    arrangedContent: Ember.computed.alias('content'),
+                    objectAtContent: function (idx) {
+                        return get(this, 'arrangedContent').objectAt(idx);
+                    },
+                    replaceContent: function (idx, amt, objects) {
+                        get(this, 'content').replace(idx, amt, objects);
+                    },
+                    _contentWillChange: Ember.beforeObserver(function () {
+                        this._teardownContent();
+                    }, 'content'),
+                    _teardownContent: function () {
+                        var content = get(this, 'content');
+                        if (content) {
+                            content.removeArrayObserver(this, {
+                                willChange: 'contentArrayWillChange',
+                                didChange: 'contentArrayDidChange'
+                            });
+                        }
+                    },
+                    contentArrayWillChange: Ember.K,
+                    contentArrayDidChange: Ember.K,
+                    _contentDidChange: Ember.observer(function () {
+                        var content = get(this, 'content');
+                        Ember.assert('Can\'t set ArrayProxy\'s content to itself', content !== this);
+                        this._setupContent();
+                    }, 'content'),
+                    _setupContent: function () {
+                        var content = get(this, 'content');
+                        if (content) {
+                            content.addArrayObserver(this, {
+                                willChange: 'contentArrayWillChange',
+                                didChange: 'contentArrayDidChange'
+                            });
+                        }
+                    },
+                    _arrangedContentWillChange: Ember.beforeObserver(function () {
+                        var arrangedContent = get(this, 'arrangedContent'), len = arrangedContent ? get(arrangedContent, 'length') : 0;
+                        this.arrangedContentArrayWillChange(this, 0, len, undefined);
+                        this.arrangedContentWillChange(this);
+                        this._teardownArrangedContent(arrangedContent);
+                    }, 'arrangedContent'),
+                    _arrangedContentDidChange: Ember.observer(function () {
+                        var arrangedContent = get(this, 'arrangedContent'), len = arrangedContent ? get(arrangedContent, 'length') : 0;
+                        Ember.assert('Can\'t set ArrayProxy\'s content to itself', arrangedContent !== this);
+                        this._setupArrangedContent();
+                        this.arrangedContentDidChange(this);
+                        this.arrangedContentArrayDidChange(this, 0, undefined, len);
+                    }, 'arrangedContent'),
+                    _setupArrangedContent: function () {
+                        var arrangedContent = get(this, 'arrangedContent');
+                        if (arrangedContent) {
+                            arrangedContent.addArrayObserver(this, {
+                                willChange: 'arrangedContentArrayWillChange',
+                                didChange: 'arrangedContentArrayDidChange'
+                            });
+                        }
+                    },
+                    _teardownArrangedContent: function () {
+                        var arrangedContent = get(this, 'arrangedContent');
+                        if (arrangedContent) {
+                            arrangedContent.removeArrayObserver(this, {
+                                willChange: 'arrangedContentArrayWillChange',
+                                didChange: 'arrangedContentArrayDidChange'
+                            });
+                        }
+                    },
+                    arrangedContentWillChange: Ember.K,
+                    arrangedContentDidChange: Ember.K,
+                    objectAt: function (idx) {
+                        return get(this, 'content') && this.objectAtContent(idx);
+                    },
+                    length: Ember.computed(function () {
+                        var arrangedContent = get(this, 'arrangedContent');
+                        return arrangedContent ? get(arrangedContent, 'length') : 0;
+                    }),
+                    _replace: function (idx, amt, objects) {
+                        var content = get(this, 'content');
+                        Ember.assert('The content property of ' + this.constructor + ' should be set before modifying it', content);
+                        if (content)
+                            this.replaceContent(idx, amt, objects);
+                        return this;
+                    },
+                    replace: function () {
+                        if (get(this, 'arrangedContent') === get(this, 'content')) {
+                            this._replace.apply(this, arguments);
+                        } else {
+                            throw new Ember.Error('Using replace on an arranged ArrayProxy is not allowed.');
+                        }
+                    },
+                    _insertAt: function (idx, object) {
+                        if (idx > get(this, 'content.length'))
+                            throw new Error(OUT_OF_RANGE_EXCEPTION);
+                        this._replace(idx, 0, [object]);
+                        return this;
+                    },
+                    insertAt: function (idx, object) {
+                        if (get(this, 'arrangedContent') === get(this, 'content')) {
+                            return this._insertAt(idx, object);
+                        } else {
+                            throw new Ember.Error('Using insertAt on an arranged ArrayProxy is not allowed.');
+                        }
+                    },
+                    removeAt: function (start, len) {
+                        if ('number' === typeof start) {
+                            var content = get(this, 'content'), arrangedContent = get(this, 'arrangedContent'), indices = [], i;
+                            if (start < 0 || start >= get(this, 'length')) {
+                                throw new Error(OUT_OF_RANGE_EXCEPTION);
+                            }
+                            if (len === undefined)
+                                len = 1;
+                            for (i = start; i < start + len; i++) {
+                                indices.push(content.indexOf(arrangedContent.objectAt(i)));
+                            }
+                            indices.sort(function (a, b) {
+                                return b - a;
+                            });
+                            Ember.beginPropertyChanges();
+                            for (i = 0; i < indices.length; i++) {
+                                this._replace(indices[i], 1, EMPTY);
+                            }
+                            Ember.endPropertyChanges();
+                        }
+                        return this;
+                    },
+                    pushObject: function (obj) {
+                        this._insertAt(get(this, 'content.length'), obj);
+                        return obj;
+                    },
+                    pushObjects: function (objects) {
+                        this._replace(get(this, 'length'), 0, objects);
+                        return this;
+                    },
+                    setObjects: function (objects) {
+                        if (objects.length === 0)
+                            return this.clear();
+                        var len = get(this, 'length');
+                        this._replace(0, len, objects);
+                        return this;
+                    },
+                    unshiftObject: function (obj) {
+                        this._insertAt(0, obj);
+                        return obj;
+                    },
+                    unshiftObjects: function (objects) {
+                        this._replace(0, 0, objects);
+                        return this;
+                    },
+                    slice: function () {
+                        var arr = this.toArray();
+                        return arr.slice.apply(arr, arguments);
+                    },
+                    arrangedContentArrayWillChange: function (item, idx, removedCnt, addedCnt) {
+                        this.arrayContentWillChange(idx, removedCnt, addedCnt);
+                    },
+                    arrangedContentArrayDidChange: function (item, idx, removedCnt, addedCnt) {
+                        this.arrayContentDidChange(idx, removedCnt, addedCnt);
+                    },
+                    init: function () {
+                        this._super();
+                        this._setupContent();
+                        this._setupArrangedContent();
+                    },
+                    willDestroy: function () {
+                        this._teardownArrangedContent();
+                        this._teardownContent();
+                    }
+                });
+            }());
+            (function () {
+                var get = Ember.get, set = Ember.set, fmt = Ember.String.fmt, addBeforeObserver = Ember.addBeforeObserver, addObserver = Ember.addObserver, removeBeforeObserver = Ember.removeBeforeObserver, removeObserver = Ember.removeObserver, propertyWillChange = Ember.propertyWillChange, propertyDidChange = Ember.propertyDidChange;
+                function contentPropertyWillChange(content, contentKey) {
+                    var key = contentKey.slice(8);
+                    if (key in this) {
+                        return;
+                    }
+                    propertyWillChange(this, key);
+                }
+                function contentPropertyDidChange(content, contentKey) {
+                    var key = contentKey.slice(8);
+                    if (key in this) {
+                        return;
+                    }
+                    propertyDidChange(this, key);
+                }
+                Ember.ObjectProxy = Ember.Object.extend({
+                    content: null,
+                    _contentDidChange: Ember.observer(function () {
+                        Ember.assert('Can\'t set ObjectProxy\'s content to itself', this.get('content') !== this);
+                    }, 'content'),
+                    isTruthy: Ember.computed.bool('content'),
+                    _debugContainerKey: null,
+                    willWatchProperty: function (key) {
+                        var contentKey = 'content.' + key;
+                        addBeforeObserver(this, contentKey, null, contentPropertyWillChange);
+                        addObserver(this, contentKey, null, contentPropertyDidChange);
+                    },
+                    didUnwatchProperty: function (key) {
+                        var contentKey = 'content.' + key;
+                        removeBeforeObserver(this, contentKey, null, contentPropertyWillChange);
+                        removeObserver(this, contentKey, null, contentPropertyDidChange);
+                    },
+                    unknownProperty: function (key) {
+                        var content = get(this, 'content');
+                        if (content) {
+                            return get(content, key);
+                        }
+                    },
+                    setUnknownProperty: function (key, value) {
+                        var content = get(this, 'content');
+                        Ember.assert(fmt('Cannot delegate set(\'%@\', %@) to the \'content\' property of object proxy %@: its \'content\' is undefined.', [
+                            key,
+                            value,
+                            this
+                        ]), content);
+                        return set(content, key, value);
+                    }
+                });
+                Ember.ObjectProxy.reopenClass({
+                    create: function () {
+                        var mixin, prototype, i, l, properties, keyName;
+                        if (arguments.length) {
+                            prototype = this.proto();
+                            for (i = 0, l = arguments.length; i < l; i++) {
+                                properties = arguments[i];
+                                for (keyName in properties) {
+                                    if (!properties.hasOwnProperty(keyName) || keyName in prototype) {
+                                        continue;
+                                    }
+                                    if (!mixin)
+                                        mixin = {};
+                                    mixin[keyName] = null;
+                                }
+                            }
+                            if (mixin)
+                                this._initMixins([mixin]);
+                        }
+                        return this._super.apply(this, arguments);
+                    }
+                });
+            }());
+            (function () {
+                var set = Ember.set, get = Ember.get, guidFor = Ember.guidFor;
+                var forEach = Ember.EnumerableUtils.forEach;
+                var EachArray = Ember.Object.extend(Ember.Array, {
+                        init: function (content, keyName, owner) {
+                            this._super();
+                            this._keyName = keyName;
+                            this._owner = owner;
+                            this._content = content;
+                        },
+                        objectAt: function (idx) {
+                            var item = this._content.objectAt(idx);
+                            return item && get(item, this._keyName);
+                        },
+                        length: Ember.computed(function () {
+                            var content = this._content;
+                            return content ? get(content, 'length') : 0;
+                        })
+                    });
+                var IS_OBSERVER = /^.+:(before|change)$/;
+                function addObserverForContentKey(content, keyName, proxy, idx, loc) {
+                    var objects = proxy._objects, guid;
+                    if (!objects)
+                        objects = proxy._objects = {};
+                    while (--loc >= idx) {
+                        var item = content.objectAt(loc);
+                        if (item) {
+                            Ember.addBeforeObserver(item, keyName, proxy, 'contentKeyWillChange');
+                            Ember.addObserver(item, keyName, proxy, 'contentKeyDidChange');
+                            guid = guidFor(item);
+                            if (!objects[guid])
+                                objects[guid] = [];
+                            objects[guid].push(loc);
+                        }
+                    }
+                }
+                function removeObserverForContentKey(content, keyName, proxy, idx, loc) {
+                    var objects = proxy._objects;
+                    if (!objects)
+                        objects = proxy._objects = {};
+                    var indicies, guid;
+                    while (--loc >= idx) {
+                        var item = content.objectAt(loc);
+                        if (item) {
+                            Ember.removeBeforeObserver(item, keyName, proxy, 'contentKeyWillChange');
+                            Ember.removeObserver(item, keyName, proxy, 'contentKeyDidChange');
+                            guid = guidFor(item);
+                            indicies = objects[guid];
+                            indicies[indicies.indexOf(loc)] = null;
+                        }
+                    }
+                }
+                Ember.EachProxy = Ember.Object.extend({
+                    init: function (content) {
+                        this._super();
+                        this._content = content;
+                        content.addArrayObserver(this);
+                        forEach(Ember.watchedEvents(this), function (eventName) {
+                            this.didAddListener(eventName);
+                        }, this);
+                    },
+                    unknownProperty: function (keyName, value) {
+                        var ret;
+                        ret = new EachArray(this._content, keyName, this);
+                        Ember.defineProperty(this, keyName, null, ret);
+                        this.beginObservingContentKey(keyName);
+                        return ret;
+                    },
+                    arrayWillChange: function (content, idx, removedCnt, addedCnt) {
+                        var keys = this._keys, key, lim;
+                        lim = removedCnt > 0 ? idx + removedCnt : -1;
+                        Ember.beginPropertyChanges(this);
+                        for (key in keys) {
+                            if (!keys.hasOwnProperty(key)) {
+                                continue;
+                            }
+                            if (lim > 0)
+                                removeObserverForContentKey(content, key, this, idx, lim);
+                            Ember.propertyWillChange(this, key);
+                        }
+                        Ember.propertyWillChange(this._content, '@each');
+                        Ember.endPropertyChanges(this);
+                    },
+                    arrayDidChange: function (content, idx, removedCnt, addedCnt) {
+                        var keys = this._keys, key, lim;
+                        lim = addedCnt > 0 ? idx + addedCnt : -1;
+                        Ember.beginPropertyChanges(this);
+                        for (key in keys) {
+                            if (!keys.hasOwnProperty(key)) {
+                                continue;
+                            }
+                            if (lim > 0)
+                                addObserverForContentKey(content, key, this, idx, lim);
+                            Ember.propertyDidChange(this, key);
+                        }
+                        Ember.propertyDidChange(this._content, '@each');
+                        Ember.endPropertyChanges(this);
+                    },
+                    didAddListener: function (eventName) {
+                        if (IS_OBSERVER.test(eventName)) {
+                            this.beginObservingContentKey(eventName.slice(0, -7));
+                        }
+                    },
+                    didRemoveListener: function (eventName) {
+                        if (IS_OBSERVER.test(eventName)) {
+                            this.stopObservingContentKey(eventName.slice(0, -7));
+                        }
+                    },
+                    beginObservingContentKey: function (keyName) {
+                        var keys = this._keys;
+                        if (!keys)
+                            keys = this._keys = {};
+                        if (!keys[keyName]) {
+                            keys[keyName] = 1;
+                            var content = this._content, len = get(content, 'length');
+                            addObserverForContentKey(content, keyName, this, 0, len);
+                        } else {
+                            keys[keyName]++;
+                        }
+                    },
+                    stopObservingContentKey: function (keyName) {
+                        var keys = this._keys;
+                        if (keys && keys[keyName] > 0 && --keys[keyName] <= 0) {
+                            var content = this._content, len = get(content, 'length');
+                            removeObserverForContentKey(content, keyName, this, 0, len);
+                        }
+                    },
+                    contentKeyWillChange: function (obj, keyName) {
+                        Ember.propertyWillChange(this, keyName);
+                    },
+                    contentKeyDidChange: function (obj, keyName) {
+                        Ember.propertyDidChange(this, keyName);
+                    }
+                });
+            }());
+            (function () {
+                var get = Ember.get, set = Ember.set;
+                var NativeArray = Ember.Mixin.create(Ember.MutableArray, Ember.Observable, Ember.Copyable, {
+                        get: function (key) {
+                            if (key === 'length')
+                                return this.length;
+                            else if ('number' === typeof key)
+                                return this[key];
+                            else
+                                return this._super(key);
+                        },
+                        objectAt: function (idx) {
+                            return this[idx];
+                        },
+                        replace: function (idx, amt, objects) {
+                            if (this.isFrozen)
+                                throw Ember.FROZEN_ERROR;
+                            var len = objects ? get(objects, 'length') : 0;
+                            this.arrayContentWillChange(idx, amt, len);
+                            if (!objects || objects.length === 0) {
+                                this.splice(idx, amt);
+                            } else {
+                                var args = [
+                                        idx,
+                                        amt
+                                    ].concat(objects);
+                                this.splice.apply(this, args);
+                            }
+                            this.arrayContentDidChange(idx, amt, len);
+                            return this;
+                        },
+                        unknownProperty: function (key, value) {
+                            var ret;
+                            if (value !== undefined && ret === undefined) {
+                                ret = this[key] = value;
+                            }
+                            return ret;
+                        },
+                        indexOf: function (object, startAt) {
+                            var idx, len = this.length;
+                            if (startAt === undefined)
+                                startAt = 0;
+                            else
+                                startAt = startAt < 0 ? Math.ceil(startAt) : Math.floor(startAt);
+                            if (startAt < 0)
+                                startAt += len;
+                            for (idx = startAt; idx < len; idx++) {
+                                if (this[idx] === object)
+                                    return idx;
+                            }
+                            return -1;
+                        },
+                        lastIndexOf: function (object, startAt) {
+                            var idx, len = this.length;
+                            if (startAt === undefined)
+                                startAt = len - 1;
+                            else
+                                startAt = startAt < 0 ? Math.ceil(startAt) : Math.floor(startAt);
+                            if (startAt < 0)
+                                startAt += len;
+                            for (idx = startAt; idx >= 0; idx--) {
+                                if (this[idx] === object)
+                                    return idx;
+                            }
+                            return -1;
+                        },
+                        copy: function (deep) {
+                            if (deep) {
+                                return this.map(function (item) {
+                                    return Ember.copy(item, true);
+                                });
+                            }
+                            return this.slice();
+                        }
+                    });
+                var ignore = ['length'];
+                Ember.EnumerableUtils.forEach(NativeArray.keys(), function (methodName) {
+                    if (Array.prototype[methodName])
+                        ignore.push(methodName);
+                });
+                if (ignore.length > 0) {
+                    NativeArray = NativeArray.without.apply(NativeArray, ignore);
+                }
+                Ember.NativeArray = NativeArray;
+                Ember.A = function (arr) {
+                    if (arr === undefined) {
+                        arr = [];
+                    }
+                    return Ember.Array.detect(arr) ? arr : Ember.NativeArray.apply(arr);
+                };
+                Ember.NativeArray.activate = function () {
+                    NativeArray.apply(Array.prototype);
+                    Ember.A = function (arr) {
+                        return arr || [];
+                    };
+                };
+                if (Ember.EXTEND_PROTOTYPES === true || Ember.EXTEND_PROTOTYPES.Array) {
+                    Ember.NativeArray.activate();
+                }
+            }());
+            (function () {
+                var get = Ember.get, set = Ember.set, guidFor = Ember.guidFor, none = Ember.isNone, fmt = Ember.String.fmt;
+                Ember.Set = Ember.CoreObject.extend(Ember.MutableEnumerable, Ember.Copyable, Ember.Freezable, {
+                    length: 0,
+                    clear: function () {
+                        if (this.isFrozen) {
+                            throw new Error(Ember.FROZEN_ERROR);
+                        }
+                        var len = get(this, 'length');
+                        if (len === 0) {
+                            return this;
+                        }
+                        var guid;
+                        this.enumerableContentWillChange(len, 0);
+                        Ember.propertyWillChange(this, 'firstObject');
+                        Ember.propertyWillChange(this, 'lastObject');
+                        for (var i = 0; i < len; i++) {
+                            guid = guidFor(this[i]);
+                            delete this[guid];
+                            delete this[i];
+                        }
+                        set(this, 'length', 0);
+                        Ember.propertyDidChange(this, 'firstObject');
+                        Ember.propertyDidChange(this, 'lastObject');
+                        this.enumerableContentDidChange(len, 0);
+                        return this;
+                    },
+                    isEqual: function (obj) {
+                        if (!Ember.Enumerable.detect(obj))
+                            return false;
+                        var loc = get(this, 'length');
+                        if (get(obj, 'length') !== loc)
+                            return false;
+                        while (--loc >= 0) {
+                            if (!obj.contains(this[loc]))
+                                return false;
+                        }
+                        return true;
+                    },
+                    add: Ember.aliasMethod('addObject'),
+                    remove: Ember.aliasMethod('removeObject'),
+                    pop: function () {
+                        if (get(this, 'isFrozen'))
+                            throw new Error(Ember.FROZEN_ERROR);
+                        var obj = this.length > 0 ? this[this.length - 1] : null;
+                        this.remove(obj);
+                        return obj;
+                    },
+                    push: Ember.aliasMethod('addObject'),
+                    shift: Ember.aliasMethod('pop'),
+                    unshift: Ember.aliasMethod('push'),
+                    addEach: Ember.aliasMethod('addObjects'),
+                    removeEach: Ember.aliasMethod('removeObjects'),
+                    init: function (items) {
+                        this._super();
+                        if (items)
+                            this.addObjects(items);
+                    },
+                    nextObject: function (idx) {
+                        return this[idx];
+                    },
+                    firstObject: Ember.computed(function () {
+                        return this.length > 0 ? this[0] : undefined;
+                    }),
+                    lastObject: Ember.computed(function () {
+                        return this.length > 0 ? this[this.length - 1] : undefined;
+                    }),
+                    addObject: function (obj) {
+                        if (get(this, 'isFrozen'))
+                            throw new Error(Ember.FROZEN_ERROR);
+                        if (none(obj))
+                            return this;
+                        var guid = guidFor(obj), idx = this[guid], len = get(this, 'length'), added;
+                        if (idx >= 0 && idx < len && this[idx] === obj)
+                            return this;
+                        added = [obj];
+                        this.enumerableContentWillChange(null, added);
+                        Ember.propertyWillChange(this, 'lastObject');
+                        len = get(this, 'length');
+                        this[guid] = len;
+                        this[len] = obj;
+                        set(this, 'length', len + 1);
+                        Ember.propertyDidChange(this, 'lastObject');
+                        this.enumerableContentDidChange(null, added);
+                        return this;
+                    },
+                    removeObject: function (obj) {
+                        if (get(this, 'isFrozen'))
+                            throw new Error(Ember.FROZEN_ERROR);
+                        if (none(obj))
+                            return this;
+                        var guid = guidFor(obj), idx = this[guid], len = get(this, 'length'), isFirst = idx === 0, isLast = idx === len - 1, last, removed;
+                        if (idx >= 0 && idx < len && this[idx] === obj) {
+                            removed = [obj];
+                            this.enumerableContentWillChange(removed, null);
+                            if (isFirst) {
+                                Ember.propertyWillChange(this, 'firstObject');
+                            }
+                            if (isLast) {
+                                Ember.propertyWillChange(this, 'lastObject');
+                            }
+                            if (idx < len - 1) {
+                                last = this[len - 1];
+                                this[idx] = last;
+                                this[guidFor(last)] = idx;
+                            }
+                            delete this[guid];
+                            delete this[len - 1];
+                            set(this, 'length', len - 1);
+                            if (isFirst) {
+                                Ember.propertyDidChange(this, 'firstObject');
+                            }
+                            if (isLast) {
+                                Ember.propertyDidChange(this, 'lastObject');
+                            }
+                            this.enumerableContentDidChange(removed, null);
+                        }
+                        return this;
+                    },
+                    contains: function (obj) {
+                        return this[guidFor(obj)] >= 0;
+                    },
+                    copy: function () {
+                        var C = this.constructor, ret = new C(), loc = get(this, 'length');
+                        set(ret, 'length', loc);
+                        while (--loc >= 0) {
+                            ret[loc] = this[loc];
+                            ret[guidFor(this[loc])] = loc;
+                        }
+                        return ret;
+                    },
+                    toString: function () {
+                        var len = this.length, idx, array = [];
+                        for (idx = 0; idx < len; idx++) {
+                            array[idx] = this[idx];
+                        }
+                        return fmt('Ember.Set<%@>', [array.join(',')]);
+                    }
+                });
+            }());
+            (function () {
+                var DeferredMixin = Ember.DeferredMixin, get = Ember.get;
+                var Deferred = Ember.Object.extend(DeferredMixin);
+                Deferred.reopenClass({
+                    promise: function (callback, binding) {
+                        var deferred = Deferred.create();
+                        callback.call(binding, deferred);
+                        return get(deferred, 'promise');
+                    }
+                });
+                Ember.Deferred = Deferred;
+            }());
+            (function () {
+                var loadHooks = Ember.ENV.EMBER_LOAD_HOOKS || {};
+                var loaded = {};
+                Ember.onLoad = function (name, callback) {
+                    var object;
+                    loadHooks[name] = loadHooks[name] || Ember.A();
+                    loadHooks[name].pushObject(callback);
+                    if (object = loaded[name]) {
+                        callback(object);
+                    }
+                };
+                Ember.runLoadHooks = function (name, object) {
+                    var hooks;
+                    loaded[name] = object;
+                    if (hooks = loadHooks[name]) {
+                        loadHooks[name].forEach(function (callback) {
+                            callback(object);
+                        });
+                    }
+                };
+            }());
+            (function () {
+            }());
+            (function () {
+                var get = Ember.get;
+                Ember.ControllerMixin = Ember.Mixin.create({
+                    isController: true,
+                    target: null,
+                    container: null,
+                    store: null,
+                    model: Ember.computed.alias('content'),
+                    send: function (actionName) {
+                        var args = [].slice.call(arguments, 1), target;
+                        if (this[actionName]) {
+                            Ember.assert('The controller ' + this + ' does not have the action ' + actionName, typeof this[actionName] === 'function');
+                            this[actionName].apply(this, args);
+                        } else if (target = get(this, 'target')) {
+                            Ember.assert('The target for controller ' + this + ' (' + target + ') did not define a `send` method', typeof target.send === 'function');
+                            target.send.apply(target, arguments);
+                        }
+                    }
+                });
+                Ember.Controller = Ember.Object.extend(Ember.ControllerMixin);
+            }());
+            (function () {
+                var get = Ember.get, set = Ember.set, forEach = Ember.EnumerableUtils.forEach;
+                Ember.SortableMixin = Ember.Mixin.create(Ember.MutableEnumerable, {
+                    sortProperties: null,
+                    sortAscending: true,
+                    orderBy: function (item1, item2) {
+                        var result = 0, sortProperties = get(this, 'sortProperties'), sortAscending = get(this, 'sortAscending');
+                        Ember.assert('you need to define `sortProperties`', !!sortProperties);
+                        forEach(sortProperties, function (propertyName) {
+                            if (result === 0) {
+                                result = Ember.compare(get(item1, propertyName), get(item2, propertyName));
+                                if (result !== 0 && !sortAscending) {
+                                    result = -1 * result;
+                                }
+                            }
+                        });
+                        return result;
+                    },
+                    destroy: function () {
+                        var content = get(this, 'content'), sortProperties = get(this, 'sortProperties');
+                        if (content && sortProperties) {
+                            forEach(content, function (item) {
+                                forEach(sortProperties, function (sortProperty) {
+                                    Ember.removeObserver(item, sortProperty, this, 'contentItemSortPropertyDidChange');
+                                }, this);
+                            }, this);
+                        }
+                        return this._super();
+                    },
+                    isSorted: Ember.computed.bool('sortProperties'),
+                    arrangedContent: Ember.computed('content', 'sortProperties.@each', function (key, value) {
+                        var content = get(this, 'content'), isSorted = get(this, 'isSorted'), sortProperties = get(this, 'sortProperties'), self = this;
+                        if (content && isSorted) {
+                            content = content.slice();
+                            content.sort(function (item1, item2) {
+                                return self.orderBy(item1, item2);
+                            });
+                            forEach(content, function (item) {
+                                forEach(sortProperties, function (sortProperty) {
+                                    Ember.addObserver(item, sortProperty, this, 'contentItemSortPropertyDidChange');
+                                }, this);
+                            }, this);
+                            return Ember.A(content);
+                        }
+                        return content;
+                    }),
+                    _contentWillChange: Ember.beforeObserver(function () {
+                        var content = get(this, 'content'), sortProperties = get(this, 'sortProperties');
+                        if (content && sortProperties) {
+                            forEach(content, function (item) {
+                                forEach(sortProperties, function (sortProperty) {
+                                    Ember.removeObserver(item, sortProperty, this, 'contentItemSortPropertyDidChange');
+                                }, this);
+                            }, this);
+                        }
+                        this._super();
+                    }, 'content'),
+                    sortAscendingWillChange: Ember.beforeObserver(function () {
+                        this._lastSortAscending = get(this, 'sortAscending');
+                    }, 'sortAscending'),
+                    sortAscendingDidChange: Ember.observer(function () {
+                        if (get(this, 'sortAscending') !== this._lastSortAscending) {
+                            var arrangedContent = get(this, 'arrangedContent');
+                            arrangedContent.reverseObjects();
+                        }
+                    }, 'sortAscending'),
+                    contentArrayWillChange: function (array, idx, removedCount, addedCount) {
+                        var isSorted = get(this, 'isSorted');
+                        if (isSorted) {
+                            var arrangedContent = get(this, 'arrangedContent');
+                            var removedObjects = array.slice(idx, idx + removedCount);
+                            var sortProperties = get(this, 'sortProperties');
+                            forEach(removedObjects, function (item) {
+                                arrangedContent.removeObject(item);
+                                forEach(sortProperties, function (sortProperty) {
+                                    Ember.removeObserver(item, sortProperty, this, 'contentItemSortPropertyDidChange');
+                                }, this);
+                            }, this);
+                        }
+                        return this._super(array, idx, removedCount, addedCount);
+                    },
+                    contentArrayDidChange: function (array, idx, removedCount, addedCount) {
+                        var isSorted = get(this, 'isSorted'), sortProperties = get(this, 'sortProperties');
+                        if (isSorted) {
+                            var addedObjects = array.slice(idx, idx + addedCount);
+                            forEach(addedObjects, function (item) {
+                                this.insertItemSorted(item);
+                                forEach(sortProperties, function (sortProperty) {
+                                    Ember.addObserver(item, sortProperty, this, 'contentItemSortPropertyDidChange');
+                                }, this);
+                            }, this);
+                        }
+                        return this._super(array, idx, removedCount, addedCount);
+                    },
+                    insertItemSorted: function (item) {
+                        var arrangedContent = get(this, 'arrangedContent');
+                        var length = get(arrangedContent, 'length');
+                        var idx = this._binarySearch(item, 0, length);
+                        arrangedContent.insertAt(idx, item);
+                    },
+                    contentItemSortPropertyDidChange: function (item) {
+                        var arrangedContent = get(this, 'arrangedContent'), oldIndex = arrangedContent.indexOf(item), leftItem = arrangedContent.objectAt(oldIndex - 1), rightItem = arrangedContent.objectAt(oldIndex + 1), leftResult = leftItem && this.orderBy(item, leftItem), rightResult = rightItem && this.orderBy(item, rightItem);
+                        if (leftResult < 0 || rightResult > 0) {
+                            arrangedContent.removeObject(item);
+                            this.insertItemSorted(item);
+                        }
+                    },
+                    _binarySearch: function (item, low, high) {
+                        var mid, midItem, res, arrangedContent;
+                        if (low === high) {
+                            return low;
+                        }
+                        arrangedContent = get(this, 'arrangedContent');
+                        mid = low + Math.floor((high - low) / 2);
+                        midItem = arrangedContent.objectAt(mid);
+                        res = this.orderBy(midItem, item);
+                        if (res < 0) {
+                            return this._binarySearch(item, mid + 1, high);
+                        } else if (res > 0) {
+                            return this._binarySearch(item, low, mid);
+                        }
+                        return mid;
+                    }
+                });
+            }());
+            (function () {
+                var get = Ember.get, set = Ember.set, forEach = Ember.EnumerableUtils.forEach, replace = Ember.EnumerableUtils.replace;
+                Ember.ArrayController = Ember.ArrayProxy.extend(Ember.ControllerMixin, Ember.SortableMixin, {
+                    itemController: null,
+                    lookupItemController: function (object) {
+                        return get(this, 'itemController');
+                    },
+                    objectAtContent: function (idx) {
+                        var length = get(this, 'length'), arrangedContent = get(this, 'arrangedContent'), object = arrangedContent && arrangedContent.objectAt(idx);
+                        if (idx >= 0 && idx < length) {
+                            var controllerClass = this.lookupItemController(object);
+                            if (controllerClass) {
+                                return this.controllerAt(idx, object, controllerClass);
+                            }
+                        }
+                        return object;
+                    },
+                    arrangedContentDidChange: function () {
+                        this._super();
+                        this._resetSubControllers();
+                    },
+                    arrayContentDidChange: function (idx, removedCnt, addedCnt) {
+                        var subControllers = get(this, '_subControllers'), subControllersToRemove = subControllers.slice(idx, idx + removedCnt);
+                        forEach(subControllersToRemove, function (subController) {
+                            if (subController) {
+                                subController.destroy();
+                            }
+                        });
+                        replace(subControllers, idx, removedCnt, new Array(addedCnt));
+                        this._super(idx, removedCnt, addedCnt);
+                    },
+                    init: function () {
+                        this._super();
+                        if (!this.get('content')) {
+                            Ember.defineProperty(this, 'content', undefined, Ember.A());
+                        }
+                        this.set('_subControllers', Ember.A());
+                    },
+                    controllerAt: function (idx, object, controllerClass) {
+                        var container = get(this, 'container'), subControllers = get(this, '_subControllers'), subController = subControllers[idx];
+                        if (!subController) {
+                            subController = container.lookup('controller:' + controllerClass, { singleton: false });
+                            subControllers[idx] = subController;
+                        }
+                        if (!subController) {
+                            throw new Error('Could not resolve itemController: "' + controllerClass + '"');
+                        }
+                        subController.set('target', this);
+                        subController.set('content', object);
+                        return subController;
+                    },
+                    _subControllers: null,
+                    _resetSubControllers: function () {
+                        var subControllers = get(this, '_subControllers');
+                        forEach(subControllers, function (subController) {
+                            if (subController) {
+                                subController.destroy();
+                            }
+                        });
+                        this.set('_subControllers', Ember.A());
+                    }
+                });
+            }());
+            (function () {
+                Ember.ObjectController = Ember.ObjectProxy.extend(Ember.ControllerMixin);
+            }());
+            (function () {
+            }());
+            (function () {
+            }());
         }());
     });
     require.define('/src/compiler.coffee', function (module, exports, __dirname, __filename) {
@@ -22485,7 +23744,7 @@ if ( typeof define === "function" && define.amd && define.amd.jQuery ) {
         }
     });
     require.define('/src/nodes.coffee', function (module, exports, __dirname, __filename) {
-        var Annotations, ArrayInitialiser, AssignOp, Block, Bool, Class, CompoundAssignOp, ComputedProperty, concat, concatMap, Conditional, createNodes, difference, enumerableMethods, exports, ForOf, FunctionApplications, Functions, GenSym, handleLists, handlePrimitives, HeregExp, Identifier, Identifiers, map, MemberAccessOp, Mixin, NegatedConditional, NewOp, Nodes, nub, ObjectInitialiser, ObjectInitialiserMember, PostDecrementOp, PostIncrementOp, Primitives, Range, RegExp, RegExps, Slice, StaticMemberAccessOps, Super, Switch, SwitchCase, This, union, While;
+        var Annotations, ArrayInitialiser, AssignOp, Block, Bool, Class, CompoundAssignOp, ComputedProperty, concat, concatMap, Conditional, createNodes, difference, enumerableMethods, exports, ForOf, FunctionApplications, Functions, GenSym, handleLists, handlePrimitives, HeregExp, Identifier, Identifiers, map, MemberAccessOp, Mixin, NegatedConditional, NewOp, Nodes, nub, ObjectInitialiser, ObjectInitialiserMember, PostDecrementOp, PostIncrementOp, Primitives, Range, RegExp, RegExps, Slice, SoakedMemberAccessOp, StaticMemberAccessOps, Super, Switch, SwitchCase, This, union, While;
         cache$ = require('/src/functional-helpers.coffee', module);
         map = cache$.map;
         concat = cache$.concat;
@@ -22494,6 +23753,8 @@ if ( typeof define === "function" && define.amd && define.amd.jQuery ) {
         nub = cache$.nub;
         union = cache$.union;
         exports = null != ('undefined' !== typeof module && null != module ? module.exports : void 0) ? 'undefined' !== typeof module && null != module ? module.exports : void 0 : this;
+        if (!('undefined' !== typeof Ember && null != Ember))
+            require('/src/ember-runtime.js', module);
         createNodes = function (subclasses, superclasses) {
             var className, specs;
             if (null == superclasses)
@@ -22874,6 +24135,7 @@ if ( typeof define === "function" && define.amd && define.amd.jQuery ) {
         MemberAccessOp = cache$1.MemberAccessOp;
         This = cache$1.This;
         AssignOp = cache$1.AssignOp;
+        SoakedMemberAccessOp = cache$1.SoakedMemberAccessOp;
         Nodes.fromBasicObject = function (obj) {
             return exports[obj.type].fromBasicObject(obj);
         };
@@ -23115,51 +24377,23 @@ if ( typeof define === "function" && define.amd && define.amd.jQuery ) {
                 return c;
             });
         };
-        enumerableMethods = [
-            'isEnumerable',
-            'nextObject',
-            'firstObject',
-            'lastObject',
-            'contains',
-            'forEach',
-            'getEach',
-            'setEach',
-            'map',
-            'mapProperty',
-            'filter',
-            'reject',
-            'filterProperty',
-            'rejectProperty',
-            'find',
-            'findProperty',
-            'every',
-            'everyProperty',
-            'some',
-            'someProperty',
-            'reduce',
-            'invoke',
-            'toArray',
-            'compact',
-            'without',
-            'uniq',
-            '[]',
-            'addEnumerableObserver',
-            'removeEnumerableObserver',
-            'hasEnumerableObservers',
-            'enumerableContentWillChange',
-            'enumerableContentDidChange'
-        ];
+        SoakedMemberAccessOp.prototype.dependentKeys = MemberAccessOp.prototype.dependentKeys;
+        enumerableMethods = Ember.Set.create();
+        enumerableMethods.addObjects(Ember.Enumerable.keys());
+        enumerableMethods.addObjects(Ember.Array.keys());
+        enumerableMethods.addObjects(Ember.MutableArray.keys());
+        enumerableMethods.addObjects(Ember.MutableEnumerable.keys());
         FunctionApplications.prototype.dependentKeys = function (scope) {
             var res;
             if (null == scope)
                 scope = {};
             res = this['function'].dependentKeys(scope);
-            if (this['function']['instanceof'](MemberAccessOp)) {
+            if (this['function']['instanceof'](MemberAccessOp) || this['function']['instanceof'](SoakedMemberAccessOp)) {
                 res = res.map(function (c) {
                     c.pop();
                     return c;
                 });
-                if (in$(this['function'].memberName, enumerableMethods))
+                if (enumerableMethods.contains(this['function'].memberName))
                     res = res.map(function (c) {
                         c.push('@each');
                         return c;
@@ -45178,7 +46412,7 @@ if ( typeof define === "function" && define.amd && define.amd.jQuery ) {
         }();
     });
     require.define('/lib/nodes.js', function (module, exports, __dirname, __filename) {
-        var Annotations, ArrayInitialiser, AssignOp, Block, Bool, Class, CompoundAssignOp, ComputedProperty, concat, concatMap, Conditional, createNodes, difference, enumerableMethods, exports, ForOf, FunctionApplications, Functions, GenSym, handleLists, handlePrimitives, HeregExp, Identifier, Identifiers, map, MemberAccessOp, Mixin, NegatedConditional, NewOp, Nodes, nub, ObjectInitialiser, ObjectInitialiserMember, PostDecrementOp, PostIncrementOp, Primitives, Range, RegExp, RegExps, Slice, StaticMemberAccessOps, Super, Switch, SwitchCase, This, union, While;
+        var Annotations, ArrayInitialiser, AssignOp, Block, Bool, Class, CompoundAssignOp, ComputedProperty, concat, concatMap, Conditional, createNodes, difference, enumerableMethods, exports, ForOf, FunctionApplications, Functions, GenSym, handleLists, handlePrimitives, HeregExp, Identifier, Identifiers, map, MemberAccessOp, Mixin, NegatedConditional, NewOp, Nodes, nub, ObjectInitialiser, ObjectInitialiserMember, PostDecrementOp, PostIncrementOp, Primitives, Range, RegExp, RegExps, Slice, SoakedMemberAccessOp, StaticMemberAccessOps, Super, Switch, SwitchCase, This, union, While;
         cache$ = require('/lib/functional-helpers.js', module);
         map = cache$.map;
         concat = cache$.concat;
@@ -45187,6 +46421,8 @@ if ( typeof define === "function" && define.amd && define.amd.jQuery ) {
         nub = cache$.nub;
         union = cache$.union;
         exports = null != ('undefined' !== typeof module && null != module ? module.exports : void 0) ? 'undefined' !== typeof module && null != module ? module.exports : void 0 : this;
+        if (!('undefined' !== typeof Ember && null != Ember))
+            require('/lib/ember-runtime.js', module);
         createNodes = function (subclasses, superclasses) {
             var className, specs;
             if (null == superclasses)
@@ -45567,6 +46803,7 @@ if ( typeof define === "function" && define.amd && define.amd.jQuery ) {
         MemberAccessOp = cache$1.MemberAccessOp;
         This = cache$1.This;
         AssignOp = cache$1.AssignOp;
+        SoakedMemberAccessOp = cache$1.SoakedMemberAccessOp;
         Nodes.fromBasicObject = function (obj) {
             return exports[obj.type].fromBasicObject(obj);
         };
@@ -45808,51 +47045,23 @@ if ( typeof define === "function" && define.amd && define.amd.jQuery ) {
                 return c;
             });
         };
-        enumerableMethods = [
-            'isEnumerable',
-            'nextObject',
-            'firstObject',
-            'lastObject',
-            'contains',
-            'forEach',
-            'getEach',
-            'setEach',
-            'map',
-            'mapProperty',
-            'filter',
-            'reject',
-            'filterProperty',
-            'rejectProperty',
-            'find',
-            'findProperty',
-            'every',
-            'everyProperty',
-            'some',
-            'someProperty',
-            'reduce',
-            'invoke',
-            'toArray',
-            'compact',
-            'without',
-            'uniq',
-            '[]',
-            'addEnumerableObserver',
-            'removeEnumerableObserver',
-            'hasEnumerableObservers',
-            'enumerableContentWillChange',
-            'enumerableContentDidChange'
-        ];
+        SoakedMemberAccessOp.prototype.dependentKeys = MemberAccessOp.prototype.dependentKeys;
+        enumerableMethods = Ember.Set.create();
+        enumerableMethods.addObjects(Ember.Enumerable.keys());
+        enumerableMethods.addObjects(Ember.Array.keys());
+        enumerableMethods.addObjects(Ember.MutableArray.keys());
+        enumerableMethods.addObjects(Ember.MutableEnumerable.keys());
         FunctionApplications.prototype.dependentKeys = function (scope) {
             var res;
             if (null == scope)
                 scope = {};
             res = this['function'].dependentKeys(scope);
-            if (this['function']['instanceof'](MemberAccessOp)) {
+            if (this['function']['instanceof'](MemberAccessOp) || this['function']['instanceof'](SoakedMemberAccessOp)) {
                 res = res.map(function (c) {
                     c.pop();
                     return c;
                 });
-                if (in$(this['function'].memberName, enumerableMethods))
+                if (enumerableMethods.contains(this['function'].memberName))
                     res = res.map(function (c) {
                         c.push('@each');
                         return c;
@@ -45936,6 +47145,6091 @@ if ( typeof define === "function" && define.amd && define.amd.jQuery ) {
                     return true;
             return false;
         }
+    });
+    require.define('/lib/ember-runtime.js', function (module, exports, __dirname, __filename) {
+        (function () {
+            if ('undefined' === typeof Ember) {
+                Ember = {};
+                if ('undefined' !== typeof window) {
+                    window.Em = window.Ember = Em = Ember;
+                }
+            }
+            Ember.ENV = 'undefined' === typeof ENV ? {} : ENV;
+            if (!('MANDATORY_SETTER' in Ember.ENV)) {
+                Ember.ENV.MANDATORY_SETTER = true;
+            }
+            Ember.assert = function (desc, test) {
+                if (!test)
+                    throw new Error('assertion failed: ' + desc);
+            };
+            Ember.warn = function (message, test) {
+                if (!test) {
+                    Ember.Logger.warn('WARNING: ' + message);
+                    if ('trace' in Ember.Logger)
+                        Ember.Logger.trace();
+                }
+            };
+            Ember.debug = function (message) {
+                Ember.Logger.debug('DEBUG: ' + message);
+            };
+            Ember.deprecate = function (message, test) {
+                if (Ember && Ember.TESTING_DEPRECATION) {
+                    return;
+                }
+                if (arguments.length === 1) {
+                    test = false;
+                }
+                if (test) {
+                    return;
+                }
+                if (Ember && Ember.ENV.RAISE_ON_DEPRECATION) {
+                    throw new Error(message);
+                }
+                var error;
+                try {
+                    __fail__.fail();
+                } catch (e) {
+                    error = e;
+                }
+                if (Ember.LOG_STACKTRACE_ON_DEPRECATION && error.stack) {
+                    var stack, stackStr = '';
+                    if (error['arguments']) {
+                        stack = error.stack.replace(/^\s+at\s+/gm, '').replace(/^([^\(]+?)([\n$])/gm, '{anonymous}($1)$2').replace(/^Object.<anonymous>\s*\(([^\)]+)\)/gm, '{anonymous}($1)').split('\n');
+                        stack.shift();
+                    } else {
+                        stack = error.stack.replace(/(?:\n@:0)?\s+$/m, '').replace(/^\(/gm, '{anonymous}(').split('\n');
+                    }
+                    stackStr = '\n    ' + stack.slice(2).join('\n    ');
+                    message = message + stackStr;
+                }
+                Ember.Logger.warn('DEPRECATION: ' + message);
+            };
+            Ember.deprecateFunc = function (message, func) {
+                return function () {
+                    Ember.deprecate(message);
+                    return func.apply(this, arguments);
+                };
+            };
+        }());
+        (function () {
+            var define, requireModule;
+            (function () {
+                var registry = {}, seen = {};
+                define = function (name, deps, callback) {
+                    registry[name] = {
+                        deps: deps,
+                        callback: callback
+                    };
+                };
+                requireModule = function (name) {
+                    if (seen[name]) {
+                        return seen[name];
+                    }
+                    seen[name] = {};
+                    var mod = registry[name], deps = mod.deps, callback = mod.callback, reified = [], exports;
+                    for (var i = 0, l = deps.length; i < l; i++) {
+                        if (deps[i] === 'exports') {
+                            reified.push(exports = {});
+                        } else {
+                            reified.push(requireModule(deps[i]));
+                        }
+                    }
+                    var value = callback.apply(this, reified);
+                    return seen[name] = exports || value;
+                };
+            }());
+            (function () {
+                if ('undefined' === typeof Ember) {
+                    Ember = {};
+                }
+                var imports = Ember.imports = Ember.imports || this;
+                var exports = Ember.exports = Ember.exports || this;
+                var lookup = Ember.lookup = Ember.lookup || this;
+                exports.Em = exports.Ember = Em = Ember;
+                Ember.isNamespace = true;
+                Ember.toString = function () {
+                    return 'Ember';
+                };
+                Ember.VERSION = '1.0.0-rc.2';
+                Ember.ENV = Ember.ENV || ('undefined' === typeof ENV ? {} : ENV);
+                Ember.config = Ember.config || {};
+                Ember.EXTEND_PROTOTYPES = Ember.ENV.EXTEND_PROTOTYPES;
+                if (typeof Ember.EXTEND_PROTOTYPES === 'undefined') {
+                    Ember.EXTEND_PROTOTYPES = true;
+                }
+                Ember.LOG_STACKTRACE_ON_DEPRECATION = Ember.ENV.LOG_STACKTRACE_ON_DEPRECATION !== false;
+                Ember.SHIM_ES5 = Ember.ENV.SHIM_ES5 === false ? false : Ember.EXTEND_PROTOTYPES;
+                Ember.LOG_VERSION = Ember.ENV.LOG_VERSION === false ? false : true;
+                Ember.K = function () {
+                    return this;
+                };
+                if ('undefined' === typeof Ember.assert) {
+                    Ember.assert = Ember.K;
+                }
+                if ('undefined' === typeof Ember.warn) {
+                    Ember.warn = Ember.K;
+                }
+                if ('undefined' === typeof Ember.debug) {
+                    Ember.debug = Ember.K;
+                }
+                if ('undefined' === typeof Ember.deprecate) {
+                    Ember.deprecate = Ember.K;
+                }
+                if ('undefined' === typeof Ember.deprecateFunc) {
+                    Ember.deprecateFunc = function (_, func) {
+                        return func;
+                    };
+                }
+                Ember.uuid = 0;
+                function consoleMethod(name) {
+                    if (imports.console && imports.console[name]) {
+                        if (imports.console[name].apply) {
+                            return function () {
+                                imports.console[name].apply(imports.console, arguments);
+                            };
+                        } else {
+                            return function () {
+                                var message = Array.prototype.join.call(arguments, ', ');
+                                imports.console[name](message);
+                            };
+                        }
+                    }
+                }
+                Ember.Logger = {
+                    log: consoleMethod('log') || Ember.K,
+                    warn: consoleMethod('warn') || Ember.K,
+                    error: consoleMethod('error') || Ember.K,
+                    info: consoleMethod('info') || Ember.K,
+                    debug: consoleMethod('debug') || consoleMethod('info') || Ember.K
+                };
+                Ember.onerror = null;
+                Ember.handleErrors = function (func, context) {
+                    if ('function' === typeof Ember.onerror) {
+                        try {
+                            return func.call(context || this);
+                        } catch (error) {
+                            Ember.onerror(error);
+                        }
+                    } else {
+                        return func.call(context || this);
+                    }
+                };
+                Ember.merge = function (original, updates) {
+                    for (var prop in updates) {
+                        if (!updates.hasOwnProperty(prop)) {
+                            continue;
+                        }
+                        original[prop] = updates[prop];
+                    }
+                    return original;
+                };
+                Ember.isNone = function (obj) {
+                    return obj === null || obj === undefined;
+                };
+                Ember.none = Ember.deprecateFunc('Ember.none is deprecated. Please use Ember.isNone instead.', Ember.isNone);
+                Ember.isEmpty = function (obj) {
+                    return obj === null || obj === undefined || obj.length === 0 && typeof obj !== 'function' || typeof obj === 'object' && Ember.get(obj, 'length') === 0;
+                };
+                Ember.empty = Ember.deprecateFunc('Ember.empty is deprecated. Please use Ember.isEmpty instead.', Ember.isEmpty);
+            }());
+            (function () {
+                var platform = Ember.platform = {};
+                Ember.create = Object.create;
+                if (!Ember.create || Ember.ENV.STUB_OBJECT_CREATE) {
+                    var K = function () {
+                    };
+                    Ember.create = function (obj, props) {
+                        K.prototype = obj;
+                        obj = new K();
+                        if (props) {
+                            K.prototype = obj;
+                            for (var prop in props) {
+                                K.prototype[prop] = props[prop].value;
+                            }
+                            obj = new K();
+                        }
+                        K.prototype = null;
+                        return obj;
+                    };
+                    Ember.create.isSimulated = true;
+                }
+                var defineProperty = Object.defineProperty;
+                var canRedefineProperties, canDefinePropertyOnDOM;
+                if (defineProperty) {
+                    try {
+                        defineProperty({}, 'a', {
+                            get: function () {
+                            }
+                        });
+                    } catch (e) {
+                        defineProperty = null;
+                    }
+                }
+                if (defineProperty) {
+                    canRedefineProperties = function () {
+                        var obj = {};
+                        defineProperty(obj, 'a', {
+                            configurable: true,
+                            enumerable: true,
+                            get: function () {
+                            },
+                            set: function () {
+                            }
+                        });
+                        defineProperty(obj, 'a', {
+                            configurable: true,
+                            enumerable: true,
+                            writable: true,
+                            value: true
+                        });
+                        return obj.a === true;
+                    }();
+                    canDefinePropertyOnDOM = function () {
+                        try {
+                            defineProperty(document.createElement('div'), 'definePropertyOnDOM', {});
+                            return true;
+                        } catch (e) {
+                        }
+                        return false;
+                    }();
+                    if (!canRedefineProperties) {
+                        defineProperty = null;
+                    } else if (!canDefinePropertyOnDOM) {
+                        defineProperty = function (obj, keyName, desc) {
+                            var isNode;
+                            if (typeof Node === 'object') {
+                                isNode = obj instanceof Node;
+                            } else {
+                                isNode = typeof obj === 'object' && typeof obj.nodeType === 'number' && typeof obj.nodeName === 'string';
+                            }
+                            if (isNode) {
+                                return obj[keyName] = desc.value;
+                            } else {
+                                return Object.defineProperty(obj, keyName, desc);
+                            }
+                        };
+                    }
+                }
+                platform.defineProperty = defineProperty;
+                platform.hasPropertyAccessors = true;
+                if (!platform.defineProperty) {
+                    platform.hasPropertyAccessors = false;
+                    platform.defineProperty = function (obj, keyName, desc) {
+                        if (!desc.get) {
+                            obj[keyName] = desc.value;
+                        }
+                    };
+                    platform.defineProperty.isSimulated = true;
+                }
+                if (Ember.ENV.MANDATORY_SETTER && !platform.hasPropertyAccessors) {
+                    Ember.ENV.MANDATORY_SETTER = false;
+                }
+            }());
+            (function () {
+                var o_defineProperty = Ember.platform.defineProperty, o_create = Ember.create, GUID_KEY = '__ember' + +new Date(), uuid = 0, numberCache = [], stringCache = {};
+                var MANDATORY_SETTER = Ember.ENV.MANDATORY_SETTER;
+                Ember.GUID_KEY = GUID_KEY;
+                var GUID_DESC = {
+                        writable: false,
+                        configurable: false,
+                        enumerable: false,
+                        value: null
+                    };
+                Ember.generateGuid = function generateGuid(obj, prefix) {
+                    if (!prefix)
+                        prefix = 'ember';
+                    var ret = prefix + uuid++;
+                    if (obj) {
+                        GUID_DESC.value = ret;
+                        o_defineProperty(obj, GUID_KEY, GUID_DESC);
+                    }
+                    return ret;
+                };
+                Ember.guidFor = function guidFor(obj) {
+                    if (obj === undefined)
+                        return '(undefined)';
+                    if (obj === null)
+                        return '(null)';
+                    var cache, ret;
+                    var type = typeof obj;
+                    switch (type) {
+                    case 'number':
+                        ret = numberCache[obj];
+                        if (!ret)
+                            ret = numberCache[obj] = 'nu' + obj;
+                        return ret;
+                    case 'string':
+                        ret = stringCache[obj];
+                        if (!ret)
+                            ret = stringCache[obj] = 'st' + uuid++;
+                        return ret;
+                    case 'boolean':
+                        return obj ? '(true)' : '(false)';
+                    default:
+                        if (obj[GUID_KEY])
+                            return obj[GUID_KEY];
+                        if (obj === Object)
+                            return '(Object)';
+                        if (obj === Array)
+                            return '(Array)';
+                        ret = 'ember' + uuid++;
+                        GUID_DESC.value = ret;
+                        o_defineProperty(obj, GUID_KEY, GUID_DESC);
+                        return ret;
+                    }
+                };
+                var META_DESC = {
+                        writable: true,
+                        configurable: false,
+                        enumerable: false,
+                        value: null
+                    };
+                var META_KEY = Ember.GUID_KEY + '_meta';
+                Ember.META_KEY = META_KEY;
+                var EMPTY_META = {
+                        descs: {},
+                        watching: {}
+                    };
+                if (MANDATORY_SETTER) {
+                    EMPTY_META.values = {};
+                }
+                Ember.EMPTY_META = EMPTY_META;
+                if (Object.freeze)
+                    Object.freeze(EMPTY_META);
+                var isDefinePropertySimulated = Ember.platform.defineProperty.isSimulated;
+                function Meta(obj) {
+                    this.descs = {};
+                    this.watching = {};
+                    this.cache = {};
+                    this.source = obj;
+                }
+                if (isDefinePropertySimulated) {
+                    Meta.prototype.__preventPlainObject__ = true;
+                    Meta.prototype.toJSON = function () {
+                    };
+                }
+                Ember.meta = function meta(obj, writable) {
+                    var ret = obj[META_KEY];
+                    if (writable === false)
+                        return ret || EMPTY_META;
+                    if (!ret) {
+                        if (!isDefinePropertySimulated)
+                            o_defineProperty(obj, META_KEY, META_DESC);
+                        ret = new Meta(obj);
+                        if (MANDATORY_SETTER) {
+                            ret.values = {};
+                        }
+                        obj[META_KEY] = ret;
+                        ret.descs.constructor = null;
+                    } else if (ret.source !== obj) {
+                        if (!isDefinePropertySimulated)
+                            o_defineProperty(obj, META_KEY, META_DESC);
+                        ret = o_create(ret);
+                        ret.descs = o_create(ret.descs);
+                        ret.watching = o_create(ret.watching);
+                        ret.cache = {};
+                        ret.source = obj;
+                        if (MANDATORY_SETTER) {
+                            ret.values = o_create(ret.values);
+                        }
+                        obj[META_KEY] = ret;
+                    }
+                    return ret;
+                };
+                Ember.getMeta = function getMeta(obj, property) {
+                    var meta = Ember.meta(obj, false);
+                    return meta[property];
+                };
+                Ember.setMeta = function setMeta(obj, property, value) {
+                    var meta = Ember.meta(obj, true);
+                    meta[property] = value;
+                    return value;
+                };
+                Ember.metaPath = function metaPath(obj, path, writable) {
+                    var meta = Ember.meta(obj, writable), keyName, value;
+                    for (var i = 0, l = path.length; i < l; i++) {
+                        keyName = path[i];
+                        value = meta[keyName];
+                        if (!value) {
+                            if (!writable) {
+                                return undefined;
+                            }
+                            value = meta[keyName] = { __ember_source__: obj };
+                        } else if (value.__ember_source__ !== obj) {
+                            if (!writable) {
+                                return undefined;
+                            }
+                            value = meta[keyName] = o_create(value);
+                            value.__ember_source__ = obj;
+                        }
+                        meta = value;
+                    }
+                    return value;
+                };
+                Ember.wrap = function (func, superFunc) {
+                    function K() {
+                    }
+                    function superWrapper() {
+                        var ret, sup = this._super;
+                        this._super = superFunc || K;
+                        ret = func.apply(this, arguments);
+                        this._super = sup;
+                        return ret;
+                    }
+                    superWrapper.wrappedFunction = func;
+                    superWrapper.__ember_observes__ = func.__ember_observes__;
+                    superWrapper.__ember_observesBefore__ = func.__ember_observesBefore__;
+                    return superWrapper;
+                };
+                Ember.isArray = function (obj) {
+                    if (!obj || obj.setInterval) {
+                        return false;
+                    }
+                    if (Array.isArray && Array.isArray(obj)) {
+                        return true;
+                    }
+                    if (Ember.Array && Ember.Array.detect(obj)) {
+                        return true;
+                    }
+                    if (obj.length !== undefined && 'object' === typeof obj) {
+                        return true;
+                    }
+                    return false;
+                };
+                Ember.makeArray = function (obj) {
+                    if (obj === null || obj === undefined) {
+                        return [];
+                    }
+                    return Ember.isArray(obj) ? obj : [obj];
+                };
+                function canInvoke(obj, methodName) {
+                    return !!(obj && typeof obj[methodName] === 'function');
+                }
+                Ember.canInvoke = canInvoke;
+                Ember.tryInvoke = function (obj, methodName, args) {
+                    if (canInvoke(obj, methodName)) {
+                        return obj[methodName].apply(obj, args || []);
+                    }
+                };
+                var needsFinallyFix = function () {
+                        var count = 0;
+                        try {
+                            try {
+                            } finally {
+                                count++;
+                                throw new Error('needsFinallyFixTest');
+                            }
+                        } catch (e) {
+                        }
+                        return count !== 1;
+                    }();
+                if (needsFinallyFix) {
+                    Ember.tryFinally = function (tryable, finalizer, binding) {
+                        var result, finalResult, finalError;
+                        binding = binding || this;
+                        try {
+                            result = tryable.call(binding);
+                        } finally {
+                            try {
+                                finalResult = finalizer.call(binding);
+                            } catch (e) {
+                                finalError = e;
+                            }
+                        }
+                        if (finalError) {
+                            throw finalError;
+                        }
+                        return finalResult === undefined ? result : finalResult;
+                    };
+                } else {
+                    Ember.tryFinally = function (tryable, finalizer, binding) {
+                        var result, finalResult;
+                        binding = binding || this;
+                        try {
+                            result = tryable.call(binding);
+                        } finally {
+                            finalResult = finalizer.call(binding);
+                        }
+                        return finalResult === undefined ? result : finalResult;
+                    };
+                }
+                if (needsFinallyFix) {
+                    Ember.tryCatchFinally = function (tryable, catchable, finalizer, binding) {
+                        var result, finalResult, finalError, finalReturn;
+                        binding = binding || this;
+                        try {
+                            result = tryable.call(binding);
+                        } catch (error) {
+                            result = catchable.call(binding, error);
+                        } finally {
+                            try {
+                                finalResult = finalizer.call(binding);
+                            } catch (e) {
+                                finalError = e;
+                            }
+                        }
+                        if (finalError) {
+                            throw finalError;
+                        }
+                        return finalResult === undefined ? result : finalResult;
+                    };
+                } else {
+                    Ember.tryCatchFinally = function (tryable, catchable, finalizer, binding) {
+                        var result, finalResult;
+                        binding = binding || this;
+                        try {
+                            result = tryable.call(binding);
+                        } catch (error) {
+                            result = catchable.call(binding, error);
+                        } finally {
+                            finalResult = finalizer.call(binding);
+                        }
+                        return finalResult === undefined ? result : finalResult;
+                    };
+                }
+            }());
+            (function () {
+                Ember.Instrumentation = {};
+                var subscribers = [], cache = {};
+                var populateListeners = function (name) {
+                    var listeners = [], subscriber;
+                    for (var i = 0, l = subscribers.length; i < l; i++) {
+                        subscriber = subscribers[i];
+                        if (subscriber.regex.test(name)) {
+                            listeners.push(subscriber.object);
+                        }
+                    }
+                    cache[name] = listeners;
+                    return listeners;
+                };
+                var time = function () {
+                        var perf = 'undefined' !== typeof window ? window.performance || {} : {};
+                        var fn = perf.now || perf.mozNow || perf.webkitNow || perf.msNow || perf.oNow;
+                        return fn ? fn.bind(perf) : function () {
+                            return +new Date();
+                        };
+                    }();
+                Ember.Instrumentation.instrument = function (name, payload, callback, binding) {
+                    var listeners = cache[name], timeName, ret;
+                    if (Ember.STRUCTURED_PROFILE) {
+                        timeName = name + ': ' + payload.object;
+                        console.time(timeName);
+                    }
+                    if (!listeners) {
+                        listeners = populateListeners(name);
+                    }
+                    if (listeners.length === 0) {
+                        ret = callback.call(binding);
+                        if (Ember.STRUCTURED_PROFILE) {
+                            console.timeEnd(timeName);
+                        }
+                        return ret;
+                    }
+                    var beforeValues = [], listener, i, l;
+                    function tryable() {
+                        for (i = 0, l = listeners.length; i < l; i++) {
+                            listener = listeners[i];
+                            beforeValues[i] = listener.before(name, time(), payload);
+                        }
+                        return callback.call(binding);
+                    }
+                    function catchable(e) {
+                        payload = payload || {};
+                        payload.exception = e;
+                    }
+                    function finalizer() {
+                        for (i = 0, l = listeners.length; i < l; i++) {
+                            listener = listeners[i];
+                            listener.after(name, time(), payload, beforeValues[i]);
+                        }
+                        if (Ember.STRUCTURED_PROFILE) {
+                            console.timeEnd(timeName);
+                        }
+                    }
+                    return Ember.tryCatchFinally(tryable, catchable, finalizer);
+                };
+                Ember.Instrumentation.subscribe = function (pattern, object) {
+                    var paths = pattern.split('.'), path, regex = [];
+                    for (var i = 0, l = paths.length; i < l; i++) {
+                        path = paths[i];
+                        if (path === '*') {
+                            regex.push('[^\\.]*');
+                        } else {
+                            regex.push(path);
+                        }
+                    }
+                    regex = regex.join('\\.');
+                    regex = regex + '(\\..*)?';
+                    var subscriber = {
+                            pattern: pattern,
+                            regex: new RegExp('^' + regex + '$'),
+                            object: object
+                        };
+                    subscribers.push(subscriber);
+                    cache = {};
+                    return subscriber;
+                };
+                Ember.Instrumentation.unsubscribe = function (subscriber) {
+                    var index;
+                    for (var i = 0, l = subscribers.length; i < l; i++) {
+                        if (subscribers[i] === subscriber) {
+                            index = i;
+                        }
+                    }
+                    subscribers.splice(index, 1);
+                    cache = {};
+                };
+                Ember.Instrumentation.reset = function () {
+                    subscribers = [];
+                    cache = {};
+                };
+                Ember.instrument = Ember.Instrumentation.instrument;
+                Ember.subscribe = Ember.Instrumentation.subscribe;
+            }());
+            (function () {
+                var utils = Ember.EnumerableUtils = {
+                        map: function (obj, callback, thisArg) {
+                            return obj.map ? obj.map.call(obj, callback, thisArg) : Array.prototype.map.call(obj, callback, thisArg);
+                        },
+                        forEach: function (obj, callback, thisArg) {
+                            return obj.forEach ? obj.forEach.call(obj, callback, thisArg) : Array.prototype.forEach.call(obj, callback, thisArg);
+                        },
+                        indexOf: function (obj, element, index) {
+                            return obj.indexOf ? obj.indexOf.call(obj, element, index) : Array.prototype.indexOf.call(obj, element, index);
+                        },
+                        indexesOf: function (obj, elements) {
+                            return elements === undefined ? [] : utils.map(elements, function (item) {
+                                return utils.indexOf(obj, item);
+                            });
+                        },
+                        addObject: function (array, item) {
+                            var index = utils.indexOf(array, item);
+                            if (index === -1) {
+                                array.push(item);
+                            }
+                        },
+                        removeObject: function (array, item) {
+                            var index = utils.indexOf(array, item);
+                            if (index !== -1) {
+                                array.splice(index, 1);
+                            }
+                        },
+                        replace: function (array, idx, amt, objects) {
+                            if (array.replace) {
+                                return array.replace(idx, amt, objects);
+                            } else {
+                                var args = Array.prototype.concat.apply([
+                                        idx,
+                                        amt
+                                    ], objects);
+                                return array.splice.apply(array, args);
+                            }
+                        },
+                        intersection: function (array1, array2) {
+                            var intersection = [];
+                            array1.forEach(function (element) {
+                                if (array2.indexOf(element) >= 0) {
+                                    intersection.push(element);
+                                }
+                            });
+                            return intersection;
+                        }
+                    };
+            }());
+            (function () {
+                var isNativeFunc = function (func) {
+                    return func && Function.prototype.toString.call(func).indexOf('[native code]') > -1;
+                };
+                var arrayMap = isNativeFunc(Array.prototype.map) ? Array.prototype.map : function (fun) {
+                        if (this === void 0 || this === null) {
+                            throw new TypeError();
+                        }
+                        var t = Object(this);
+                        var len = t.length >>> 0;
+                        if (typeof fun !== 'function') {
+                            throw new TypeError();
+                        }
+                        var res = new Array(len);
+                        var thisp = arguments[1];
+                        for (var i = 0; i < len; i++) {
+                            if (i in t) {
+                                res[i] = fun.call(thisp, t[i], i, t);
+                            }
+                        }
+                        return res;
+                    };
+                var arrayForEach = isNativeFunc(Array.prototype.forEach) ? Array.prototype.forEach : function (fun) {
+                        if (this === void 0 || this === null) {
+                            throw new TypeError();
+                        }
+                        var t = Object(this);
+                        var len = t.length >>> 0;
+                        if (typeof fun !== 'function') {
+                            throw new TypeError();
+                        }
+                        var thisp = arguments[1];
+                        for (var i = 0; i < len; i++) {
+                            if (i in t) {
+                                fun.call(thisp, t[i], i, t);
+                            }
+                        }
+                    };
+                var arrayIndexOf = isNativeFunc(Array.prototype.indexOf) ? Array.prototype.indexOf : function (obj, fromIndex) {
+                        if (fromIndex === null || fromIndex === undefined) {
+                            fromIndex = 0;
+                        } else if (fromIndex < 0) {
+                            fromIndex = Math.max(0, this.length + fromIndex);
+                        }
+                        for (var i = fromIndex, j = this.length; i < j; i++) {
+                            if (this[i] === obj) {
+                                return i;
+                            }
+                        }
+                        return -1;
+                    };
+                Ember.ArrayPolyfills = {
+                    map: arrayMap,
+                    forEach: arrayForEach,
+                    indexOf: arrayIndexOf
+                };
+                if (Ember.SHIM_ES5) {
+                    if (!Array.prototype.map) {
+                        Array.prototype.map = arrayMap;
+                    }
+                    if (!Array.prototype.forEach) {
+                        Array.prototype.forEach = arrayForEach;
+                    }
+                    if (!Array.prototype.indexOf) {
+                        Array.prototype.indexOf = arrayIndexOf;
+                    }
+                }
+            }());
+            (function () {
+                var guidFor = Ember.guidFor, indexOf = Ember.ArrayPolyfills.indexOf;
+                var copy = function (obj) {
+                    var output = {};
+                    for (var prop in obj) {
+                        if (obj.hasOwnProperty(prop)) {
+                            output[prop] = obj[prop];
+                        }
+                    }
+                    return output;
+                };
+                var copyMap = function (original, newObject) {
+                    var keys = original.keys.copy(), values = copy(original.values);
+                    newObject.keys = keys;
+                    newObject.values = values;
+                    return newObject;
+                };
+                var OrderedSet = Ember.OrderedSet = function () {
+                        this.clear();
+                    };
+                OrderedSet.create = function () {
+                    return new OrderedSet();
+                };
+                OrderedSet.prototype = {
+                    clear: function () {
+                        this.presenceSet = {};
+                        this.list = [];
+                    },
+                    add: function (obj) {
+                        var guid = guidFor(obj), presenceSet = this.presenceSet, list = this.list;
+                        if (guid in presenceSet) {
+                            return;
+                        }
+                        presenceSet[guid] = true;
+                        list.push(obj);
+                    },
+                    remove: function (obj) {
+                        var guid = guidFor(obj), presenceSet = this.presenceSet, list = this.list;
+                        delete presenceSet[guid];
+                        var index = indexOf.call(list, obj);
+                        if (index > -1) {
+                            list.splice(index, 1);
+                        }
+                    },
+                    isEmpty: function () {
+                        return this.list.length === 0;
+                    },
+                    has: function (obj) {
+                        var guid = guidFor(obj), presenceSet = this.presenceSet;
+                        return guid in presenceSet;
+                    },
+                    forEach: function (fn, self) {
+                        var list = this.list.slice();
+                        for (var i = 0, j = list.length; i < j; i++) {
+                            fn.call(self, list[i]);
+                        }
+                    },
+                    toArray: function () {
+                        return this.list.slice();
+                    },
+                    copy: function () {
+                        var set = new OrderedSet();
+                        set.presenceSet = copy(this.presenceSet);
+                        set.list = this.list.slice();
+                        return set;
+                    }
+                };
+                var Map = Ember.Map = function () {
+                        this.keys = Ember.OrderedSet.create();
+                        this.values = {};
+                    };
+                Map.create = function () {
+                    return new Map();
+                };
+                Map.prototype = {
+                    get: function (key) {
+                        var values = this.values, guid = guidFor(key);
+                        return values[guid];
+                    },
+                    set: function (key, value) {
+                        var keys = this.keys, values = this.values, guid = guidFor(key);
+                        keys.add(key);
+                        values[guid] = value;
+                    },
+                    remove: function (key) {
+                        var keys = this.keys, values = this.values, guid = guidFor(key), value;
+                        if (values.hasOwnProperty(guid)) {
+                            keys.remove(key);
+                            value = values[guid];
+                            delete values[guid];
+                            return true;
+                        } else {
+                            return false;
+                        }
+                    },
+                    has: function (key) {
+                        var values = this.values, guid = guidFor(key);
+                        return values.hasOwnProperty(guid);
+                    },
+                    forEach: function (callback, self) {
+                        var keys = this.keys, values = this.values;
+                        keys.forEach(function (key) {
+                            var guid = guidFor(key);
+                            callback.call(self, key, values[guid]);
+                        });
+                    },
+                    copy: function () {
+                        return copyMap(this, new Map());
+                    }
+                };
+                var MapWithDefault = Ember.MapWithDefault = function (options) {
+                        Map.call(this);
+                        this.defaultValue = options.defaultValue;
+                    };
+                MapWithDefault.create = function (options) {
+                    if (options) {
+                        return new MapWithDefault(options);
+                    } else {
+                        return new Map();
+                    }
+                };
+                MapWithDefault.prototype = Ember.create(Map.prototype);
+                MapWithDefault.prototype.get = function (key) {
+                    var hasValue = this.has(key);
+                    if (hasValue) {
+                        return Map.prototype.get.call(this, key);
+                    } else {
+                        var defaultValue = this.defaultValue(key);
+                        this.set(key, defaultValue);
+                        return defaultValue;
+                    }
+                };
+                MapWithDefault.prototype.copy = function () {
+                    return copyMap(this, new MapWithDefault({ defaultValue: this.defaultValue }));
+                };
+            }());
+            (function () {
+                var META_KEY = Ember.META_KEY, get;
+                var MANDATORY_SETTER = Ember.ENV.MANDATORY_SETTER;
+                var IS_GLOBAL_PATH = /^([A-Z$]|([0-9][A-Z$])).*[\.\*]/;
+                var HAS_THIS = /^this[\.\*]/;
+                var FIRST_KEY = /^([^\.\*]+)/;
+                get = function get(obj, keyName) {
+                    if (keyName === '') {
+                        return obj;
+                    }
+                    if (!keyName && 'string' === typeof obj) {
+                        keyName = obj;
+                        obj = null;
+                    }
+                    if (!obj || keyName.indexOf('.') !== -1) {
+                        Ember.assert('Cannot call get with \'' + keyName + '\' on an undefined object.', obj !== undefined);
+                        return getPath(obj, keyName);
+                    }
+                    Ember.assert('You need to provide an object and key to `get`.', !!obj && keyName);
+                    var meta = obj[META_KEY], desc = meta && meta.descs[keyName], ret;
+                    if (desc) {
+                        return desc.get(obj, keyName);
+                    } else {
+                        if (MANDATORY_SETTER && meta && meta.watching[keyName] > 0) {
+                            ret = meta.values[keyName];
+                        } else {
+                            ret = obj[keyName];
+                        }
+                        if (ret === undefined && 'object' === typeof obj && !(keyName in obj) && 'function' === typeof obj.unknownProperty) {
+                            return obj.unknownProperty(keyName);
+                        }
+                        return ret;
+                    }
+                };
+                if (Ember.config.overrideAccessors) {
+                    Ember.get = get;
+                    Ember.config.overrideAccessors();
+                    get = Ember.get;
+                }
+                function firstKey(path) {
+                    return path.match(FIRST_KEY)[0];
+                }
+                function normalizeTuple(target, path) {
+                    var hasThis = HAS_THIS.test(path), isGlobal = !hasThis && IS_GLOBAL_PATH.test(path), key;
+                    if (!target || isGlobal)
+                        target = Ember.lookup;
+                    if (hasThis)
+                        path = path.slice(5);
+                    if (target === Ember.lookup) {
+                        key = firstKey(path);
+                        target = get(target, key);
+                        path = path.slice(key.length + 1);
+                    }
+                    if (!path || path.length === 0)
+                        throw new Error('Invalid Path');
+                    return [
+                        target,
+                        path
+                    ];
+                }
+                var getPath = Ember._getPath = function (root, path) {
+                        var hasThis, parts, tuple, idx, len;
+                        if (root === null && path.indexOf('.') === -1) {
+                            return get(Ember.lookup, path);
+                        }
+                        hasThis = HAS_THIS.test(path);
+                        if (!root || hasThis) {
+                            tuple = normalizeTuple(root, path);
+                            root = tuple[0];
+                            path = tuple[1];
+                            tuple.length = 0;
+                        }
+                        parts = path.split('.');
+                        len = parts.length;
+                        for (idx = 0; root && idx < len; idx++) {
+                            root = get(root, parts[idx], true);
+                            if (root && root.isDestroyed) {
+                                return undefined;
+                            }
+                        }
+                        return root;
+                    };
+                Ember.normalizeTuple = function (target, path) {
+                    return normalizeTuple(target, path);
+                };
+                Ember.getWithDefault = function (root, key, defaultValue) {
+                    var value = get(root, key);
+                    if (value === undefined) {
+                        return defaultValue;
+                    }
+                    return value;
+                };
+                Ember.get = get;
+                Ember.getPath = Ember.deprecateFunc('getPath is deprecated since get now supports paths', Ember.get);
+            }());
+            (function () {
+                var o_create = Ember.create, metaFor = Ember.meta, META_KEY = Ember.META_KEY;
+                function indexOf(array, target, method) {
+                    var index = -1;
+                    for (var i = 0, l = array.length; i < l; i++) {
+                        if (target === array[i][0] && method === array[i][1]) {
+                            index = i;
+                            break;
+                        }
+                    }
+                    return index;
+                }
+                function actionsFor(obj, eventName) {
+                    var meta = metaFor(obj, true), actions;
+                    if (!meta.listeners) {
+                        meta.listeners = {};
+                    }
+                    if (!meta.hasOwnProperty('listeners')) {
+                        meta.listeners = o_create(meta.listeners);
+                    }
+                    actions = meta.listeners[eventName];
+                    if (actions && !meta.listeners.hasOwnProperty(eventName)) {
+                        actions = meta.listeners[eventName] = meta.listeners[eventName].slice();
+                    } else if (!actions) {
+                        actions = meta.listeners[eventName] = [];
+                    }
+                    return actions;
+                }
+                function actionsUnion(obj, eventName, otherActions) {
+                    var meta = obj[META_KEY], actions = meta && meta.listeners && meta.listeners[eventName];
+                    if (!actions) {
+                        return;
+                    }
+                    for (var i = actions.length - 1; i >= 0; i--) {
+                        var target = actions[i][0], method = actions[i][1], once = actions[i][2], suspended = actions[i][3], actionIndex = indexOf(otherActions, target, method);
+                        if (actionIndex === -1) {
+                            otherActions.push([
+                                target,
+                                method,
+                                once,
+                                suspended
+                            ]);
+                        }
+                    }
+                }
+                function actionsDiff(obj, eventName, otherActions) {
+                    var meta = obj[META_KEY], actions = meta && meta.listeners && meta.listeners[eventName], diffActions = [];
+                    if (!actions) {
+                        return;
+                    }
+                    for (var i = actions.length - 1; i >= 0; i--) {
+                        var target = actions[i][0], method = actions[i][1], once = actions[i][2], suspended = actions[i][3], actionIndex = indexOf(otherActions, target, method);
+                        if (actionIndex !== -1) {
+                            continue;
+                        }
+                        otherActions.push([
+                            target,
+                            method,
+                            once,
+                            suspended
+                        ]);
+                        diffActions.push([
+                            target,
+                            method,
+                            once,
+                            suspended
+                        ]);
+                    }
+                    return diffActions;
+                }
+                function addListener(obj, eventName, target, method, once) {
+                    Ember.assert('You must pass at least an object and event name to Ember.addListener', !!obj && !!eventName);
+                    if (!method && 'function' === typeof target) {
+                        method = target;
+                        target = null;
+                    }
+                    var actions = actionsFor(obj, eventName), actionIndex = indexOf(actions, target, method);
+                    if (actionIndex !== -1) {
+                        return;
+                    }
+                    actions.push([
+                        target,
+                        method,
+                        once,
+                        undefined
+                    ]);
+                    if ('function' === typeof obj.didAddListener) {
+                        obj.didAddListener(eventName, target, method);
+                    }
+                }
+                function removeListener(obj, eventName, target, method) {
+                    Ember.assert('You must pass at least an object and event name to Ember.removeListener', !!obj && !!eventName);
+                    if (!method && 'function' === typeof target) {
+                        method = target;
+                        target = null;
+                    }
+                    function _removeListener(target, method, once) {
+                        var actions = actionsFor(obj, eventName), actionIndex = indexOf(actions, target, method);
+                        if (actionIndex === -1) {
+                            return;
+                        }
+                        actions.splice(actionIndex, 1);
+                        if ('function' === typeof obj.didRemoveListener) {
+                            obj.didRemoveListener(eventName, target, method);
+                        }
+                    }
+                    if (method) {
+                        _removeListener(target, method);
+                    } else {
+                        var meta = obj[META_KEY], actions = meta && meta.listeners && meta.listeners[eventName];
+                        if (!actions) {
+                            return;
+                        }
+                        for (var i = actions.length - 1; i >= 0; i--) {
+                            _removeListener(actions[i][0], actions[i][1]);
+                        }
+                    }
+                }
+                function suspendListener(obj, eventName, target, method, callback) {
+                    if (!method && 'function' === typeof target) {
+                        method = target;
+                        target = null;
+                    }
+                    var actions = actionsFor(obj, eventName), actionIndex = indexOf(actions, target, method), action;
+                    if (actionIndex !== -1) {
+                        action = actions[actionIndex].slice();
+                        action[3] = true;
+                        actions[actionIndex] = action;
+                    }
+                    function tryable() {
+                        return callback.call(target);
+                    }
+                    function finalizer() {
+                        if (action) {
+                            action[3] = undefined;
+                        }
+                    }
+                    return Ember.tryFinally(tryable, finalizer);
+                }
+                function suspendListeners(obj, eventNames, target, method, callback) {
+                    if (!method && 'function' === typeof target) {
+                        method = target;
+                        target = null;
+                    }
+                    var suspendedActions = [], eventName, actions, action, i, l;
+                    for (i = 0, l = eventNames.length; i < l; i++) {
+                        eventName = eventNames[i];
+                        actions = actionsFor(obj, eventName);
+                        var actionIndex = indexOf(actions, target, method);
+                        if (actionIndex !== -1) {
+                            action = actions[actionIndex].slice();
+                            action[3] = true;
+                            actions[actionIndex] = action;
+                            suspendedActions.push(action);
+                        }
+                    }
+                    function tryable() {
+                        return callback.call(target);
+                    }
+                    function finalizer() {
+                        for (i = 0, l = suspendedActions.length; i < l; i++) {
+                            suspendedActions[i][3] = undefined;
+                        }
+                    }
+                    return Ember.tryFinally(tryable, finalizer);
+                }
+                function watchedEvents(obj) {
+                    var listeners = obj[META_KEY].listeners, ret = [];
+                    if (listeners) {
+                        for (var eventName in listeners) {
+                            if (listeners[eventName]) {
+                                ret.push(eventName);
+                            }
+                        }
+                    }
+                    return ret;
+                }
+                function sendEvent(obj, eventName, params, actions) {
+                    if (obj !== Ember && 'function' === typeof obj.sendEvent) {
+                        obj.sendEvent(eventName, params);
+                    }
+                    if (!actions) {
+                        var meta = obj[META_KEY];
+                        actions = meta && meta.listeners && meta.listeners[eventName];
+                    }
+                    if (!actions) {
+                        return;
+                    }
+                    for (var i = actions.length - 1; i >= 0; i--) {
+                        if (!actions[i] || actions[i][3] === true) {
+                            continue;
+                        }
+                        var target = actions[i][0], method = actions[i][1], once = actions[i][2];
+                        if (once) {
+                            removeListener(obj, eventName, target, method);
+                        }
+                        if (!target) {
+                            target = obj;
+                        }
+                        if ('string' === typeof method) {
+                            method = target[method];
+                        }
+                        if (params) {
+                            method.apply(target, params);
+                        } else {
+                            method.call(target);
+                        }
+                    }
+                    return true;
+                }
+                function hasListeners(obj, eventName) {
+                    var meta = obj[META_KEY], actions = meta && meta.listeners && meta.listeners[eventName];
+                    return !!(actions && actions.length);
+                }
+                function listenersFor(obj, eventName) {
+                    var ret = [];
+                    var meta = obj[META_KEY], actions = meta && meta.listeners && meta.listeners[eventName];
+                    if (!actions) {
+                        return ret;
+                    }
+                    for (var i = 0, l = actions.length; i < l; i++) {
+                        var target = actions[i][0], method = actions[i][1];
+                        ret.push([
+                            target,
+                            method
+                        ]);
+                    }
+                    return ret;
+                }
+                Ember.addListener = addListener;
+                Ember.removeListener = removeListener;
+                Ember._suspendListener = suspendListener;
+                Ember._suspendListeners = suspendListeners;
+                Ember.sendEvent = sendEvent;
+                Ember.hasListeners = hasListeners;
+                Ember.watchedEvents = watchedEvents;
+                Ember.listenersFor = listenersFor;
+                Ember.listenersDiff = actionsDiff;
+                Ember.listenersUnion = actionsUnion;
+            }());
+            (function () {
+                var guidFor = Ember.guidFor, sendEvent = Ember.sendEvent;
+                var ObserverSet = Ember._ObserverSet = function () {
+                        this.clear();
+                    };
+                ObserverSet.prototype.add = function (sender, keyName, eventName) {
+                    var observerSet = this.observerSet, observers = this.observers, senderGuid = guidFor(sender), keySet = observerSet[senderGuid], index;
+                    if (!keySet) {
+                        observerSet[senderGuid] = keySet = {};
+                    }
+                    index = keySet[keyName];
+                    if (index === undefined) {
+                        index = observers.push({
+                            sender: sender,
+                            keyName: keyName,
+                            eventName: eventName,
+                            listeners: []
+                        }) - 1;
+                        keySet[keyName] = index;
+                    }
+                    return observers[index].listeners;
+                };
+                ObserverSet.prototype.flush = function () {
+                    var observers = this.observers, i, len, observer, sender;
+                    this.clear();
+                    for (i = 0, len = observers.length; i < len; ++i) {
+                        observer = observers[i];
+                        sender = observer.sender;
+                        if (sender.isDestroying || sender.isDestroyed) {
+                            continue;
+                        }
+                        sendEvent(sender, observer.eventName, [
+                            sender,
+                            observer.keyName
+                        ], observer.listeners);
+                    }
+                };
+                ObserverSet.prototype.clear = function () {
+                    this.observerSet = {};
+                    this.observers = [];
+                };
+            }());
+            (function () {
+                var metaFor = Ember.meta, guidFor = Ember.guidFor, tryFinally = Ember.tryFinally, sendEvent = Ember.sendEvent, listenersUnion = Ember.listenersUnion, listenersDiff = Ember.listenersDiff, ObserverSet = Ember._ObserverSet, beforeObserverSet = new ObserverSet(), observerSet = new ObserverSet(), deferred = 0;
+                var propertyWillChange = Ember.propertyWillChange = function (obj, keyName) {
+                        var m = metaFor(obj, false), watching = m.watching[keyName] > 0 || keyName === 'length', proto = m.proto, desc = m.descs[keyName];
+                        if (!watching) {
+                            return;
+                        }
+                        if (proto === obj) {
+                            return;
+                        }
+                        if (desc && desc.willChange) {
+                            desc.willChange(obj, keyName);
+                        }
+                        dependentKeysWillChange(obj, keyName, m);
+                        chainsWillChange(obj, keyName, m);
+                        notifyBeforeObservers(obj, keyName);
+                    };
+                var propertyDidChange = Ember.propertyDidChange = function (obj, keyName) {
+                        var m = metaFor(obj, false), watching = m.watching[keyName] > 0 || keyName === 'length', proto = m.proto, desc = m.descs[keyName];
+                        if (proto === obj) {
+                            return;
+                        }
+                        if (desc && desc.didChange) {
+                            desc.didChange(obj, keyName);
+                        }
+                        if (!watching && keyName !== 'length') {
+                            return;
+                        }
+                        dependentKeysDidChange(obj, keyName, m);
+                        chainsDidChange(obj, keyName, m);
+                        notifyObservers(obj, keyName);
+                    };
+                var WILL_SEEN, DID_SEEN;
+                function dependentKeysWillChange(obj, depKey, meta) {
+                    if (obj.isDestroying) {
+                        return;
+                    }
+                    var seen = WILL_SEEN, top = !seen;
+                    if (top) {
+                        seen = WILL_SEEN = {};
+                    }
+                    iterDeps(propertyWillChange, obj, depKey, seen, meta);
+                    if (top) {
+                        WILL_SEEN = null;
+                    }
+                }
+                function dependentKeysDidChange(obj, depKey, meta) {
+                    if (obj.isDestroying) {
+                        return;
+                    }
+                    var seen = DID_SEEN, top = !seen;
+                    if (top) {
+                        seen = DID_SEEN = {};
+                    }
+                    iterDeps(propertyDidChange, obj, depKey, seen, meta);
+                    if (top) {
+                        DID_SEEN = null;
+                    }
+                }
+                function iterDeps(method, obj, depKey, seen, meta) {
+                    var guid = guidFor(obj);
+                    if (!seen[guid])
+                        seen[guid] = {};
+                    if (seen[guid][depKey])
+                        return;
+                    seen[guid][depKey] = true;
+                    var deps = meta.deps;
+                    deps = deps && deps[depKey];
+                    if (deps) {
+                        for (var key in deps) {
+                            var desc = meta.descs[key];
+                            if (desc && desc._suspended === obj)
+                                continue;
+                            method(obj, key);
+                        }
+                    }
+                }
+                var chainsWillChange = function (obj, keyName, m, arg) {
+                    if (!m.hasOwnProperty('chainWatchers')) {
+                        return;
+                    }
+                    var nodes = m.chainWatchers;
+                    nodes = nodes[keyName];
+                    if (!nodes) {
+                        return;
+                    }
+                    for (var i = 0, l = nodes.length; i < l; i++) {
+                        nodes[i].willChange(arg);
+                    }
+                };
+                var chainsDidChange = function (obj, keyName, m, arg) {
+                    if (!m.hasOwnProperty('chainWatchers')) {
+                        return;
+                    }
+                    var nodes = m.chainWatchers;
+                    nodes = nodes[keyName];
+                    if (!nodes) {
+                        return;
+                    }
+                    for (var i = nodes.length - 1; i >= 0; i--) {
+                        nodes[i].didChange(arg);
+                    }
+                };
+                Ember.overrideChains = function (obj, keyName, m) {
+                    chainsDidChange(obj, keyName, m, true);
+                };
+                var beginPropertyChanges = Ember.beginPropertyChanges = function () {
+                        deferred++;
+                    };
+                var endPropertyChanges = Ember.endPropertyChanges = function () {
+                        deferred--;
+                        if (deferred <= 0) {
+                            beforeObserverSet.clear();
+                            observerSet.flush();
+                        }
+                    };
+                var changeProperties = Ember.changeProperties = function (cb, binding) {
+                        beginPropertyChanges();
+                        tryFinally(cb, endPropertyChanges, binding);
+                    };
+                var notifyBeforeObservers = function (obj, keyName) {
+                    if (obj.isDestroying) {
+                        return;
+                    }
+                    var eventName = keyName + ':before', listeners, diff;
+                    if (deferred) {
+                        listeners = beforeObserverSet.add(obj, keyName, eventName);
+                        diff = listenersDiff(obj, eventName, listeners);
+                        sendEvent(obj, eventName, [
+                            obj,
+                            keyName
+                        ], diff);
+                    } else {
+                        sendEvent(obj, eventName, [
+                            obj,
+                            keyName
+                        ]);
+                    }
+                };
+                var notifyObservers = function (obj, keyName) {
+                    if (obj.isDestroying) {
+                        return;
+                    }
+                    var eventName = keyName + ':change', listeners;
+                    if (deferred) {
+                        listeners = observerSet.add(obj, keyName, eventName);
+                        listenersUnion(obj, eventName, listeners);
+                    } else {
+                        sendEvent(obj, eventName, [
+                            obj,
+                            keyName
+                        ]);
+                    }
+                };
+            }());
+            (function () {
+                var META_KEY = Ember.META_KEY, MANDATORY_SETTER = Ember.ENV.MANDATORY_SETTER, IS_GLOBAL = /^([A-Z$]|([0-9][A-Z$]))/, propertyWillChange = Ember.propertyWillChange, propertyDidChange = Ember.propertyDidChange, getPath = Ember._getPath;
+                var set = function set(obj, keyName, value, tolerant) {
+                    if (typeof obj === 'string') {
+                        Ember.assert('Path \'' + obj + '\' must be global if no obj is given.', IS_GLOBAL.test(obj));
+                        value = keyName;
+                        keyName = obj;
+                        obj = null;
+                    }
+                    if (!obj || keyName.indexOf('.') !== -1) {
+                        return setPath(obj, keyName, value, tolerant);
+                    }
+                    Ember.assert('You need to provide an object and key to `set`.', !!obj && keyName !== undefined);
+                    Ember.assert('calling set on destroyed object', !obj.isDestroyed);
+                    var meta = obj[META_KEY], desc = meta && meta.descs[keyName], isUnknown, currentValue;
+                    if (desc) {
+                        desc.set(obj, keyName, value);
+                    } else {
+                        isUnknown = 'object' === typeof obj && !(keyName in obj);
+                        if (isUnknown && 'function' === typeof obj.setUnknownProperty) {
+                            obj.setUnknownProperty(keyName, value);
+                        } else if (meta && meta.watching[keyName] > 0) {
+                            if (MANDATORY_SETTER) {
+                                currentValue = meta.values[keyName];
+                            } else {
+                                currentValue = obj[keyName];
+                            }
+                            if (value !== currentValue) {
+                                Ember.propertyWillChange(obj, keyName);
+                                if (MANDATORY_SETTER) {
+                                    if (currentValue === undefined && !(keyName in obj)) {
+                                        Ember.defineProperty(obj, keyName, null, value);
+                                    } else {
+                                        meta.values[keyName] = value;
+                                    }
+                                } else {
+                                    obj[keyName] = value;
+                                }
+                                Ember.propertyDidChange(obj, keyName);
+                            }
+                        } else {
+                            obj[keyName] = value;
+                        }
+                    }
+                    return value;
+                };
+                if (Ember.config.overrideAccessors) {
+                    Ember.set = set;
+                    Ember.config.overrideAccessors();
+                    set = Ember.set;
+                }
+                function setPath(root, path, value, tolerant) {
+                    var keyName;
+                    keyName = path.slice(path.lastIndexOf('.') + 1);
+                    path = path.slice(0, path.length - (keyName.length + 1));
+                    if (path !== 'this') {
+                        root = getPath(root, path);
+                    }
+                    if (!keyName || keyName.length === 0) {
+                        throw new Error('You passed an empty path');
+                    }
+                    if (!root) {
+                        if (tolerant) {
+                            return;
+                        } else {
+                            throw new Error('Object in path ' + path + ' could not be found or was destroyed.');
+                        }
+                    }
+                    return set(root, keyName, value);
+                }
+                Ember.set = set;
+                Ember.setPath = Ember.deprecateFunc('setPath is deprecated since set now supports paths', Ember.set);
+                Ember.trySet = function (root, path, value) {
+                    return set(root, path, value, true);
+                };
+                Ember.trySetPath = Ember.deprecateFunc('trySetPath has been renamed to trySet', Ember.trySet);
+            }());
+            (function () {
+                var META_KEY = Ember.META_KEY, metaFor = Ember.meta, objectDefineProperty = Ember.platform.defineProperty;
+                var MANDATORY_SETTER = Ember.ENV.MANDATORY_SETTER;
+                var Descriptor = Ember.Descriptor = function () {
+                    };
+                var MANDATORY_SETTER_FUNCTION = Ember.MANDATORY_SETTER_FUNCTION = function (value) {
+                        Ember.assert('You must use Ember.set() to access this property (of ' + this + ')', false);
+                    };
+                var DEFAULT_GETTER_FUNCTION = Ember.DEFAULT_GETTER_FUNCTION = function (name) {
+                        return function () {
+                            var meta = this[META_KEY];
+                            return meta && meta.values[name];
+                        };
+                    };
+                Ember.defineProperty = function (obj, keyName, desc, data, meta) {
+                    var descs, existingDesc, watching, value;
+                    if (!meta)
+                        meta = metaFor(obj);
+                    descs = meta.descs;
+                    existingDesc = meta.descs[keyName];
+                    watching = meta.watching[keyName] > 0;
+                    if (existingDesc instanceof Ember.Descriptor) {
+                        existingDesc.teardown(obj, keyName);
+                    }
+                    if (desc instanceof Ember.Descriptor) {
+                        value = desc;
+                        descs[keyName] = desc;
+                        if (MANDATORY_SETTER && watching) {
+                            objectDefineProperty(obj, keyName, {
+                                configurable: true,
+                                enumerable: true,
+                                writable: true,
+                                value: undefined
+                            });
+                        } else {
+                            obj[keyName] = undefined;
+                        }
+                        desc.setup(obj, keyName);
+                    } else {
+                        descs[keyName] = undefined;
+                        if (desc == null) {
+                            value = data;
+                            if (MANDATORY_SETTER && watching) {
+                                meta.values[keyName] = data;
+                                objectDefineProperty(obj, keyName, {
+                                    configurable: true,
+                                    enumerable: true,
+                                    set: MANDATORY_SETTER_FUNCTION,
+                                    get: DEFAULT_GETTER_FUNCTION(keyName)
+                                });
+                            } else {
+                                obj[keyName] = data;
+                            }
+                        } else {
+                            value = desc;
+                            objectDefineProperty(obj, keyName, desc);
+                        }
+                    }
+                    if (watching) {
+                        Ember.overrideChains(obj, keyName, meta);
+                    }
+                    if (obj.didDefineProperty) {
+                        obj.didDefineProperty(obj, keyName, value);
+                    }
+                    return this;
+                };
+            }());
+            (function () {
+                var changeProperties = Ember.changeProperties, set = Ember.set;
+                Ember.setProperties = function (self, hash) {
+                    changeProperties(function () {
+                        for (var prop in hash) {
+                            if (hash.hasOwnProperty(prop)) {
+                                set(self, prop, hash[prop]);
+                            }
+                        }
+                    });
+                    return self;
+                };
+            }());
+            (function () {
+                var metaFor = Ember.meta, isArray = Ember.isArray, MANDATORY_SETTER = Ember.ENV.MANDATORY_SETTER, o_defineProperty = Ember.platform.defineProperty;
+                Ember.watchKey = function (obj, keyName) {
+                    if (keyName === 'length' && isArray(obj)) {
+                        return this;
+                    }
+                    var m = metaFor(obj), watching = m.watching, desc;
+                    if (!watching[keyName]) {
+                        watching[keyName] = 1;
+                        desc = m.descs[keyName];
+                        if (desc && desc.willWatch) {
+                            desc.willWatch(obj, keyName);
+                        }
+                        if ('function' === typeof obj.willWatchProperty) {
+                            obj.willWatchProperty(keyName);
+                        }
+                        if (MANDATORY_SETTER && keyName in obj) {
+                            m.values[keyName] = obj[keyName];
+                            o_defineProperty(obj, keyName, {
+                                configurable: true,
+                                enumerable: true,
+                                set: Ember.MANDATORY_SETTER_FUNCTION,
+                                get: Ember.DEFAULT_GETTER_FUNCTION(keyName)
+                            });
+                        }
+                    } else {
+                        watching[keyName] = (watching[keyName] || 0) + 1;
+                    }
+                };
+                Ember.unwatchKey = function (obj, keyName) {
+                    var m = metaFor(obj), watching = m.watching, desc;
+                    if (watching[keyName] === 1) {
+                        watching[keyName] = 0;
+                        desc = m.descs[keyName];
+                        if (desc && desc.didUnwatch) {
+                            desc.didUnwatch(obj, keyName);
+                        }
+                        if ('function' === typeof obj.didUnwatchProperty) {
+                            obj.didUnwatchProperty(keyName);
+                        }
+                        if (MANDATORY_SETTER && keyName in obj) {
+                            o_defineProperty(obj, keyName, {
+                                configurable: true,
+                                enumerable: true,
+                                writable: true,
+                                value: m.values[keyName]
+                            });
+                            delete m.values[keyName];
+                        }
+                    } else if (watching[keyName] > 1) {
+                        watching[keyName]--;
+                    }
+                    return this;
+                };
+            }());
+            (function () {
+                var metaFor = Ember.meta, get = Ember.get, normalizeTuple = Ember.normalizeTuple, forEach = Ember.ArrayPolyfills.forEach, warn = Ember.warn, watchKey = Ember.watchKey, unwatchKey = Ember.unwatchKey, propertyWillChange = Ember.propertyWillChange, propertyDidChange = Ember.propertyDidChange, FIRST_KEY = /^([^\.\*]+)/;
+                function firstKey(path) {
+                    return path.match(FIRST_KEY)[0];
+                }
+                var pendingQueue = [];
+                Ember.flushPendingChains = function () {
+                    if (pendingQueue.length === 0) {
+                        return;
+                    }
+                    var queue = pendingQueue;
+                    pendingQueue = [];
+                    forEach.call(queue, function (q) {
+                        q[0].add(q[1]);
+                    });
+                    warn('Watching an undefined global, Ember expects watched globals to be setup by the time the run loop is flushed, check for typos', pendingQueue.length === 0);
+                };
+                function addChainWatcher(obj, keyName, node) {
+                    if (!obj || 'object' !== typeof obj) {
+                        return;
+                    }
+                    var m = metaFor(obj), nodes = m.chainWatchers;
+                    if (!m.hasOwnProperty('chainWatchers')) {
+                        nodes = m.chainWatchers = {};
+                    }
+                    if (!nodes[keyName]) {
+                        nodes[keyName] = [];
+                    }
+                    nodes[keyName].push(node);
+                    watchKey(obj, keyName);
+                }
+                var removeChainWatcher = Ember.removeChainWatcher = function (obj, keyName, node) {
+                        if (!obj || 'object' !== typeof obj) {
+                            return;
+                        }
+                        var m = metaFor(obj, false);
+                        if (!m.hasOwnProperty('chainWatchers')) {
+                            return;
+                        }
+                        var nodes = m.chainWatchers;
+                        if (nodes[keyName]) {
+                            nodes = nodes[keyName];
+                            for (var i = 0, l = nodes.length; i < l; i++) {
+                                if (nodes[i] === node) {
+                                    nodes.splice(i, 1);
+                                }
+                            }
+                        }
+                        unwatchKey(obj, keyName);
+                    };
+                function isProto(pvalue) {
+                    return metaFor(pvalue, false).proto === pvalue;
+                }
+                var ChainNode = Ember._ChainNode = function (parent, key, value) {
+                        var obj;
+                        this._parent = parent;
+                        this._key = key;
+                        this._watching = value === undefined;
+                        this._value = value;
+                        this._paths = {};
+                        if (this._watching) {
+                            this._object = parent.value();
+                            if (this._object) {
+                                addChainWatcher(this._object, this._key, this);
+                            }
+                        }
+                        if (this._parent && this._parent._key === '@each') {
+                            this.value();
+                        }
+                    };
+                var ChainNodePrototype = ChainNode.prototype;
+                ChainNodePrototype.value = function () {
+                    if (this._value === undefined && this._watching) {
+                        var obj = this._parent.value();
+                        this._value = obj && !isProto(obj) ? get(obj, this._key) : undefined;
+                    }
+                    return this._value;
+                };
+                ChainNodePrototype.destroy = function () {
+                    if (this._watching) {
+                        var obj = this._object;
+                        if (obj) {
+                            removeChainWatcher(obj, this._key, this);
+                        }
+                        this._watching = false;
+                    }
+                };
+                ChainNodePrototype.copy = function (obj) {
+                    var ret = new ChainNode(null, null, obj), paths = this._paths, path;
+                    for (path in paths) {
+                        if (paths[path] <= 0) {
+                            continue;
+                        }
+                        ret.add(path);
+                    }
+                    return ret;
+                };
+                ChainNodePrototype.add = function (path) {
+                    var obj, tuple, key, src, paths;
+                    paths = this._paths;
+                    paths[path] = (paths[path] || 0) + 1;
+                    obj = this.value();
+                    tuple = normalizeTuple(obj, path);
+                    if (tuple[0] && tuple[0] === obj) {
+                        path = tuple[1];
+                        key = firstKey(path);
+                        path = path.slice(key.length + 1);
+                    } else if (!tuple[0]) {
+                        pendingQueue.push([
+                            this,
+                            path
+                        ]);
+                        tuple.length = 0;
+                        return;
+                    } else {
+                        src = tuple[0];
+                        key = path.slice(0, 0 - (tuple[1].length + 1));
+                        path = tuple[1];
+                    }
+                    tuple.length = 0;
+                    this.chain(key, path, src);
+                };
+                ChainNodePrototype.remove = function (path) {
+                    var obj, tuple, key, src, paths;
+                    paths = this._paths;
+                    if (paths[path] > 0) {
+                        paths[path]--;
+                    }
+                    obj = this.value();
+                    tuple = normalizeTuple(obj, path);
+                    if (tuple[0] === obj) {
+                        path = tuple[1];
+                        key = firstKey(path);
+                        path = path.slice(key.length + 1);
+                    } else {
+                        src = tuple[0];
+                        key = path.slice(0, 0 - (tuple[1].length + 1));
+                        path = tuple[1];
+                    }
+                    tuple.length = 0;
+                    this.unchain(key, path);
+                };
+                ChainNodePrototype.count = 0;
+                ChainNodePrototype.chain = function (key, path, src) {
+                    var chains = this._chains, node;
+                    if (!chains) {
+                        chains = this._chains = {};
+                    }
+                    node = chains[key];
+                    if (!node) {
+                        node = chains[key] = new ChainNode(this, key, src);
+                    }
+                    node.count++;
+                    if (path && path.length > 0) {
+                        key = firstKey(path);
+                        path = path.slice(key.length + 1);
+                        node.chain(key, path);
+                    }
+                };
+                ChainNodePrototype.unchain = function (key, path) {
+                    var chains = this._chains, node = chains[key];
+                    if (path && path.length > 1) {
+                        key = firstKey(path);
+                        path = path.slice(key.length + 1);
+                        node.unchain(key, path);
+                    }
+                    node.count--;
+                    if (node.count <= 0) {
+                        delete chains[node._key];
+                        node.destroy();
+                    }
+                };
+                ChainNodePrototype.willChange = function () {
+                    var chains = this._chains;
+                    if (chains) {
+                        for (var key in chains) {
+                            if (!chains.hasOwnProperty(key)) {
+                                continue;
+                            }
+                            chains[key].willChange();
+                        }
+                    }
+                    if (this._parent) {
+                        this._parent.chainWillChange(this, this._key, 1);
+                    }
+                };
+                ChainNodePrototype.chainWillChange = function (chain, path, depth) {
+                    if (this._key) {
+                        path = this._key + '.' + path;
+                    }
+                    if (this._parent) {
+                        this._parent.chainWillChange(this, path, depth + 1);
+                    } else {
+                        if (depth > 1) {
+                            propertyWillChange(this.value(), path);
+                        }
+                        path = 'this.' + path;
+                        if (this._paths[path] > 0) {
+                            propertyWillChange(this.value(), path);
+                        }
+                    }
+                };
+                ChainNodePrototype.chainDidChange = function (chain, path, depth) {
+                    if (this._key) {
+                        path = this._key + '.' + path;
+                    }
+                    if (this._parent) {
+                        this._parent.chainDidChange(this, path, depth + 1);
+                    } else {
+                        if (depth > 1) {
+                            propertyDidChange(this.value(), path);
+                        }
+                        path = 'this.' + path;
+                        if (this._paths[path] > 0) {
+                            propertyDidChange(this.value(), path);
+                        }
+                    }
+                };
+                ChainNodePrototype.didChange = function (suppressEvent) {
+                    if (this._watching) {
+                        var obj = this._parent.value();
+                        if (obj !== this._object) {
+                            removeChainWatcher(this._object, this._key, this);
+                            this._object = obj;
+                            addChainWatcher(obj, this._key, this);
+                        }
+                        this._value = undefined;
+                        if (this._parent && this._parent._key === '@each')
+                            this.value();
+                    }
+                    var chains = this._chains;
+                    if (chains) {
+                        for (var key in chains) {
+                            if (!chains.hasOwnProperty(key)) {
+                                continue;
+                            }
+                            chains[key].didChange(suppressEvent);
+                        }
+                    }
+                    if (suppressEvent) {
+                        return;
+                    }
+                    if (this._parent) {
+                        this._parent.chainDidChange(this, this._key, 1);
+                    }
+                };
+                Ember.finishChains = function (obj) {
+                    var m = metaFor(obj, false), chains = m.chains;
+                    if (chains) {
+                        if (chains.value() !== obj) {
+                            m.chains = chains = chains.copy(obj);
+                        }
+                        chains.didChange(true);
+                    }
+                };
+            }());
+            (function () {
+                var metaFor = Ember.meta, isArray = Ember.isArray, ChainNode = Ember._ChainNode;
+                function chainsFor(obj) {
+                    var m = metaFor(obj), ret = m.chains;
+                    if (!ret) {
+                        ret = m.chains = new ChainNode(null, null, obj);
+                    } else if (ret.value() !== obj) {
+                        ret = m.chains = ret.copy(obj);
+                    }
+                    return ret;
+                }
+                Ember.watchPath = function (obj, keyPath) {
+                    if (keyPath === 'length' && isArray(obj)) {
+                        return;
+                    }
+                    var m = metaFor(obj), watching = m.watching;
+                    if (!watching[keyPath]) {
+                        watching[keyPath] = 1;
+                        chainsFor(obj).add(keyPath);
+                    } else {
+                        watching[keyPath] = (watching[keyPath] || 0) + 1;
+                    }
+                };
+                Ember.unwatchPath = function (obj, keyPath) {
+                    var m = metaFor(obj), watching = m.watching, desc;
+                    if (watching[keyPath] === 1) {
+                        watching[keyPath] = 0;
+                        chainsFor(obj).remove(keyPath);
+                    } else if (watching[keyPath] > 1) {
+                        watching[keyPath]--;
+                    }
+                    return this;
+                };
+            }());
+            (function () {
+                var metaFor = Ember.meta, GUID_KEY = Ember.GUID_KEY, META_KEY = Ember.META_KEY, removeChainWatcher = Ember.removeChainWatcher, watchKey = Ember.watchKey, unwatchKey = Ember.unwatchKey, watchPath = Ember.watchPath, unwatchPath = Ember.unwatchPath, isArray = Ember.isArray, generateGuid = Ember.generateGuid, IS_PATH = /[\.\*]/;
+                function isKeyName(path) {
+                    return path === '*' || !IS_PATH.test(path);
+                }
+                Ember.watch = function (obj, keyPath) {
+                    if (keyPath === 'length' && isArray(obj)) {
+                        return;
+                    }
+                    if (isKeyName(keyPath)) {
+                        watchKey(obj, keyPath);
+                    } else {
+                        watchPath(obj, keyPath);
+                    }
+                };
+                Ember.isWatching = function isWatching(obj, key) {
+                    var meta = obj[META_KEY];
+                    return (meta && meta.watching[key]) > 0;
+                };
+                Ember.watch.flushPending = Ember.flushPendingChains;
+                Ember.unwatch = function (obj, keyPath) {
+                    if (keyPath === 'length' && isArray(obj)) {
+                        return this;
+                    }
+                    if (isKeyName(keyPath)) {
+                        unwatchKey(obj, keyPath);
+                    } else {
+                        unwatchPath(obj, keyPath);
+                    }
+                };
+                Ember.rewatch = function (obj) {
+                    var m = metaFor(obj, false), chains = m.chains;
+                    if (GUID_KEY in obj && !obj.hasOwnProperty(GUID_KEY)) {
+                        generateGuid(obj, 'ember');
+                    }
+                    if (chains && chains.value() !== obj) {
+                        m.chains = chains.copy(obj);
+                    }
+                    return this;
+                };
+                var NODE_STACK = [];
+                Ember.destroy = function (obj) {
+                    var meta = obj[META_KEY], node, nodes, key, nodeObject;
+                    if (meta) {
+                        obj[META_KEY] = null;
+                        node = meta.chains;
+                        if (node) {
+                            NODE_STACK.push(node);
+                            while (NODE_STACK.length > 0) {
+                                node = NODE_STACK.pop();
+                                nodes = node._chains;
+                                if (nodes) {
+                                    for (key in nodes) {
+                                        if (nodes.hasOwnProperty(key)) {
+                                            NODE_STACK.push(nodes[key]);
+                                        }
+                                    }
+                                }
+                                if (node._watching) {
+                                    nodeObject = node._object;
+                                    if (nodeObject) {
+                                        removeChainWatcher(nodeObject, node._key, node);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                };
+            }());
+            (function () {
+                Ember.warn('The CP_DEFAULT_CACHEABLE flag has been removed and computed properties are always cached by default. Use `volatile` if you don\'t want caching.', Ember.ENV.CP_DEFAULT_CACHEABLE !== false);
+                var get = Ember.get, set = Ember.set, metaFor = Ember.meta, a_slice = [].slice, o_create = Ember.create, META_KEY = Ember.META_KEY, watch = Ember.watch, unwatch = Ember.unwatch;
+                function keysForDep(obj, depsMeta, depKey) {
+                    var keys = depsMeta[depKey];
+                    if (!keys) {
+                        keys = depsMeta[depKey] = {};
+                    } else if (!depsMeta.hasOwnProperty(depKey)) {
+                        keys = depsMeta[depKey] = o_create(keys);
+                    }
+                    return keys;
+                }
+                function metaForDeps(obj, meta) {
+                    return keysForDep(obj, meta, 'deps');
+                }
+                function addDependentKeys(desc, obj, keyName, meta) {
+                    var depKeys = desc._dependentKeys, depsMeta, idx, len, depKey, keys;
+                    if (!depKeys)
+                        return;
+                    depsMeta = metaForDeps(obj, meta);
+                    for (idx = 0, len = depKeys.length; idx < len; idx++) {
+                        depKey = depKeys[idx];
+                        keys = keysForDep(obj, depsMeta, depKey);
+                        keys[keyName] = (keys[keyName] || 0) + 1;
+                        watch(obj, depKey);
+                    }
+                }
+                function removeDependentKeys(desc, obj, keyName, meta) {
+                    var depKeys = desc._dependentKeys, depsMeta, idx, len, depKey, keys;
+                    if (!depKeys)
+                        return;
+                    depsMeta = metaForDeps(obj, meta);
+                    for (idx = 0, len = depKeys.length; idx < len; idx++) {
+                        depKey = depKeys[idx];
+                        keys = keysForDep(obj, depsMeta, depKey);
+                        keys[keyName] = (keys[keyName] || 0) - 1;
+                        unwatch(obj, depKey);
+                    }
+                }
+                function ComputedProperty(func, opts) {
+                    this.func = func;
+                    this._cacheable = opts && opts.cacheable !== undefined ? opts.cacheable : true;
+                    this._dependentKeys = opts && opts.dependentKeys;
+                    this._readOnly = opts && (opts.readOnly !== undefined || !!opts.readOnly);
+                }
+                Ember.ComputedProperty = ComputedProperty;
+                ComputedProperty.prototype = new Ember.Descriptor();
+                var ComputedPropertyPrototype = ComputedProperty.prototype;
+                ComputedPropertyPrototype.cacheable = function (aFlag) {
+                    this._cacheable = aFlag !== false;
+                    return this;
+                };
+                ComputedPropertyPrototype.volatile = function () {
+                    return this.cacheable(false);
+                };
+                ComputedPropertyPrototype.readOnly = function (readOnly) {
+                    this._readOnly = readOnly === undefined || !!readOnly;
+                    return this;
+                };
+                ComputedPropertyPrototype.property = function () {
+                    var args = [];
+                    for (var i = 0, l = arguments.length; i < l; i++) {
+                        args.push(arguments[i]);
+                    }
+                    this._dependentKeys = args;
+                    return this;
+                };
+                ComputedPropertyPrototype.meta = function (meta) {
+                    if (arguments.length === 0) {
+                        return this._meta || {};
+                    } else {
+                        this._meta = meta;
+                        return this;
+                    }
+                };
+                ComputedPropertyPrototype.willWatch = function (obj, keyName) {
+                    var meta = obj[META_KEY];
+                    Ember.assert('watch should have setup meta to be writable', meta.source === obj);
+                    if (!(keyName in meta.cache)) {
+                        addDependentKeys(this, obj, keyName, meta);
+                    }
+                };
+                ComputedPropertyPrototype.didUnwatch = function (obj, keyName) {
+                    var meta = obj[META_KEY];
+                    Ember.assert('unwatch should have setup meta to be writable', meta.source === obj);
+                    if (!(keyName in meta.cache)) {
+                        removeDependentKeys(this, obj, keyName, meta);
+                    }
+                };
+                ComputedPropertyPrototype.didChange = function (obj, keyName) {
+                    if (this._cacheable && this._suspended !== obj) {
+                        var meta = metaFor(obj);
+                        if (keyName in meta.cache) {
+                            delete meta.cache[keyName];
+                            if (!meta.watching[keyName]) {
+                                removeDependentKeys(this, obj, keyName, meta);
+                            }
+                        }
+                    }
+                };
+                ComputedPropertyPrototype.get = function (obj, keyName) {
+                    var ret, cache, meta;
+                    if (this._cacheable) {
+                        meta = metaFor(obj);
+                        cache = meta.cache;
+                        if (keyName in cache) {
+                            return cache[keyName];
+                        }
+                        ret = cache[keyName] = this.func.call(obj, keyName);
+                        if (!meta.watching[keyName]) {
+                            addDependentKeys(this, obj, keyName, meta);
+                        }
+                    } else {
+                        ret = this.func.call(obj, keyName);
+                    }
+                    return ret;
+                };
+                ComputedPropertyPrototype.set = function (obj, keyName, value) {
+                    var cacheable = this._cacheable, func = this.func, meta = metaFor(obj, cacheable), watched = meta.watching[keyName], oldSuspended = this._suspended, hadCachedValue = false, cache = meta.cache, cachedValue, ret;
+                    if (this._readOnly) {
+                        throw new Error('Cannot Set: ' + keyName + ' on: ' + obj.toString());
+                    }
+                    this._suspended = obj;
+                    try {
+                        if (cacheable && cache.hasOwnProperty(keyName)) {
+                            cachedValue = cache[keyName];
+                            hadCachedValue = true;
+                        }
+                        if (func.wrappedFunction) {
+                            func = func.wrappedFunction;
+                        }
+                        if (func.length === 3) {
+                            ret = func.call(obj, keyName, value, cachedValue);
+                        } else if (func.length === 2) {
+                            ret = func.call(obj, keyName, value);
+                        } else {
+                            Ember.defineProperty(obj, keyName, null, cachedValue);
+                            Ember.set(obj, keyName, value);
+                            return;
+                        }
+                        if (hadCachedValue && cachedValue === ret) {
+                            return;
+                        }
+                        if (watched) {
+                            Ember.propertyWillChange(obj, keyName);
+                        }
+                        if (hadCachedValue) {
+                            delete cache[keyName];
+                        }
+                        if (cacheable) {
+                            if (!watched && !hadCachedValue) {
+                                addDependentKeys(this, obj, keyName, meta);
+                            }
+                            cache[keyName] = ret;
+                        }
+                        if (watched) {
+                            Ember.propertyDidChange(obj, keyName);
+                        }
+                    } finally {
+                        this._suspended = oldSuspended;
+                    }
+                    return ret;
+                };
+                ComputedPropertyPrototype.setup = function (obj, keyName) {
+                    var meta = obj[META_KEY];
+                    if (meta && meta.watching[keyName]) {
+                        addDependentKeys(this, obj, keyName, metaFor(obj));
+                    }
+                };
+                ComputedPropertyPrototype.teardown = function (obj, keyName) {
+                    var meta = metaFor(obj);
+                    if (meta.watching[keyName] || keyName in meta.cache) {
+                        removeDependentKeys(this, obj, keyName, meta);
+                    }
+                    if (this._cacheable) {
+                        delete meta.cache[keyName];
+                    }
+                    return null;
+                };
+                Ember.computed = function (func) {
+                    var args;
+                    if (arguments.length > 1) {
+                        args = a_slice.call(arguments, 0, -1);
+                        func = a_slice.call(arguments, -1)[0];
+                    }
+                    if (typeof func !== 'function') {
+                        throw new Error('Computed Property declared without a property function');
+                    }
+                    var cp = new ComputedProperty(func);
+                    if (args) {
+                        cp.property.apply(cp, args);
+                    }
+                    return cp;
+                };
+                Ember.cacheFor = function cacheFor(obj, key) {
+                    var cache = metaFor(obj, false).cache;
+                    if (cache && key in cache) {
+                        return cache[key];
+                    }
+                };
+                function getProperties(self, propertyNames) {
+                    var ret = {};
+                    for (var i = 0; i < propertyNames.length; i++) {
+                        ret[propertyNames[i]] = get(self, propertyNames[i]);
+                    }
+                    return ret;
+                }
+                function registerComputed(name, macro) {
+                    Ember.computed[name] = function (dependentKey) {
+                        var args = a_slice.call(arguments);
+                        return Ember.computed(dependentKey, function () {
+                            return macro.apply(this, args);
+                        });
+                    };
+                }
+                function registerComputedWithProperties(name, macro) {
+                    Ember.computed[name] = function () {
+                        var properties = a_slice.call(arguments);
+                        var computed = Ember.computed(function () {
+                                return macro.apply(this, [getProperties(this, properties)]);
+                            });
+                        return computed.property.apply(computed, properties);
+                    };
+                }
+                registerComputed('empty', function (dependentKey) {
+                    return Ember.isEmpty(get(this, dependentKey));
+                });
+                registerComputed('notEmpty', function (dependentKey) {
+                    return !Ember.isEmpty(get(this, dependentKey));
+                });
+                registerComputed('none', function (dependentKey) {
+                    return Ember.isNone(get(this, dependentKey));
+                });
+                registerComputed('not', function (dependentKey) {
+                    return !get(this, dependentKey);
+                });
+                registerComputed('bool', function (dependentKey) {
+                    return !!get(this, dependentKey);
+                });
+                registerComputed('match', function (dependentKey, regexp) {
+                    var value = get(this, dependentKey);
+                    return typeof value === 'string' ? !!value.match(regexp) : false;
+                });
+                registerComputed('equal', function (dependentKey, value) {
+                    return get(this, dependentKey) === value;
+                });
+                registerComputed('gt', function (dependentKey, value) {
+                    return get(this, dependentKey) > value;
+                });
+                registerComputed('gte', function (dependentKey, value) {
+                    return get(this, dependentKey) >= value;
+                });
+                registerComputed('lt', function (dependentKey, value) {
+                    return get(this, dependentKey) < value;
+                });
+                registerComputed('lte', function (dependentKey, value) {
+                    return get(this, dependentKey) <= value;
+                });
+                registerComputedWithProperties('and', function (properties) {
+                    for (var key in properties) {
+                        if (properties.hasOwnProperty(key) && !properties[key]) {
+                            return false;
+                        }
+                    }
+                    return true;
+                });
+                registerComputedWithProperties('or', function (properties) {
+                    for (var key in properties) {
+                        if (properties.hasOwnProperty(key) && properties[key]) {
+                            return true;
+                        }
+                    }
+                    return false;
+                });
+                registerComputedWithProperties('any', function (properties) {
+                    for (var key in properties) {
+                        if (properties.hasOwnProperty(key) && properties[key]) {
+                            return properties[key];
+                        }
+                    }
+                    return null;
+                });
+                registerComputedWithProperties('map', function (properties) {
+                    var res = [];
+                    for (var key in properties) {
+                        if (properties.hasOwnProperty(key)) {
+                            if (Ember.isNone(properties[key])) {
+                                res.push(null);
+                            } else {
+                                res.push(properties[key]);
+                            }
+                        }
+                    }
+                    return res;
+                });
+                Ember.computed.alias = function (dependentKey) {
+                    return Ember.computed(dependentKey, function (key, value) {
+                        if (arguments.length > 1) {
+                            set(this, dependentKey, value);
+                            return value;
+                        } else {
+                            return get(this, dependentKey);
+                        }
+                    });
+                };
+                Ember.computed.defaultTo = function (defaultPath) {
+                    return Ember.computed(function (key, newValue, cachedValue) {
+                        var result;
+                        if (arguments.length === 1) {
+                            return cachedValue != null ? cachedValue : get(this, defaultPath);
+                        }
+                        return newValue != null ? newValue : get(this, defaultPath);
+                    });
+                };
+            }());
+            (function () {
+                var AFTER_OBSERVERS = ':change';
+                var BEFORE_OBSERVERS = ':before';
+                var guidFor = Ember.guidFor;
+                function changeEvent(keyName) {
+                    return keyName + AFTER_OBSERVERS;
+                }
+                function beforeEvent(keyName) {
+                    return keyName + BEFORE_OBSERVERS;
+                }
+                Ember.addObserver = function (obj, path, target, method) {
+                    Ember.addListener(obj, changeEvent(path), target, method);
+                    Ember.watch(obj, path);
+                    return this;
+                };
+                Ember.observersFor = function (obj, path) {
+                    return Ember.listenersFor(obj, changeEvent(path));
+                };
+                Ember.removeObserver = function (obj, path, target, method) {
+                    Ember.unwatch(obj, path);
+                    Ember.removeListener(obj, changeEvent(path), target, method);
+                    return this;
+                };
+                Ember.addBeforeObserver = function (obj, path, target, method) {
+                    Ember.addListener(obj, beforeEvent(path), target, method);
+                    Ember.watch(obj, path);
+                    return this;
+                };
+                Ember._suspendBeforeObserver = function (obj, path, target, method, callback) {
+                    return Ember._suspendListener(obj, beforeEvent(path), target, method, callback);
+                };
+                Ember._suspendObserver = function (obj, path, target, method, callback) {
+                    return Ember._suspendListener(obj, changeEvent(path), target, method, callback);
+                };
+                var map = Ember.ArrayPolyfills.map;
+                Ember._suspendBeforeObservers = function (obj, paths, target, method, callback) {
+                    var events = map.call(paths, beforeEvent);
+                    return Ember._suspendListeners(obj, events, target, method, callback);
+                };
+                Ember._suspendObservers = function (obj, paths, target, method, callback) {
+                    var events = map.call(paths, changeEvent);
+                    return Ember._suspendListeners(obj, events, target, method, callback);
+                };
+                Ember.beforeObserversFor = function (obj, path) {
+                    return Ember.listenersFor(obj, beforeEvent(path));
+                };
+                Ember.removeBeforeObserver = function (obj, path, target, method) {
+                    Ember.unwatch(obj, path);
+                    Ember.removeListener(obj, beforeEvent(path), target, method);
+                    return this;
+                };
+            }());
+            (function () {
+                var slice = [].slice, forEach = Ember.ArrayPolyfills.forEach;
+                function invoke(target, method, args, ignore) {
+                    if (method === undefined) {
+                        method = target;
+                        target = undefined;
+                    }
+                    if ('string' === typeof method) {
+                        method = target[method];
+                    }
+                    if (args && ignore > 0) {
+                        args = args.length > ignore ? slice.call(args, ignore) : null;
+                    }
+                    return Ember.handleErrors(function () {
+                        return method.apply(target || this, args || []);
+                    }, this);
+                }
+                var timerMark;
+                var RunLoop = function (prev) {
+                    this._prev = prev || null;
+                    this.onceTimers = {};
+                };
+                RunLoop.prototype = {
+                    end: function () {
+                        this.flush();
+                    },
+                    prev: function () {
+                        return this._prev;
+                    },
+                    schedule: function (queueName, target, method) {
+                        var queues = this._queues, queue;
+                        if (!queues) {
+                            queues = this._queues = {};
+                        }
+                        queue = queues[queueName];
+                        if (!queue) {
+                            queue = queues[queueName] = [];
+                        }
+                        var args = arguments.length > 3 ? slice.call(arguments, 3) : null;
+                        queue.push({
+                            target: target,
+                            method: method,
+                            args: args
+                        });
+                        return this;
+                    },
+                    flush: function (queueName) {
+                        var queueNames, idx, len, queue, log;
+                        if (!this._queues) {
+                            return this;
+                        }
+                        function iter(item) {
+                            invoke(item.target, item.method, item.args);
+                        }
+                        function tryable() {
+                            forEach.call(queue, iter);
+                        }
+                        Ember.watch.flushPending();
+                        if (queueName) {
+                            while (this._queues && (queue = this._queues[queueName])) {
+                                this._queues[queueName] = null;
+                                if (queueName === 'sync') {
+                                    log = Ember.LOG_BINDINGS;
+                                    if (log) {
+                                        Ember.Logger.log('Begin: Flush Sync Queue');
+                                    }
+                                    Ember.beginPropertyChanges();
+                                    Ember.tryFinally(tryable, Ember.endPropertyChanges);
+                                    if (log) {
+                                        Ember.Logger.log('End: Flush Sync Queue');
+                                    }
+                                } else {
+                                    forEach.call(queue, iter);
+                                }
+                            }
+                        } else {
+                            queueNames = Ember.run.queues;
+                            len = queueNames.length;
+                            idx = 0;
+                            outerloop:
+                                while (idx < len) {
+                                    queueName = queueNames[idx];
+                                    queue = this._queues && this._queues[queueName];
+                                    delete this._queues[queueName];
+                                    if (queue) {
+                                        if (queueName === 'sync') {
+                                            log = Ember.LOG_BINDINGS;
+                                            if (log) {
+                                                Ember.Logger.log('Begin: Flush Sync Queue');
+                                            }
+                                            Ember.beginPropertyChanges();
+                                            Ember.tryFinally(tryable, Ember.endPropertyChanges);
+                                            if (log) {
+                                                Ember.Logger.log('End: Flush Sync Queue');
+                                            }
+                                        } else {
+                                            forEach.call(queue, iter);
+                                        }
+                                    }
+                                    for (var i = 0; i <= idx; i++) {
+                                        if (this._queues && this._queues[queueNames[i]]) {
+                                            idx = i;
+                                            continue outerloop;
+                                        }
+                                    }
+                                    idx++;
+                                }
+                        }
+                        timerMark = null;
+                        return this;
+                    }
+                };
+                Ember.RunLoop = RunLoop;
+                Ember.run = function (target, method) {
+                    var args = arguments;
+                    run.begin();
+                    function tryable() {
+                        if (target || method) {
+                            return invoke(target, method, args, 2);
+                        }
+                    }
+                    return Ember.tryFinally(tryable, run.end);
+                };
+                var run = Ember.run;
+                Ember.run.begin = function () {
+                    run.currentRunLoop = new RunLoop(run.currentRunLoop);
+                };
+                Ember.run.end = function () {
+                    Ember.assert('must have a current run loop', run.currentRunLoop);
+                    function tryable() {
+                        run.currentRunLoop.end();
+                    }
+                    function finalizer() {
+                        run.currentRunLoop = run.currentRunLoop.prev();
+                    }
+                    Ember.tryFinally(tryable, finalizer);
+                };
+                Ember.run.queues = [
+                    'sync',
+                    'actions',
+                    'destroy'
+                ];
+                Ember.run.schedule = function (queue, target, method) {
+                    var loop = run.autorun();
+                    loop.schedule.apply(loop, arguments);
+                };
+                var scheduledAutorun;
+                function autorun() {
+                    scheduledAutorun = null;
+                    if (run.currentRunLoop) {
+                        run.end();
+                    }
+                }
+                Ember.run.hasScheduledTimers = function () {
+                    return !!(scheduledAutorun || scheduledLater);
+                };
+                Ember.run.cancelTimers = function () {
+                    if (scheduledAutorun) {
+                        clearTimeout(scheduledAutorun);
+                        scheduledAutorun = null;
+                    }
+                    if (scheduledLater) {
+                        clearTimeout(scheduledLater);
+                        scheduledLater = null;
+                    }
+                    timers = {};
+                };
+                Ember.run.autorun = function () {
+                    if (!run.currentRunLoop) {
+                        Ember.assert('You have turned on testing mode, which disabled the run-loop\'s autorun. You will need to wrap any code with asynchronous side-effects in an Ember.run', !Ember.testing);
+                        run.begin();
+                        if (!scheduledAutorun) {
+                            scheduledAutorun = setTimeout(autorun, 1);
+                        }
+                    }
+                    return run.currentRunLoop;
+                };
+                Ember.run.sync = function () {
+                    run.autorun();
+                    run.currentRunLoop.flush('sync');
+                };
+                var timers = {};
+                var scheduledLater, scheduledLaterExpires;
+                function invokeLaterTimers() {
+                    scheduledLater = null;
+                    run(function () {
+                        var now = +new Date(), earliest = -1;
+                        for (var key in timers) {
+                            if (!timers.hasOwnProperty(key)) {
+                                continue;
+                            }
+                            var timer = timers[key];
+                            if (timer && timer.expires) {
+                                if (now >= timer.expires) {
+                                    delete timers[key];
+                                    invoke(timer.target, timer.method, timer.args, 2);
+                                } else {
+                                    if (earliest < 0 || timer.expires < earliest) {
+                                        earliest = timer.expires;
+                                    }
+                                }
+                            }
+                        }
+                        if (earliest > 0) {
+                            scheduledLater = setTimeout(invokeLaterTimers, earliest - now);
+                            scheduledLaterExpires = earliest;
+                        }
+                    });
+                }
+                Ember.run.later = function (target, method) {
+                    var args, expires, timer, guid, wait;
+                    if (arguments.length === 2 && 'function' === typeof target) {
+                        wait = method;
+                        method = target;
+                        target = undefined;
+                        args = [
+                            target,
+                            method
+                        ];
+                    } else {
+                        args = slice.call(arguments);
+                        wait = args.pop();
+                    }
+                    expires = +new Date() + wait;
+                    timer = {
+                        target: target,
+                        method: method,
+                        expires: expires,
+                        args: args
+                    };
+                    guid = Ember.guidFor(timer);
+                    timers[guid] = timer;
+                    if (scheduledLater && expires < scheduledLaterExpires) {
+                        clearTimeout(scheduledLater);
+                        scheduledLater = null;
+                    }
+                    if (!scheduledLater) {
+                        scheduledLater = setTimeout(invokeLaterTimers, wait);
+                        scheduledLaterExpires = expires;
+                    }
+                    return guid;
+                };
+                function invokeOnceTimer(guid, onceTimers) {
+                    if (onceTimers[this.tguid]) {
+                        delete onceTimers[this.tguid][this.mguid];
+                    }
+                    if (timers[guid]) {
+                        invoke(this.target, this.method, this.args);
+                    }
+                    delete timers[guid];
+                }
+                function scheduleOnce(queue, target, method, args) {
+                    var tguid = Ember.guidFor(target), mguid = Ember.guidFor(method), onceTimers = run.autorun().onceTimers, guid = onceTimers[tguid] && onceTimers[tguid][mguid], timer;
+                    if (guid && timers[guid]) {
+                        timers[guid].args = args;
+                    } else {
+                        timer = {
+                            target: target,
+                            method: method,
+                            args: args,
+                            tguid: tguid,
+                            mguid: mguid
+                        };
+                        guid = Ember.guidFor(timer);
+                        timers[guid] = timer;
+                        if (!onceTimers[tguid]) {
+                            onceTimers[tguid] = {};
+                        }
+                        onceTimers[tguid][mguid] = guid;
+                        run.schedule(queue, timer, invokeOnceTimer, guid, onceTimers);
+                    }
+                    return guid;
+                }
+                Ember.run.once = function (target, method) {
+                    return scheduleOnce('actions', target, method, slice.call(arguments, 2));
+                };
+                Ember.run.scheduleOnce = function (queue, target, method, args) {
+                    return scheduleOnce(queue, target, method, slice.call(arguments, 3));
+                };
+                Ember.run.next = function () {
+                    var args = slice.call(arguments);
+                    args.push(1);
+                    return run.later.apply(this, args);
+                };
+                Ember.run.cancel = function (timer) {
+                    delete timers[timer];
+                };
+            }());
+            (function () {
+                Ember.LOG_BINDINGS = false || !!Ember.ENV.LOG_BINDINGS;
+                var get = Ember.get, set = Ember.set, guidFor = Ember.guidFor, IS_GLOBAL = /^([A-Z$]|([0-9][A-Z$]))/;
+                var isGlobalPath = Ember.isGlobalPath = function (path) {
+                        return IS_GLOBAL.test(path);
+                    };
+                function getWithGlobals(obj, path) {
+                    return get(isGlobalPath(path) ? Ember.lookup : obj, path);
+                }
+                var Binding = function (toPath, fromPath) {
+                    this._direction = 'fwd';
+                    this._from = fromPath;
+                    this._to = toPath;
+                    this._directionMap = Ember.Map.create();
+                };
+                Binding.prototype = {
+                    copy: function () {
+                        var copy = new Binding(this._to, this._from);
+                        if (this._oneWay) {
+                            copy._oneWay = true;
+                        }
+                        return copy;
+                    },
+                    from: function (path) {
+                        this._from = path;
+                        return this;
+                    },
+                    to: function (path) {
+                        this._to = path;
+                        return this;
+                    },
+                    oneWay: function () {
+                        this._oneWay = true;
+                        return this;
+                    },
+                    toString: function () {
+                        var oneWay = this._oneWay ? '[oneWay]' : '';
+                        return 'Ember.Binding<' + guidFor(this) + '>(' + this._from + ' -> ' + this._to + ')' + oneWay;
+                    },
+                    connect: function (obj) {
+                        Ember.assert('Must pass a valid object to Ember.Binding.connect()', !!obj);
+                        var fromPath = this._from, toPath = this._to;
+                        Ember.trySet(obj, toPath, getWithGlobals(obj, fromPath));
+                        Ember.addObserver(obj, fromPath, this, this.fromDidChange);
+                        if (!this._oneWay) {
+                            Ember.addObserver(obj, toPath, this, this.toDidChange);
+                        }
+                        this._readyToSync = true;
+                        return this;
+                    },
+                    disconnect: function (obj) {
+                        Ember.assert('Must pass a valid object to Ember.Binding.disconnect()', !!obj);
+                        var twoWay = !this._oneWay;
+                        Ember.removeObserver(obj, this._from, this, this.fromDidChange);
+                        if (twoWay) {
+                            Ember.removeObserver(obj, this._to, this, this.toDidChange);
+                        }
+                        this._readyToSync = false;
+                        return this;
+                    },
+                    fromDidChange: function (target) {
+                        this._scheduleSync(target, 'fwd');
+                    },
+                    toDidChange: function (target) {
+                        this._scheduleSync(target, 'back');
+                    },
+                    _scheduleSync: function (obj, dir) {
+                        var directionMap = this._directionMap;
+                        var existingDir = directionMap.get(obj);
+                        if (!existingDir) {
+                            Ember.run.schedule('sync', this, this._sync, obj);
+                            directionMap.set(obj, dir);
+                        }
+                        if (existingDir === 'back' && dir === 'fwd') {
+                            directionMap.set(obj, 'fwd');
+                        }
+                    },
+                    _sync: function (obj) {
+                        var log = Ember.LOG_BINDINGS;
+                        if (obj.isDestroyed || !this._readyToSync) {
+                            return;
+                        }
+                        var directionMap = this._directionMap;
+                        var direction = directionMap.get(obj);
+                        var fromPath = this._from, toPath = this._to;
+                        directionMap.remove(obj);
+                        if (direction === 'fwd') {
+                            var fromValue = getWithGlobals(obj, this._from);
+                            if (log) {
+                                Ember.Logger.log(' ', this.toString(), '->', fromValue, obj);
+                            }
+                            if (this._oneWay) {
+                                Ember.trySet(obj, toPath, fromValue);
+                            } else {
+                                Ember._suspendObserver(obj, toPath, this, this.toDidChange, function () {
+                                    Ember.trySet(obj, toPath, fromValue);
+                                });
+                            }
+                        } else if (direction === 'back') {
+                            var toValue = get(obj, this._to);
+                            if (log) {
+                                Ember.Logger.log(' ', this.toString(), '<-', toValue, obj);
+                            }
+                            Ember._suspendObserver(obj, fromPath, this, this.fromDidChange, function () {
+                                Ember.trySet(Ember.isGlobalPath(fromPath) ? Ember.lookup : obj, fromPath, toValue);
+                            });
+                        }
+                    }
+                };
+                function mixinProperties(to, from) {
+                    for (var key in from) {
+                        if (from.hasOwnProperty(key)) {
+                            to[key] = from[key];
+                        }
+                    }
+                }
+                mixinProperties(Binding, {
+                    from: function () {
+                        var C = this, binding = new C();
+                        return binding.from.apply(binding, arguments);
+                    },
+                    to: function () {
+                        var C = this, binding = new C();
+                        return binding.to.apply(binding, arguments);
+                    },
+                    oneWay: function (from, flag) {
+                        var C = this, binding = new C(null, from);
+                        return binding.oneWay(flag);
+                    }
+                });
+                Ember.Binding = Binding;
+                Ember.bind = function (obj, to, from) {
+                    return new Ember.Binding(to, from).connect(obj);
+                };
+                Ember.oneWay = function (obj, to, from) {
+                    return new Ember.Binding(to, from).oneWay().connect(obj);
+                };
+            }());
+            (function () {
+                var Mixin, REQUIRED, Alias, a_map = Ember.ArrayPolyfills.map, a_indexOf = Ember.ArrayPolyfills.indexOf, a_forEach = Ember.ArrayPolyfills.forEach, a_slice = [].slice, o_create = Ember.create, defineProperty = Ember.defineProperty, guidFor = Ember.guidFor;
+                function mixinsMeta(obj) {
+                    var m = Ember.meta(obj, true), ret = m.mixins;
+                    if (!ret) {
+                        ret = m.mixins = {};
+                    } else if (!m.hasOwnProperty('mixins')) {
+                        ret = m.mixins = o_create(ret);
+                    }
+                    return ret;
+                }
+                function initMixin(mixin, args) {
+                    if (args && args.length > 0) {
+                        mixin.mixins = a_map.call(args, function (x) {
+                            if (x instanceof Mixin) {
+                                return x;
+                            }
+                            var mixin = new Mixin();
+                            mixin.properties = x;
+                            return mixin;
+                        });
+                    }
+                    return mixin;
+                }
+                function isMethod(obj) {
+                    return 'function' === typeof obj && obj.isMethod !== false && obj !== Boolean && obj !== Object && obj !== Number && obj !== Array && obj !== Date && obj !== String;
+                }
+                var CONTINUE = {};
+                function mixinProperties(mixinsMeta, mixin) {
+                    var guid;
+                    if (mixin instanceof Mixin) {
+                        guid = guidFor(mixin);
+                        if (mixinsMeta[guid]) {
+                            return CONTINUE;
+                        }
+                        mixinsMeta[guid] = mixin;
+                        return mixin.properties;
+                    } else {
+                        return mixin;
+                    }
+                }
+                function concatenatedProperties(props, values, base) {
+                    var concats;
+                    concats = values.concatenatedProperties || base.concatenatedProperties;
+                    if (props.concatenatedProperties) {
+                        concats = concats ? concats.concat(props.concatenatedProperties) : props.concatenatedProperties;
+                    }
+                    return concats;
+                }
+                function giveDescriptorSuper(meta, key, property, values, descs) {
+                    var superProperty;
+                    if (values[key] === undefined) {
+                        superProperty = descs[key];
+                    }
+                    superProperty = superProperty || meta.descs[key];
+                    if (!superProperty || !(superProperty instanceof Ember.ComputedProperty)) {
+                        return property;
+                    }
+                    property = o_create(property);
+                    property.func = Ember.wrap(property.func, superProperty.func);
+                    return property;
+                }
+                function giveMethodSuper(obj, key, method, values, descs) {
+                    var superMethod;
+                    if (descs[key] === undefined) {
+                        superMethod = values[key];
+                    }
+                    superMethod = superMethod || obj[key];
+                    if ('function' !== typeof superMethod) {
+                        return method;
+                    }
+                    return Ember.wrap(method, superMethod);
+                }
+                function applyConcatenatedProperties(obj, key, value, values) {
+                    var baseValue = values[key] || obj[key];
+                    if (baseValue) {
+                        if ('function' === typeof baseValue.concat) {
+                            return baseValue.concat(value);
+                        } else {
+                            return Ember.makeArray(baseValue).concat(value);
+                        }
+                    } else {
+                        return Ember.makeArray(value);
+                    }
+                }
+                function addNormalizedProperty(base, key, value, meta, descs, values, concats) {
+                    if (value instanceof Ember.Descriptor) {
+                        if (value === REQUIRED && descs[key]) {
+                            return CONTINUE;
+                        }
+                        if (value.func) {
+                            value = giveDescriptorSuper(meta, key, value, values, descs);
+                        }
+                        descs[key] = value;
+                        values[key] = undefined;
+                    } else {
+                        if (isMethod(value)) {
+                            value = giveMethodSuper(base, key, value, values, descs);
+                        } else if (concats && a_indexOf.call(concats, key) >= 0 || key === 'concatenatedProperties') {
+                            value = applyConcatenatedProperties(base, key, value, values);
+                        }
+                        descs[key] = undefined;
+                        values[key] = value;
+                    }
+                }
+                function mergeMixins(mixins, m, descs, values, base, keys) {
+                    var mixin, props, key, concats, meta;
+                    function removeKeys(keyName) {
+                        delete descs[keyName];
+                        delete values[keyName];
+                    }
+                    for (var i = 0, l = mixins.length; i < l; i++) {
+                        mixin = mixins[i];
+                        Ember.assert('Expected hash or Mixin instance, got ' + Object.prototype.toString.call(mixin), typeof mixin === 'object' && mixin !== null && Object.prototype.toString.call(mixin) !== '[object Array]');
+                        props = mixinProperties(m, mixin);
+                        if (props === CONTINUE) {
+                            continue;
+                        }
+                        if (props) {
+                            meta = Ember.meta(base);
+                            concats = concatenatedProperties(props, values, base);
+                            for (key in props) {
+                                if (!props.hasOwnProperty(key)) {
+                                    continue;
+                                }
+                                keys.push(key);
+                                addNormalizedProperty(base, key, props[key], meta, descs, values, concats);
+                            }
+                            if (props.hasOwnProperty('toString')) {
+                                base.toString = props.toString;
+                            }
+                        } else if (mixin.mixins) {
+                            mergeMixins(mixin.mixins, m, descs, values, base, keys);
+                            if (mixin._without) {
+                                a_forEach.call(mixin._without, removeKeys);
+                            }
+                        }
+                    }
+                }
+                function writableReq(obj) {
+                    var m = Ember.meta(obj), req = m.required;
+                    if (!req || !m.hasOwnProperty('required')) {
+                        req = m.required = req ? o_create(req) : {};
+                    }
+                    return req;
+                }
+                var IS_BINDING = Ember.IS_BINDING = /^.+Binding$/;
+                function detectBinding(obj, key, value, m) {
+                    if (IS_BINDING.test(key)) {
+                        var bindings = m.bindings;
+                        if (!bindings) {
+                            bindings = m.bindings = {};
+                        } else if (!m.hasOwnProperty('bindings')) {
+                            bindings = m.bindings = o_create(m.bindings);
+                        }
+                        bindings[key] = value;
+                    }
+                }
+                function connectBindings(obj, m) {
+                    var bindings = m.bindings, key, binding, to;
+                    if (bindings) {
+                        for (key in bindings) {
+                            binding = bindings[key];
+                            if (binding) {
+                                to = key.slice(0, -7);
+                                if (binding instanceof Ember.Binding) {
+                                    binding = binding.copy();
+                                    binding.to(to);
+                                } else {
+                                    binding = new Ember.Binding(to, binding);
+                                }
+                                binding.connect(obj);
+                                obj[key] = binding;
+                            }
+                        }
+                        m.bindings = {};
+                    }
+                }
+                function finishPartial(obj, m) {
+                    connectBindings(obj, m || Ember.meta(obj));
+                    return obj;
+                }
+                function followAlias(obj, desc, m, descs, values) {
+                    var altKey = desc.methodName, value;
+                    if (descs[altKey] || values[altKey]) {
+                        value = values[altKey];
+                        desc = descs[altKey];
+                    } else if (m.descs[altKey]) {
+                        desc = m.descs[altKey];
+                        value = undefined;
+                    } else {
+                        desc = undefined;
+                        value = obj[altKey];
+                    }
+                    return {
+                        desc: desc,
+                        value: value
+                    };
+                }
+                function updateObservers(obj, key, observer, observerKey, method) {
+                    if ('function' !== typeof observer) {
+                        return;
+                    }
+                    var paths = observer[observerKey];
+                    if (paths) {
+                        for (var i = 0, l = paths.length; i < l; i++) {
+                            Ember[method](obj, paths[i], null, key);
+                        }
+                    }
+                }
+                function replaceObservers(obj, key, observer) {
+                    var prevObserver = obj[key];
+                    updateObservers(obj, key, prevObserver, '__ember_observesBefore__', 'removeBeforeObserver');
+                    updateObservers(obj, key, prevObserver, '__ember_observes__', 'removeObserver');
+                    updateObservers(obj, key, observer, '__ember_observesBefore__', 'addBeforeObserver');
+                    updateObservers(obj, key, observer, '__ember_observes__', 'addObserver');
+                }
+                function applyMixin(obj, mixins, partial) {
+                    var descs = {}, values = {}, m = Ember.meta(obj), key, value, desc, keys = [];
+                    mergeMixins(mixins, mixinsMeta(obj), descs, values, obj, keys);
+                    for (var i = 0, l = keys.length; i < l; i++) {
+                        key = keys[i];
+                        if (key === 'constructor' || !values.hasOwnProperty(key)) {
+                            continue;
+                        }
+                        desc = descs[key];
+                        value = values[key];
+                        if (desc === REQUIRED) {
+                            continue;
+                        }
+                        while (desc && desc instanceof Alias) {
+                            var followed = followAlias(obj, desc, m, descs, values);
+                            desc = followed.desc;
+                            value = followed.value;
+                        }
+                        if (desc === undefined && value === undefined) {
+                            continue;
+                        }
+                        replaceObservers(obj, key, value);
+                        detectBinding(obj, key, value, m);
+                        defineProperty(obj, key, desc, value, m);
+                    }
+                    if (!partial) {
+                        finishPartial(obj, m);
+                    }
+                    return obj;
+                }
+                Ember.mixin = function (obj) {
+                    var args = a_slice.call(arguments, 1);
+                    applyMixin(obj, args, false);
+                    return obj;
+                };
+                Ember.Mixin = function () {
+                    return initMixin(this, arguments);
+                };
+                Mixin = Ember.Mixin;
+                Mixin.prototype = {
+                    properties: null,
+                    mixins: null,
+                    ownerConstructor: null
+                };
+                Mixin._apply = applyMixin;
+                Mixin.applyPartial = function (obj) {
+                    var args = a_slice.call(arguments, 1);
+                    return applyMixin(obj, args, true);
+                };
+                Mixin.finishPartial = finishPartial;
+                Ember.anyUnprocessedMixins = false;
+                Mixin.create = function () {
+                    Ember.anyUnprocessedMixins = true;
+                    var M = this;
+                    return initMixin(new M(), arguments);
+                };
+                var MixinPrototype = Mixin.prototype;
+                MixinPrototype.reopen = function () {
+                    var mixin, tmp;
+                    if (this.properties) {
+                        mixin = Mixin.create();
+                        mixin.properties = this.properties;
+                        delete this.properties;
+                        this.mixins = [mixin];
+                    } else if (!this.mixins) {
+                        this.mixins = [];
+                    }
+                    var len = arguments.length, mixins = this.mixins, idx;
+                    for (idx = 0; idx < len; idx++) {
+                        mixin = arguments[idx];
+                        Ember.assert('Expected hash or Mixin instance, got ' + Object.prototype.toString.call(mixin), typeof mixin === 'object' && mixin !== null && Object.prototype.toString.call(mixin) !== '[object Array]');
+                        if (mixin instanceof Mixin) {
+                            mixins.push(mixin);
+                        } else {
+                            tmp = Mixin.create();
+                            tmp.properties = mixin;
+                            mixins.push(tmp);
+                        }
+                    }
+                    return this;
+                };
+                MixinPrototype.apply = function (obj) {
+                    return applyMixin(obj, [this], false);
+                };
+                MixinPrototype.applyPartial = function (obj) {
+                    return applyMixin(obj, [this], true);
+                };
+                function _detect(curMixin, targetMixin, seen) {
+                    var guid = guidFor(curMixin);
+                    if (seen[guid]) {
+                        return false;
+                    }
+                    seen[guid] = true;
+                    if (curMixin === targetMixin) {
+                        return true;
+                    }
+                    var mixins = curMixin.mixins, loc = mixins ? mixins.length : 0;
+                    while (--loc >= 0) {
+                        if (_detect(mixins[loc], targetMixin, seen)) {
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+                MixinPrototype.detect = function (obj) {
+                    if (!obj) {
+                        return false;
+                    }
+                    if (obj instanceof Mixin) {
+                        return _detect(obj, this, {});
+                    }
+                    var mixins = Ember.meta(obj, false).mixins;
+                    if (mixins) {
+                        return !!mixins[guidFor(this)];
+                    }
+                    return false;
+                };
+                MixinPrototype.without = function () {
+                    var ret = new Mixin(this);
+                    ret._without = a_slice.call(arguments);
+                    return ret;
+                };
+                function _keys(ret, mixin, seen) {
+                    if (seen[guidFor(mixin)]) {
+                        return;
+                    }
+                    seen[guidFor(mixin)] = true;
+                    if (mixin.properties) {
+                        var props = mixin.properties;
+                        for (var key in props) {
+                            if (props.hasOwnProperty(key)) {
+                                ret[key] = true;
+                            }
+                        }
+                    } else if (mixin.mixins) {
+                        a_forEach.call(mixin.mixins, function (x) {
+                            _keys(ret, x, seen);
+                        });
+                    }
+                }
+                MixinPrototype.keys = function () {
+                    var keys = {}, seen = {}, ret = [];
+                    _keys(keys, this, seen);
+                    for (var key in keys) {
+                        if (keys.hasOwnProperty(key)) {
+                            ret.push(key);
+                        }
+                    }
+                    return ret;
+                };
+                Mixin.mixins = function (obj) {
+                    var mixins = Ember.meta(obj, false).mixins, ret = [];
+                    if (!mixins) {
+                        return ret;
+                    }
+                    for (var key in mixins) {
+                        var mixin = mixins[key];
+                        if (!mixin.properties) {
+                            ret.push(mixin);
+                        }
+                    }
+                    return ret;
+                };
+                REQUIRED = new Ember.Descriptor();
+                REQUIRED.toString = function () {
+                    return '(Required Property)';
+                };
+                Ember.required = function () {
+                    return REQUIRED;
+                };
+                Alias = function (methodName) {
+                    this.methodName = methodName;
+                };
+                Alias.prototype = new Ember.Descriptor();
+                Ember.alias = function (methodName) {
+                    return new Alias(methodName);
+                };
+                Ember.deprecateFunc('Ember.alias is deprecated. Please use Ember.aliasMethod or Ember.computed.alias instead.', Ember.alias);
+                Ember.aliasMethod = function (methodName) {
+                    return new Alias(methodName);
+                };
+                Ember.observer = function (func) {
+                    var paths = a_slice.call(arguments, 1);
+                    func.__ember_observes__ = paths;
+                    return func;
+                };
+                Ember.immediateObserver = function () {
+                    for (var i = 0, l = arguments.length; i < l; i++) {
+                        var arg = arguments[i];
+                        Ember.assert('Immediate observers must observe internal properties only, not properties on other objects.', typeof arg !== 'string' || arg.indexOf('.') === -1);
+                    }
+                    return Ember.observer.apply(this, arguments);
+                };
+                Ember.beforeObserver = function (func) {
+                    var paths = a_slice.call(arguments, 1);
+                    func.__ember_observesBefore__ = paths;
+                    return func;
+                };
+            }());
+            (function () {
+            }());
+            (function () {
+                define('rsvp', [], function () {
+                    'use strict';
+                    var browserGlobal = typeof window !== 'undefined' ? window : {};
+                    var MutationObserver = browserGlobal.MutationObserver || browserGlobal.WebKitMutationObserver;
+                    var RSVP, async;
+                    if (typeof process !== 'undefined' && {}.toString.call(process) === '[object process]') {
+                        async = function (callback, binding) {
+                            process.nextTick(function () {
+                                callback.call(binding);
+                            });
+                        };
+                    } else if (MutationObserver) {
+                        var queue = [];
+                        var observer = new MutationObserver(function () {
+                                var toProcess = queue.slice();
+                                queue = [];
+                                toProcess.forEach(function (tuple) {
+                                    var callback = tuple[0], binding = tuple[1];
+                                    callback.call(binding);
+                                });
+                            });
+                        var element = document.createElement('div');
+                        observer.observe(element, { attributes: true });
+                        window.addEventListener('unload', function () {
+                            observer.disconnect();
+                            observer = null;
+                        });
+                        async = function (callback, binding) {
+                            queue.push([
+                                callback,
+                                binding
+                            ]);
+                            element.setAttribute('drainQueue', 'drainQueue');
+                        };
+                    } else {
+                        async = function (callback, binding) {
+                            setTimeout(function () {
+                                callback.call(binding);
+                            }, 1);
+                        };
+                    }
+                    var Event = function (type, options) {
+                        this.type = type;
+                        for (var option in options) {
+                            if (!options.hasOwnProperty(option)) {
+                                continue;
+                            }
+                            this[option] = options[option];
+                        }
+                    };
+                    var indexOf = function (callbacks, callback) {
+                        for (var i = 0, l = callbacks.length; i < l; i++) {
+                            if (callbacks[i][0] === callback) {
+                                return i;
+                            }
+                        }
+                        return -1;
+                    };
+                    var callbacksFor = function (object) {
+                        var callbacks = object._promiseCallbacks;
+                        if (!callbacks) {
+                            callbacks = object._promiseCallbacks = {};
+                        }
+                        return callbacks;
+                    };
+                    var EventTarget = {
+                            mixin: function (object) {
+                                object.on = this.on;
+                                object.off = this.off;
+                                object.trigger = this.trigger;
+                                return object;
+                            },
+                            on: function (eventNames, callback, binding) {
+                                var allCallbacks = callbacksFor(this), callbacks, eventName;
+                                eventNames = eventNames.split(/\s+/);
+                                binding = binding || this;
+                                while (eventName = eventNames.shift()) {
+                                    callbacks = allCallbacks[eventName];
+                                    if (!callbacks) {
+                                        callbacks = allCallbacks[eventName] = [];
+                                    }
+                                    if (indexOf(callbacks, callback) === -1) {
+                                        callbacks.push([
+                                            callback,
+                                            binding
+                                        ]);
+                                    }
+                                }
+                            },
+                            off: function (eventNames, callback) {
+                                var allCallbacks = callbacksFor(this), callbacks, eventName, index;
+                                eventNames = eventNames.split(/\s+/);
+                                while (eventName = eventNames.shift()) {
+                                    if (!callback) {
+                                        allCallbacks[eventName] = [];
+                                        continue;
+                                    }
+                                    callbacks = allCallbacks[eventName];
+                                    index = indexOf(callbacks, callback);
+                                    if (index !== -1) {
+                                        callbacks.splice(index, 1);
+                                    }
+                                }
+                            },
+                            trigger: function (eventName, options) {
+                                var allCallbacks = callbacksFor(this), callbacks, callbackTuple, callback, binding, event;
+                                if (callbacks = allCallbacks[eventName]) {
+                                    for (var i = 0; i < callbacks.length; i++) {
+                                        callbackTuple = callbacks[i];
+                                        callback = callbackTuple[0];
+                                        binding = callbackTuple[1];
+                                        if (typeof options !== 'object') {
+                                            options = { detail: options };
+                                        }
+                                        event = new Event(eventName, options);
+                                        callback.call(binding, event);
+                                    }
+                                }
+                            }
+                        };
+                    var Promise = function () {
+                        this.on('promise:resolved', function (event) {
+                            this.trigger('success', { detail: event.detail });
+                        }, this);
+                        this.on('promise:failed', function (event) {
+                            this.trigger('error', { detail: event.detail });
+                        }, this);
+                    };
+                    var noop = function () {
+                    };
+                    var invokeCallback = function (type, promise, callback, event) {
+                        var hasCallback = typeof callback === 'function', value, error, succeeded, failed;
+                        if (hasCallback) {
+                            try {
+                                value = callback(event.detail);
+                                succeeded = true;
+                            } catch (e) {
+                                failed = true;
+                                error = e;
+                            }
+                        } else {
+                            value = event.detail;
+                            succeeded = true;
+                        }
+                        if (value && typeof value.then === 'function') {
+                            value.then(function (value) {
+                                promise.resolve(value);
+                            }, function (error) {
+                                promise.reject(error);
+                            });
+                        } else if (hasCallback && succeeded) {
+                            promise.resolve(value);
+                        } else if (failed) {
+                            promise.reject(error);
+                        } else {
+                            promise[type](value);
+                        }
+                    };
+                    Promise.prototype = {
+                        then: function (done, fail) {
+                            var thenPromise = new Promise();
+                            if (this.isResolved) {
+                                RSVP.async(function () {
+                                    invokeCallback('resolve', thenPromise, done, { detail: this.resolvedValue });
+                                }, this);
+                            }
+                            if (this.isRejected) {
+                                RSVP.async(function () {
+                                    invokeCallback('reject', thenPromise, fail, { detail: this.rejectedValue });
+                                }, this);
+                            }
+                            this.on('promise:resolved', function (event) {
+                                invokeCallback('resolve', thenPromise, done, event);
+                            });
+                            this.on('promise:failed', function (event) {
+                                invokeCallback('reject', thenPromise, fail, event);
+                            });
+                            return thenPromise;
+                        },
+                        resolve: function (value) {
+                            resolve(this, value);
+                            this.resolve = noop;
+                            this.reject = noop;
+                        },
+                        reject: function (value) {
+                            reject(this, value);
+                            this.resolve = noop;
+                            this.reject = noop;
+                        }
+                    };
+                    function resolve(promise, value) {
+                        RSVP.async(function () {
+                            promise.trigger('promise:resolved', { detail: value });
+                            promise.isResolved = true;
+                            promise.resolvedValue = value;
+                        });
+                    }
+                    function reject(promise, value) {
+                        RSVP.async(function () {
+                            promise.trigger('promise:failed', { detail: value });
+                            promise.isRejected = true;
+                            promise.rejectedValue = value;
+                        });
+                    }
+                    function all(promises) {
+                        var i, results = [];
+                        var allPromise = new Promise();
+                        var remaining = promises.length;
+                        if (remaining === 0) {
+                            allPromise.resolve([]);
+                        }
+                        var resolver = function (index) {
+                            return function (value) {
+                                resolve(index, value);
+                            };
+                        };
+                        var resolve = function (index, value) {
+                            results[index] = value;
+                            if (--remaining === 0) {
+                                allPromise.resolve(results);
+                            }
+                        };
+                        var reject = function (error) {
+                            allPromise.reject(error);
+                        };
+                        for (i = 0; i < remaining; i++) {
+                            promises[i].then(resolver(i), reject);
+                        }
+                        return allPromise;
+                    }
+                    EventTarget.mixin(Promise.prototype);
+                    RSVP = {
+                        async: async,
+                        Promise: Promise,
+                        Event: Event,
+                        EventTarget: EventTarget,
+                        all: all,
+                        raiseOnUncaughtExceptions: true
+                    };
+                    return RSVP;
+                });
+            }());
+            (function () {
+                define('container', [], function () {
+                    function InheritingDict(parent) {
+                        this.parent = parent;
+                        this.dict = {};
+                    }
+                    InheritingDict.prototype = {
+                        get: function (key) {
+                            var dict = this.dict;
+                            if (dict.hasOwnProperty(key)) {
+                                return dict[key];
+                            }
+                            if (this.parent) {
+                                return this.parent.get(key);
+                            }
+                        },
+                        set: function (key, value) {
+                            this.dict[key] = value;
+                        },
+                        has: function (key) {
+                            var dict = this.dict;
+                            if (dict.hasOwnProperty(key)) {
+                                return true;
+                            }
+                            if (this.parent) {
+                                return this.parent.has(key);
+                            }
+                            return false;
+                        },
+                        eachLocal: function (callback, binding) {
+                            var dict = this.dict;
+                            for (var prop in dict) {
+                                if (dict.hasOwnProperty(prop)) {
+                                    callback.call(binding, prop, dict[prop]);
+                                }
+                            }
+                        }
+                    };
+                    function Container(parent) {
+                        this.parent = parent;
+                        this.children = [];
+                        this.resolver = parent && parent.resolver || function () {
+                        };
+                        this.registry = new InheritingDict(parent && parent.registry);
+                        this.cache = new InheritingDict(parent && parent.cache);
+                        this.typeInjections = new InheritingDict(parent && parent.typeInjections);
+                        this.injections = {};
+                        this._options = new InheritingDict(parent && parent._options);
+                        this._typeOptions = new InheritingDict(parent && parent._typeOptions);
+                    }
+                    Container.prototype = {
+                        child: function () {
+                            var container = new Container(this);
+                            this.children.push(container);
+                            return container;
+                        },
+                        set: function (object, key, value) {
+                            object[key] = value;
+                        },
+                        register: function (type, name, factory, options) {
+                            var fullName;
+                            if (type.indexOf(':') !== -1) {
+                                options = factory;
+                                factory = name;
+                                fullName = type;
+                            } else {
+                                Ember.deprecate('register("' + type + '", "' + name + '") is now deprecated in-favour of register("' + type + ':' + name + '");', false);
+                                fullName = type + ':' + name;
+                            }
+                            var normalizedName = this.normalize(fullName);
+                            this.registry.set(normalizedName, factory);
+                            this._options.set(normalizedName, options || {});
+                        },
+                        resolve: function (fullName) {
+                            return this.resolver(fullName) || this.registry.get(fullName);
+                        },
+                        normalize: function (fullName) {
+                            return fullName;
+                        },
+                        lookup: function (fullName, options) {
+                            fullName = this.normalize(fullName);
+                            options = options || {};
+                            if (this.cache.has(fullName) && options.singleton !== false) {
+                                return this.cache.get(fullName);
+                            }
+                            var value = instantiate(this, fullName);
+                            if (!value) {
+                                return;
+                            }
+                            if (isSingleton(this, fullName) && options.singleton !== false) {
+                                this.cache.set(fullName, value);
+                            }
+                            return value;
+                        },
+                        has: function (fullName) {
+                            if (this.cache.has(fullName)) {
+                                return true;
+                            }
+                            return !!factoryFor(this, fullName);
+                        },
+                        optionsForType: function (type, options) {
+                            if (this.parent) {
+                                illegalChildOperation('optionsForType');
+                            }
+                            this._typeOptions.set(type, options);
+                        },
+                        options: function (type, options) {
+                            this.optionsForType(type, options);
+                        },
+                        typeInjection: function (type, property, fullName) {
+                            if (this.parent) {
+                                illegalChildOperation('typeInjection');
+                            }
+                            var injections = this.typeInjections.get(type);
+                            if (!injections) {
+                                injections = [];
+                                this.typeInjections.set(type, injections);
+                            }
+                            injections.push({
+                                property: property,
+                                fullName: fullName
+                            });
+                        },
+                        injection: function (factoryName, property, injectionName) {
+                            if (this.parent) {
+                                illegalChildOperation('injection');
+                            }
+                            if (factoryName.indexOf(':') === -1) {
+                                return this.typeInjection(factoryName, property, injectionName);
+                            }
+                            var injections = this.injections[factoryName] = this.injections[factoryName] || [];
+                            injections.push({
+                                property: property,
+                                fullName: injectionName
+                            });
+                        },
+                        destroy: function () {
+                            this.isDestroyed = true;
+                            for (var i = 0, l = this.children.length; i < l; i++) {
+                                this.children[i].destroy();
+                            }
+                            this.children = [];
+                            eachDestroyable(this, function (item) {
+                                item.isDestroying = true;
+                            });
+                            eachDestroyable(this, function (item) {
+                                item.destroy();
+                            });
+                            delete this.parent;
+                            this.isDestroyed = true;
+                        },
+                        reset: function () {
+                            for (var i = 0, l = this.children.length; i < l; i++) {
+                                resetCache(this.children[i]);
+                            }
+                            resetCache(this);
+                        }
+                    };
+                    function illegalChildOperation(operation) {
+                        throw new Error(operation + ' is not currently supported on child containers');
+                    }
+                    function isSingleton(container, fullName) {
+                        var singleton = option(container, fullName, 'singleton');
+                        return singleton !== false;
+                    }
+                    function buildInjections(container, injections) {
+                        var hash = {};
+                        if (!injections) {
+                            return hash;
+                        }
+                        var injection, lookup;
+                        for (var i = 0, l = injections.length; i < l; i++) {
+                            injection = injections[i];
+                            lookup = container.lookup(injection.fullName);
+                            hash[injection.property] = lookup;
+                        }
+                        return hash;
+                    }
+                    function option(container, fullName, optionName) {
+                        var options = container._options.get(fullName);
+                        if (options && options[optionName] !== undefined) {
+                            return options[optionName];
+                        }
+                        var type = fullName.split(':')[0];
+                        options = container._typeOptions.get(type);
+                        if (options) {
+                            return options[optionName];
+                        }
+                    }
+                    function factoryFor(container, fullName) {
+                        var name = container.normalize(fullName);
+                        return container.resolve(name);
+                    }
+                    function instantiate(container, fullName) {
+                        var factory = factoryFor(container, fullName);
+                        var splitName = fullName.split(':'), type = splitName[0], name = splitName[1], value;
+                        if (option(container, fullName, 'instantiate') === false) {
+                            return factory;
+                        }
+                        if (factory) {
+                            var injections = [];
+                            injections = injections.concat(container.typeInjections.get(type) || []);
+                            injections = injections.concat(container.injections[fullName] || []);
+                            var hash = buildInjections(container, injections);
+                            hash.container = container;
+                            hash._debugContainerKey = fullName;
+                            value = factory.create(hash);
+                            return value;
+                        }
+                    }
+                    function eachDestroyable(container, callback) {
+                        container.cache.eachLocal(function (key, value) {
+                            if (option(container, key, 'instantiate') === false) {
+                                return;
+                            }
+                            callback(value);
+                        });
+                    }
+                    function resetCache(container) {
+                        container.cache.eachLocal(function (key, value) {
+                            if (option(container, key, 'instantiate') === false) {
+                                return;
+                            }
+                            value.destroy();
+                        });
+                        container.cache.dict = {};
+                    }
+                    return Container;
+                });
+            }());
+            (function () {
+                var indexOf = Ember.EnumerableUtils.indexOf;
+                var TYPE_MAP = {};
+                var t = 'Boolean Number String Function Array Date RegExp Object'.split(' ');
+                Ember.ArrayPolyfills.forEach.call(t, function (name) {
+                    TYPE_MAP['[object ' + name + ']'] = name.toLowerCase();
+                });
+                var toString = Object.prototype.toString;
+                Ember.typeOf = function (item) {
+                    var ret;
+                    ret = item === null || item === undefined ? String(item) : TYPE_MAP[toString.call(item)] || 'object';
+                    if (ret === 'function') {
+                        if (Ember.Object && Ember.Object.detect(item))
+                            ret = 'class';
+                    } else if (ret === 'object') {
+                        if (item instanceof Error)
+                            ret = 'error';
+                        else if (Ember.Object && item instanceof Ember.Object)
+                            ret = 'instance';
+                        else
+                            ret = 'object';
+                    }
+                    return ret;
+                };
+                Ember.compare = function compare(v, w) {
+                    if (v === w) {
+                        return 0;
+                    }
+                    var type1 = Ember.typeOf(v);
+                    var type2 = Ember.typeOf(w);
+                    var Comparable = Ember.Comparable;
+                    if (Comparable) {
+                        if (type1 === 'instance' && Comparable.detect(v.constructor)) {
+                            return v.constructor.compare(v, w);
+                        }
+                        if (type2 === 'instance' && Comparable.detect(w.constructor)) {
+                            return 1 - w.constructor.compare(w, v);
+                        }
+                    }
+                    var mapping = Ember.ORDER_DEFINITION_MAPPING;
+                    if (!mapping) {
+                        var order = Ember.ORDER_DEFINITION;
+                        mapping = Ember.ORDER_DEFINITION_MAPPING = {};
+                        var idx, len;
+                        for (idx = 0, len = order.length; idx < len; ++idx) {
+                            mapping[order[idx]] = idx;
+                        }
+                        delete Ember.ORDER_DEFINITION;
+                    }
+                    var type1Index = mapping[type1];
+                    var type2Index = mapping[type2];
+                    if (type1Index < type2Index) {
+                        return -1;
+                    }
+                    if (type1Index > type2Index) {
+                        return 1;
+                    }
+                    switch (type1) {
+                    case 'boolean':
+                    case 'number':
+                        if (v < w) {
+                            return -1;
+                        }
+                        if (v > w) {
+                            return 1;
+                        }
+                        return 0;
+                    case 'string':
+                        var comp = v.localeCompare(w);
+                        if (comp < 0) {
+                            return -1;
+                        }
+                        if (comp > 0) {
+                            return 1;
+                        }
+                        return 0;
+                    case 'array':
+                        var vLen = v.length;
+                        var wLen = w.length;
+                        var l = Math.min(vLen, wLen);
+                        var r = 0;
+                        var i = 0;
+                        while (r === 0 && i < l) {
+                            r = compare(v[i], w[i]);
+                            i++;
+                        }
+                        if (r !== 0) {
+                            return r;
+                        }
+                        if (vLen < wLen) {
+                            return -1;
+                        }
+                        if (vLen > wLen) {
+                            return 1;
+                        }
+                        return 0;
+                    case 'instance':
+                        if (Ember.Comparable && Ember.Comparable.detect(v)) {
+                            return v.compare(v, w);
+                        }
+                        return 0;
+                    case 'date':
+                        var vNum = v.getTime();
+                        var wNum = w.getTime();
+                        if (vNum < wNum) {
+                            return -1;
+                        }
+                        if (vNum > wNum) {
+                            return 1;
+                        }
+                        return 0;
+                    default:
+                        return 0;
+                    }
+                };
+                function _copy(obj, deep, seen, copies) {
+                    var ret, loc, key;
+                    if ('object' !== typeof obj || obj === null)
+                        return obj;
+                    if (deep && (loc = indexOf(seen, obj)) >= 0)
+                        return copies[loc];
+                    Ember.assert('Cannot clone an Ember.Object that does not implement Ember.Copyable', !(obj instanceof Ember.Object) || Ember.Copyable && Ember.Copyable.detect(obj));
+                    if (Ember.typeOf(obj) === 'array') {
+                        ret = obj.slice();
+                        if (deep) {
+                            loc = ret.length;
+                            while (--loc >= 0)
+                                ret[loc] = _copy(ret[loc], deep, seen, copies);
+                        }
+                    } else if (Ember.Copyable && Ember.Copyable.detect(obj)) {
+                        ret = obj.copy(deep, seen, copies);
+                    } else {
+                        ret = {};
+                        for (key in obj) {
+                            if (!obj.hasOwnProperty(key))
+                                continue;
+                            if (key.substring(0, 2) === '__')
+                                continue;
+                            ret[key] = deep ? _copy(obj[key], deep, seen, copies) : obj[key];
+                        }
+                    }
+                    if (deep) {
+                        seen.push(obj);
+                        copies.push(ret);
+                    }
+                    return ret;
+                }
+                Ember.copy = function (obj, deep) {
+                    if ('object' !== typeof obj || obj === null)
+                        return obj;
+                    if (Ember.Copyable && Ember.Copyable.detect(obj))
+                        return obj.copy(deep);
+                    return _copy(obj, deep, deep ? [] : null, deep ? [] : null);
+                };
+                Ember.inspect = function (obj) {
+                    if (typeof obj !== 'object' || obj === null) {
+                        return obj + '';
+                    }
+                    var v, ret = [];
+                    for (var key in obj) {
+                        if (obj.hasOwnProperty(key)) {
+                            v = obj[key];
+                            if (v === 'toString') {
+                                continue;
+                            }
+                            if (Ember.typeOf(v) === 'function') {
+                                v = 'function() { ... }';
+                            }
+                            ret.push(key + ': ' + v);
+                        }
+                    }
+                    return '{' + ret.join(', ') + '}';
+                };
+                Ember.isEqual = function (a, b) {
+                    if (a && 'function' === typeof a.isEqual)
+                        return a.isEqual(b);
+                    return a === b;
+                };
+                Ember.ORDER_DEFINITION = Ember.ENV.ORDER_DEFINITION || [
+                    'undefined',
+                    'null',
+                    'boolean',
+                    'number',
+                    'string',
+                    'array',
+                    'object',
+                    'instance',
+                    'function',
+                    'class',
+                    'date'
+                ];
+                Ember.keys = Object.keys;
+                if (!Ember.keys) {
+                    Ember.keys = function (obj) {
+                        var ret = [];
+                        for (var key in obj) {
+                            if (obj.hasOwnProperty(key)) {
+                                ret.push(key);
+                            }
+                        }
+                        return ret;
+                    };
+                }
+                var errorProps = [
+                        'description',
+                        'fileName',
+                        'lineNumber',
+                        'message',
+                        'name',
+                        'number',
+                        'stack'
+                    ];
+                Ember.Error = function () {
+                    var tmp = Error.prototype.constructor.apply(this, arguments);
+                    for (var idx = 0; idx < errorProps.length; idx++) {
+                        this[errorProps[idx]] = tmp[errorProps[idx]];
+                    }
+                };
+                Ember.Error.prototype = Ember.create(Error.prototype);
+            }());
+            (function () {
+                Ember.RSVP = requireModule('rsvp');
+            }());
+            (function () {
+                var STRING_DASHERIZE_REGEXP = /[ _]/g;
+                var STRING_DASHERIZE_CACHE = {};
+                var STRING_DECAMELIZE_REGEXP = /([a-z])([A-Z])/g;
+                var STRING_CAMELIZE_REGEXP = /(\-|_|\.|\s)+(.)?/g;
+                var STRING_UNDERSCORE_REGEXP_1 = /([a-z\d])([A-Z]+)/g;
+                var STRING_UNDERSCORE_REGEXP_2 = /\-|\s+/g;
+                Ember.STRINGS = {};
+                Ember.String = {
+                    fmt: function (str, formats) {
+                        var idx = 0;
+                        return str.replace(/%@([0-9]+)?/g, function (s, argIndex) {
+                            argIndex = argIndex ? parseInt(argIndex, 0) - 1 : idx++;
+                            s = formats[argIndex];
+                            return (s === null ? '(null)' : s === undefined ? '' : s).toString();
+                        });
+                    },
+                    loc: function (str, formats) {
+                        str = Ember.STRINGS[str] || str;
+                        return Ember.String.fmt(str, formats);
+                    },
+                    w: function (str) {
+                        return str.split(/\s+/);
+                    },
+                    decamelize: function (str) {
+                        return str.replace(STRING_DECAMELIZE_REGEXP, '$1_$2').toLowerCase();
+                    },
+                    dasherize: function (str) {
+                        var cache = STRING_DASHERIZE_CACHE, hit = cache.hasOwnProperty(str), ret;
+                        if (hit) {
+                            return cache[str];
+                        } else {
+                            ret = Ember.String.decamelize(str).replace(STRING_DASHERIZE_REGEXP, '-');
+                            cache[str] = ret;
+                        }
+                        return ret;
+                    },
+                    camelize: function (str) {
+                        return str.replace(STRING_CAMELIZE_REGEXP, function (match, separator, chr) {
+                            return chr ? chr.toUpperCase() : '';
+                        }).replace(/^([A-Z])/, function (match, separator, chr) {
+                            return match.toLowerCase();
+                        });
+                    },
+                    classify: function (str) {
+                        var parts = str.split('.'), out = [];
+                        for (var i = 0, l = parts.length; i < l; i++) {
+                            var camelized = Ember.String.camelize(parts[i]);
+                            out.push(camelized.charAt(0).toUpperCase() + camelized.substr(1));
+                        }
+                        return out.join('.');
+                    },
+                    underscore: function (str) {
+                        return str.replace(STRING_UNDERSCORE_REGEXP_1, '$1_$2').replace(STRING_UNDERSCORE_REGEXP_2, '_').toLowerCase();
+                    },
+                    capitalize: function (str) {
+                        return str.charAt(0).toUpperCase() + str.substr(1);
+                    }
+                };
+            }());
+            (function () {
+                var fmt = Ember.String.fmt, w = Ember.String.w, loc = Ember.String.loc, camelize = Ember.String.camelize, decamelize = Ember.String.decamelize, dasherize = Ember.String.dasherize, underscore = Ember.String.underscore, capitalize = Ember.String.capitalize, classify = Ember.String.classify;
+                if (Ember.EXTEND_PROTOTYPES === true || Ember.EXTEND_PROTOTYPES.String) {
+                    String.prototype.fmt = function () {
+                        return fmt(this, arguments);
+                    };
+                    String.prototype.w = function () {
+                        return w(this);
+                    };
+                    String.prototype.loc = function () {
+                        return loc(this, arguments);
+                    };
+                    String.prototype.camelize = function () {
+                        return camelize(this);
+                    };
+                    String.prototype.decamelize = function () {
+                        return decamelize(this);
+                    };
+                    String.prototype.dasherize = function () {
+                        return dasherize(this);
+                    };
+                    String.prototype.underscore = function () {
+                        return underscore(this);
+                    };
+                    String.prototype.classify = function () {
+                        return classify(this);
+                    };
+                    String.prototype.capitalize = function () {
+                        return capitalize(this);
+                    };
+                }
+            }());
+            (function () {
+                var a_slice = Array.prototype.slice;
+                if (Ember.EXTEND_PROTOTYPES === true || Ember.EXTEND_PROTOTYPES.Function) {
+                    Function.prototype.property = function () {
+                        var ret = Ember.computed(this);
+                        return ret.property.apply(ret, arguments);
+                    };
+                    Function.prototype.observes = function () {
+                        this.__ember_observes__ = a_slice.call(arguments);
+                        return this;
+                    };
+                    Function.prototype.observesBefore = function () {
+                        this.__ember_observesBefore__ = a_slice.call(arguments);
+                        return this;
+                    };
+                }
+            }());
+            (function () {
+            }());
+            (function () {
+                var get = Ember.get, set = Ember.set;
+                var a_slice = Array.prototype.slice;
+                var a_indexOf = Ember.EnumerableUtils.indexOf;
+                var contexts = [];
+                function popCtx() {
+                    return contexts.length === 0 ? {} : contexts.pop();
+                }
+                function pushCtx(ctx) {
+                    contexts.push(ctx);
+                    return null;
+                }
+                function iter(key, value) {
+                    var valueProvided = arguments.length === 2;
+                    function i(item) {
+                        var cur = get(item, key);
+                        return valueProvided ? value === cur : !!cur;
+                    }
+                    return i;
+                }
+                Ember.Enumerable = Ember.Mixin.create({
+                    isEnumerable: true,
+                    nextObject: Ember.required(Function),
+                    firstObject: Ember.computed(function () {
+                        if (get(this, 'length') === 0)
+                            return undefined;
+                        var context = popCtx(), ret;
+                        ret = this.nextObject(0, null, context);
+                        pushCtx(context);
+                        return ret;
+                    }).property('[]'),
+                    lastObject: Ember.computed(function () {
+                        var len = get(this, 'length');
+                        if (len === 0)
+                            return undefined;
+                        var context = popCtx(), idx = 0, cur, last = null;
+                        do {
+                            last = cur;
+                            cur = this.nextObject(idx++, last, context);
+                        } while (cur !== undefined);
+                        pushCtx(context);
+                        return last;
+                    }).property('[]'),
+                    contains: function (obj) {
+                        return this.find(function (item) {
+                            return item === obj;
+                        }) !== undefined;
+                    },
+                    forEach: function (callback, target) {
+                        if (typeof callback !== 'function')
+                            throw new TypeError();
+                        var len = get(this, 'length'), last = null, context = popCtx();
+                        if (target === undefined)
+                            target = null;
+                        for (var idx = 0; idx < len; idx++) {
+                            var next = this.nextObject(idx, last, context);
+                            callback.call(target, next, idx, this);
+                            last = next;
+                        }
+                        last = null;
+                        context = pushCtx(context);
+                        return this;
+                    },
+                    getEach: function (key) {
+                        return this.mapProperty(key);
+                    },
+                    setEach: function (key, value) {
+                        return this.forEach(function (item) {
+                            set(item, key, value);
+                        });
+                    },
+                    map: function (callback, target) {
+                        var ret = Ember.A([]);
+                        this.forEach(function (x, idx, i) {
+                            ret[idx] = callback.call(target, x, idx, i);
+                        });
+                        return ret;
+                    },
+                    mapProperty: function (key) {
+                        return this.map(function (next) {
+                            return get(next, key);
+                        });
+                    },
+                    filter: function (callback, target) {
+                        var ret = Ember.A([]);
+                        this.forEach(function (x, idx, i) {
+                            if (callback.call(target, x, idx, i))
+                                ret.push(x);
+                        });
+                        return ret;
+                    },
+                    reject: function (callback, target) {
+                        return this.filter(function () {
+                            return !callback.apply(target, arguments);
+                        });
+                    },
+                    filterProperty: function (key, value) {
+                        return this.filter(iter.apply(this, arguments));
+                    },
+                    rejectProperty: function (key, value) {
+                        var exactValue = function (item) {
+                                return get(item, key) === value;
+                            }, hasValue = function (item) {
+                                return !!get(item, key);
+                            }, use = arguments.length === 2 ? exactValue : hasValue;
+                        return this.reject(use);
+                    },
+                    find: function (callback, target) {
+                        var len = get(this, 'length');
+                        if (target === undefined)
+                            target = null;
+                        var last = null, next, found = false, ret;
+                        var context = popCtx();
+                        for (var idx = 0; idx < len && !found; idx++) {
+                            next = this.nextObject(idx, last, context);
+                            if (found = callback.call(target, next, idx, this))
+                                ret = next;
+                            last = next;
+                        }
+                        next = last = null;
+                        context = pushCtx(context);
+                        return ret;
+                    },
+                    findProperty: function (key, value) {
+                        return this.find(iter.apply(this, arguments));
+                    },
+                    every: function (callback, target) {
+                        return !this.find(function (x, idx, i) {
+                            return !callback.call(target, x, idx, i);
+                        });
+                    },
+                    everyProperty: function (key, value) {
+                        return this.every(iter.apply(this, arguments));
+                    },
+                    some: function (callback, target) {
+                        return !!this.find(function (x, idx, i) {
+                            return !!callback.call(target, x, idx, i);
+                        });
+                    },
+                    someProperty: function (key, value) {
+                        return this.some(iter.apply(this, arguments));
+                    },
+                    reduce: function (callback, initialValue, reducerProperty) {
+                        if (typeof callback !== 'function') {
+                            throw new TypeError();
+                        }
+                        var ret = initialValue;
+                        this.forEach(function (item, i) {
+                            ret = callback.call(null, ret, item, i, this, reducerProperty);
+                        }, this);
+                        return ret;
+                    },
+                    invoke: function (methodName) {
+                        var args, ret = Ember.A([]);
+                        if (arguments.length > 1)
+                            args = a_slice.call(arguments, 1);
+                        this.forEach(function (x, idx) {
+                            var method = x && x[methodName];
+                            if ('function' === typeof method) {
+                                ret[idx] = args ? method.apply(x, args) : method.call(x);
+                            }
+                        }, this);
+                        return ret;
+                    },
+                    toArray: function () {
+                        var ret = Ember.A([]);
+                        this.forEach(function (o, idx) {
+                            ret[idx] = o;
+                        });
+                        return ret;
+                    },
+                    compact: function () {
+                        return this.filter(function (value) {
+                            return value != null;
+                        });
+                    },
+                    without: function (value) {
+                        if (!this.contains(value))
+                            return this;
+                        var ret = Ember.A([]);
+                        this.forEach(function (k) {
+                            if (k !== value)
+                                ret[ret.length] = k;
+                        });
+                        return ret;
+                    },
+                    uniq: function () {
+                        var ret = Ember.A([]);
+                        this.forEach(function (k) {
+                            if (a_indexOf(ret, k) < 0)
+                                ret.push(k);
+                        });
+                        return ret;
+                    },
+                    '[]': Ember.computed(function (key, value) {
+                        return this;
+                    }),
+                    addEnumerableObserver: function (target, opts) {
+                        var willChange = opts && opts.willChange || 'enumerableWillChange', didChange = opts && opts.didChange || 'enumerableDidChange';
+                        var hasObservers = get(this, 'hasEnumerableObservers');
+                        if (!hasObservers)
+                            Ember.propertyWillChange(this, 'hasEnumerableObservers');
+                        Ember.addListener(this, '@enumerable:before', target, willChange);
+                        Ember.addListener(this, '@enumerable:change', target, didChange);
+                        if (!hasObservers)
+                            Ember.propertyDidChange(this, 'hasEnumerableObservers');
+                        return this;
+                    },
+                    removeEnumerableObserver: function (target, opts) {
+                        var willChange = opts && opts.willChange || 'enumerableWillChange', didChange = opts && opts.didChange || 'enumerableDidChange';
+                        var hasObservers = get(this, 'hasEnumerableObservers');
+                        if (hasObservers)
+                            Ember.propertyWillChange(this, 'hasEnumerableObservers');
+                        Ember.removeListener(this, '@enumerable:before', target, willChange);
+                        Ember.removeListener(this, '@enumerable:change', target, didChange);
+                        if (hasObservers)
+                            Ember.propertyDidChange(this, 'hasEnumerableObservers');
+                        return this;
+                    },
+                    hasEnumerableObservers: Ember.computed(function () {
+                        return Ember.hasListeners(this, '@enumerable:change') || Ember.hasListeners(this, '@enumerable:before');
+                    }),
+                    enumerableContentWillChange: function (removing, adding) {
+                        var removeCnt, addCnt, hasDelta;
+                        if ('number' === typeof removing)
+                            removeCnt = removing;
+                        else if (removing)
+                            removeCnt = get(removing, 'length');
+                        else
+                            removeCnt = removing = -1;
+                        if ('number' === typeof adding)
+                            addCnt = adding;
+                        else if (adding)
+                            addCnt = get(adding, 'length');
+                        else
+                            addCnt = adding = -1;
+                        hasDelta = addCnt < 0 || removeCnt < 0 || addCnt - removeCnt !== 0;
+                        if (removing === -1)
+                            removing = null;
+                        if (adding === -1)
+                            adding = null;
+                        Ember.propertyWillChange(this, '[]');
+                        if (hasDelta)
+                            Ember.propertyWillChange(this, 'length');
+                        Ember.sendEvent(this, '@enumerable:before', [
+                            this,
+                            removing,
+                            adding
+                        ]);
+                        return this;
+                    },
+                    enumerableContentDidChange: function (removing, adding) {
+                        var removeCnt, addCnt, hasDelta;
+                        if ('number' === typeof removing)
+                            removeCnt = removing;
+                        else if (removing)
+                            removeCnt = get(removing, 'length');
+                        else
+                            removeCnt = removing = -1;
+                        if ('number' === typeof adding)
+                            addCnt = adding;
+                        else if (adding)
+                            addCnt = get(adding, 'length');
+                        else
+                            addCnt = adding = -1;
+                        hasDelta = addCnt < 0 || removeCnt < 0 || addCnt - removeCnt !== 0;
+                        if (removing === -1)
+                            removing = null;
+                        if (adding === -1)
+                            adding = null;
+                        Ember.sendEvent(this, '@enumerable:change', [
+                            this,
+                            removing,
+                            adding
+                        ]);
+                        if (hasDelta)
+                            Ember.propertyDidChange(this, 'length');
+                        Ember.propertyDidChange(this, '[]');
+                        return this;
+                    }
+                });
+            }());
+            (function () {
+                var get = Ember.get, set = Ember.set, map = Ember.EnumerableUtils.map, cacheFor = Ember.cacheFor;
+                function none(obj) {
+                    return obj === null || obj === undefined;
+                }
+                Ember.Array = Ember.Mixin.create(Ember.Enumerable, {
+                    isSCArray: true,
+                    length: Ember.required(),
+                    objectAt: function (idx) {
+                        if (idx < 0 || idx >= get(this, 'length'))
+                            return undefined;
+                        return get(this, idx);
+                    },
+                    objectsAt: function (indexes) {
+                        var self = this;
+                        return map(indexes, function (idx) {
+                            return self.objectAt(idx);
+                        });
+                    },
+                    nextObject: function (idx) {
+                        return this.objectAt(idx);
+                    },
+                    '[]': Ember.computed(function (key, value) {
+                        if (value !== undefined)
+                            this.replace(0, get(this, 'length'), value);
+                        return this;
+                    }),
+                    firstObject: Ember.computed(function () {
+                        return this.objectAt(0);
+                    }),
+                    lastObject: Ember.computed(function () {
+                        return this.objectAt(get(this, 'length') - 1);
+                    }),
+                    contains: function (obj) {
+                        return this.indexOf(obj) >= 0;
+                    },
+                    slice: function (beginIndex, endIndex) {
+                        var ret = Ember.A([]);
+                        var length = get(this, 'length');
+                        if (none(beginIndex))
+                            beginIndex = 0;
+                        if (none(endIndex) || endIndex > length)
+                            endIndex = length;
+                        if (beginIndex < 0)
+                            beginIndex = length + beginIndex;
+                        if (endIndex < 0)
+                            endIndex = length + endIndex;
+                        while (beginIndex < endIndex) {
+                            ret[ret.length] = this.objectAt(beginIndex++);
+                        }
+                        return ret;
+                    },
+                    indexOf: function (object, startAt) {
+                        var idx, len = get(this, 'length');
+                        if (startAt === undefined)
+                            startAt = 0;
+                        if (startAt < 0)
+                            startAt += len;
+                        for (idx = startAt; idx < len; idx++) {
+                            if (this.objectAt(idx, true) === object)
+                                return idx;
+                        }
+                        return -1;
+                    },
+                    lastIndexOf: function (object, startAt) {
+                        var idx, len = get(this, 'length');
+                        if (startAt === undefined || startAt >= len)
+                            startAt = len - 1;
+                        if (startAt < 0)
+                            startAt += len;
+                        for (idx = startAt; idx >= 0; idx--) {
+                            if (this.objectAt(idx) === object)
+                                return idx;
+                        }
+                        return -1;
+                    },
+                    addArrayObserver: function (target, opts) {
+                        var willChange = opts && opts.willChange || 'arrayWillChange', didChange = opts && opts.didChange || 'arrayDidChange';
+                        var hasObservers = get(this, 'hasArrayObservers');
+                        if (!hasObservers)
+                            Ember.propertyWillChange(this, 'hasArrayObservers');
+                        Ember.addListener(this, '@array:before', target, willChange);
+                        Ember.addListener(this, '@array:change', target, didChange);
+                        if (!hasObservers)
+                            Ember.propertyDidChange(this, 'hasArrayObservers');
+                        return this;
+                    },
+                    removeArrayObserver: function (target, opts) {
+                        var willChange = opts && opts.willChange || 'arrayWillChange', didChange = opts && opts.didChange || 'arrayDidChange';
+                        var hasObservers = get(this, 'hasArrayObservers');
+                        if (hasObservers)
+                            Ember.propertyWillChange(this, 'hasArrayObservers');
+                        Ember.removeListener(this, '@array:before', target, willChange);
+                        Ember.removeListener(this, '@array:change', target, didChange);
+                        if (hasObservers)
+                            Ember.propertyDidChange(this, 'hasArrayObservers');
+                        return this;
+                    },
+                    hasArrayObservers: Ember.computed(function () {
+                        return Ember.hasListeners(this, '@array:change') || Ember.hasListeners(this, '@array:before');
+                    }),
+                    arrayContentWillChange: function (startIdx, removeAmt, addAmt) {
+                        if (startIdx === undefined) {
+                            startIdx = 0;
+                            removeAmt = addAmt = -1;
+                        } else {
+                            if (removeAmt === undefined)
+                                removeAmt = -1;
+                            if (addAmt === undefined)
+                                addAmt = -1;
+                        }
+                        if (Ember.isWatching(this, '@each')) {
+                            get(this, '@each');
+                        }
+                        Ember.sendEvent(this, '@array:before', [
+                            this,
+                            startIdx,
+                            removeAmt,
+                            addAmt
+                        ]);
+                        var removing, lim;
+                        if (startIdx >= 0 && removeAmt >= 0 && get(this, 'hasEnumerableObservers')) {
+                            removing = [];
+                            lim = startIdx + removeAmt;
+                            for (var idx = startIdx; idx < lim; idx++)
+                                removing.push(this.objectAt(idx));
+                        } else {
+                            removing = removeAmt;
+                        }
+                        this.enumerableContentWillChange(removing, addAmt);
+                        return this;
+                    },
+                    arrayContentDidChange: function (startIdx, removeAmt, addAmt) {
+                        if (startIdx === undefined) {
+                            startIdx = 0;
+                            removeAmt = addAmt = -1;
+                        } else {
+                            if (removeAmt === undefined)
+                                removeAmt = -1;
+                            if (addAmt === undefined)
+                                addAmt = -1;
+                        }
+                        var adding, lim;
+                        if (startIdx >= 0 && addAmt >= 0 && get(this, 'hasEnumerableObservers')) {
+                            adding = [];
+                            lim = startIdx + addAmt;
+                            for (var idx = startIdx; idx < lim; idx++)
+                                adding.push(this.objectAt(idx));
+                        } else {
+                            adding = addAmt;
+                        }
+                        this.enumerableContentDidChange(removeAmt, adding);
+                        Ember.sendEvent(this, '@array:change', [
+                            this,
+                            startIdx,
+                            removeAmt,
+                            addAmt
+                        ]);
+                        var length = get(this, 'length'), cachedFirst = cacheFor(this, 'firstObject'), cachedLast = cacheFor(this, 'lastObject');
+                        if (this.objectAt(0) !== cachedFirst) {
+                            Ember.propertyWillChange(this, 'firstObject');
+                            Ember.propertyDidChange(this, 'firstObject');
+                        }
+                        if (this.objectAt(length - 1) !== cachedLast) {
+                            Ember.propertyWillChange(this, 'lastObject');
+                            Ember.propertyDidChange(this, 'lastObject');
+                        }
+                        return this;
+                    },
+                    '@each': Ember.computed(function () {
+                        if (!this.__each)
+                            this.__each = new Ember.EachProxy(this);
+                        return this.__each;
+                    })
+                });
+            }());
+            (function () {
+                Ember.Comparable = Ember.Mixin.create({
+                    isComparable: true,
+                    compare: Ember.required(Function)
+                });
+            }());
+            (function () {
+                var get = Ember.get, set = Ember.set;
+                Ember.Copyable = Ember.Mixin.create({
+                    copy: Ember.required(Function),
+                    frozenCopy: function () {
+                        if (Ember.Freezable && Ember.Freezable.detect(this)) {
+                            return get(this, 'isFrozen') ? this : this.copy().freeze();
+                        } else {
+                            throw new Error(Ember.String.fmt('%@ does not support freezing', [this]));
+                        }
+                    }
+                });
+            }());
+            (function () {
+                var get = Ember.get, set = Ember.set;
+                Ember.Freezable = Ember.Mixin.create({
+                    isFrozen: false,
+                    freeze: function () {
+                        if (get(this, 'isFrozen'))
+                            return this;
+                        set(this, 'isFrozen', true);
+                        return this;
+                    }
+                });
+                Ember.FROZEN_ERROR = 'Frozen object cannot be modified.';
+            }());
+            (function () {
+                var forEach = Ember.EnumerableUtils.forEach;
+                Ember.MutableEnumerable = Ember.Mixin.create(Ember.Enumerable, {
+                    addObject: Ember.required(Function),
+                    addObjects: function (objects) {
+                        Ember.beginPropertyChanges(this);
+                        forEach(objects, function (obj) {
+                            this.addObject(obj);
+                        }, this);
+                        Ember.endPropertyChanges(this);
+                        return this;
+                    },
+                    removeObject: Ember.required(Function),
+                    removeObjects: function (objects) {
+                        Ember.beginPropertyChanges(this);
+                        forEach(objects, function (obj) {
+                            this.removeObject(obj);
+                        }, this);
+                        Ember.endPropertyChanges(this);
+                        return this;
+                    }
+                });
+            }());
+            (function () {
+                var OUT_OF_RANGE_EXCEPTION = 'Index out of range';
+                var EMPTY = [];
+                var get = Ember.get, set = Ember.set;
+                Ember.MutableArray = Ember.Mixin.create(Ember.Array, Ember.MutableEnumerable, {
+                    replace: Ember.required(),
+                    clear: function () {
+                        var len = get(this, 'length');
+                        if (len === 0)
+                            return this;
+                        this.replace(0, len, EMPTY);
+                        return this;
+                    },
+                    insertAt: function (idx, object) {
+                        if (idx > get(this, 'length'))
+                            throw new Error(OUT_OF_RANGE_EXCEPTION);
+                        this.replace(idx, 0, [object]);
+                        return this;
+                    },
+                    removeAt: function (start, len) {
+                        if ('number' === typeof start) {
+                            if (start < 0 || start >= get(this, 'length')) {
+                                throw new Error(OUT_OF_RANGE_EXCEPTION);
+                            }
+                            if (len === undefined)
+                                len = 1;
+                            this.replace(start, len, EMPTY);
+                        }
+                        return this;
+                    },
+                    pushObject: function (obj) {
+                        this.insertAt(get(this, 'length'), obj);
+                        return obj;
+                    },
+                    pushObjects: function (objects) {
+                        this.replace(get(this, 'length'), 0, objects);
+                        return this;
+                    },
+                    popObject: function () {
+                        var len = get(this, 'length');
+                        if (len === 0)
+                            return null;
+                        var ret = this.objectAt(len - 1);
+                        this.removeAt(len - 1, 1);
+                        return ret;
+                    },
+                    shiftObject: function () {
+                        if (get(this, 'length') === 0)
+                            return null;
+                        var ret = this.objectAt(0);
+                        this.removeAt(0);
+                        return ret;
+                    },
+                    unshiftObject: function (obj) {
+                        this.insertAt(0, obj);
+                        return obj;
+                    },
+                    unshiftObjects: function (objects) {
+                        this.replace(0, 0, objects);
+                        return this;
+                    },
+                    reverseObjects: function () {
+                        var len = get(this, 'length');
+                        if (len === 0)
+                            return this;
+                        var objects = this.toArray().reverse();
+                        this.replace(0, len, objects);
+                        return this;
+                    },
+                    setObjects: function (objects) {
+                        if (objects.length === 0)
+                            return this.clear();
+                        var len = get(this, 'length');
+                        this.replace(0, len, objects);
+                        return this;
+                    },
+                    removeObject: function (obj) {
+                        var loc = get(this, 'length') || 0;
+                        while (--loc >= 0) {
+                            var curObject = this.objectAt(loc);
+                            if (curObject === obj)
+                                this.removeAt(loc);
+                        }
+                        return this;
+                    },
+                    addObject: function (obj) {
+                        if (!this.contains(obj))
+                            this.pushObject(obj);
+                        return this;
+                    }
+                });
+            }());
+            (function () {
+                var get = Ember.get, set = Ember.set;
+                Ember.Observable = Ember.Mixin.create({
+                    get: function (keyName) {
+                        return get(this, keyName);
+                    },
+                    getProperties: function () {
+                        var ret = {};
+                        var propertyNames = arguments;
+                        if (arguments.length === 1 && Ember.typeOf(arguments[0]) === 'array') {
+                            propertyNames = arguments[0];
+                        }
+                        for (var i = 0; i < propertyNames.length; i++) {
+                            ret[propertyNames[i]] = get(this, propertyNames[i]);
+                        }
+                        return ret;
+                    },
+                    set: function (keyName, value) {
+                        set(this, keyName, value);
+                        return this;
+                    },
+                    setProperties: function (hash) {
+                        return Ember.setProperties(this, hash);
+                    },
+                    beginPropertyChanges: function () {
+                        Ember.beginPropertyChanges();
+                        return this;
+                    },
+                    endPropertyChanges: function () {
+                        Ember.endPropertyChanges();
+                        return this;
+                    },
+                    propertyWillChange: function (keyName) {
+                        Ember.propertyWillChange(this, keyName);
+                        return this;
+                    },
+                    propertyDidChange: function (keyName) {
+                        Ember.propertyDidChange(this, keyName);
+                        return this;
+                    },
+                    notifyPropertyChange: function (keyName) {
+                        this.propertyWillChange(keyName);
+                        this.propertyDidChange(keyName);
+                        return this;
+                    },
+                    addBeforeObserver: function (key, target, method) {
+                        Ember.addBeforeObserver(this, key, target, method);
+                    },
+                    addObserver: function (key, target, method) {
+                        Ember.addObserver(this, key, target, method);
+                    },
+                    removeObserver: function (key, target, method) {
+                        Ember.removeObserver(this, key, target, method);
+                    },
+                    hasObserverFor: function (key) {
+                        return Ember.hasListeners(this, key + ':change');
+                    },
+                    getPath: function (path) {
+                        Ember.deprecate('getPath is deprecated since get now supports paths');
+                        return this.get(path);
+                    },
+                    setPath: function (path, value) {
+                        Ember.deprecate('setPath is deprecated since set now supports paths');
+                        return this.set(path, value);
+                    },
+                    getWithDefault: function (keyName, defaultValue) {
+                        return Ember.getWithDefault(this, keyName, defaultValue);
+                    },
+                    incrementProperty: function (keyName, increment) {
+                        if (!increment) {
+                            increment = 1;
+                        }
+                        set(this, keyName, (get(this, keyName) || 0) + increment);
+                        return get(this, keyName);
+                    },
+                    decrementProperty: function (keyName, increment) {
+                        if (!increment) {
+                            increment = 1;
+                        }
+                        set(this, keyName, (get(this, keyName) || 0) - increment);
+                        return get(this, keyName);
+                    },
+                    toggleProperty: function (keyName) {
+                        set(this, keyName, !get(this, keyName));
+                        return get(this, keyName);
+                    },
+                    cacheFor: function (keyName) {
+                        return Ember.cacheFor(this, keyName);
+                    },
+                    observersForKey: function (keyName) {
+                        return Ember.observersFor(this, keyName);
+                    }
+                });
+            }());
+            (function () {
+                var get = Ember.get, set = Ember.set;
+                Ember.TargetActionSupport = Ember.Mixin.create({
+                    target: null,
+                    action: null,
+                    targetObject: Ember.computed(function () {
+                        var target = get(this, 'target');
+                        if (Ember.typeOf(target) === 'string') {
+                            var value = get(this, target);
+                            if (value === undefined) {
+                                value = get(Ember.lookup, target);
+                            }
+                            return value;
+                        } else {
+                            return target;
+                        }
+                    }).property('target'),
+                    triggerAction: function () {
+                        var action = get(this, 'action'), target = get(this, 'targetObject');
+                        if (target && action) {
+                            var ret;
+                            if (typeof target.send === 'function') {
+                                ret = target.send(action, this);
+                            } else {
+                                if (typeof action === 'string') {
+                                    action = target[action];
+                                }
+                                ret = action.call(target, this);
+                            }
+                            if (ret !== false)
+                                ret = true;
+                            return ret;
+                        } else {
+                            return false;
+                        }
+                    }
+                });
+            }());
+            (function () {
+                Ember.Evented = Ember.Mixin.create({
+                    on: function (name, target, method) {
+                        Ember.addListener(this, name, target, method);
+                        return this;
+                    },
+                    one: function (name, target, method) {
+                        if (!method) {
+                            method = target;
+                            target = null;
+                        }
+                        Ember.addListener(this, name, target, method, true);
+                        return this;
+                    },
+                    trigger: function (name) {
+                        var args = [], i, l;
+                        for (i = 1, l = arguments.length; i < l; i++) {
+                            args.push(arguments[i]);
+                        }
+                        Ember.sendEvent(this, name, args);
+                    },
+                    fire: function (name) {
+                        Ember.deprecate('Ember.Evented#fire() has been deprecated in favor of trigger() for compatibility with jQuery. It will be removed in 1.0. Please update your code to call trigger() instead.');
+                        this.trigger.apply(this, arguments);
+                    },
+                    off: function (name, target, method) {
+                        Ember.removeListener(this, name, target, method);
+                        return this;
+                    },
+                    has: function (name) {
+                        return Ember.hasListeners(this, name);
+                    }
+                });
+            }());
+            (function () {
+                var RSVP = requireModule('rsvp');
+                RSVP.async = function (callback, binding) {
+                    Ember.run.schedule('actions', binding, callback);
+                };
+                var get = Ember.get;
+                Ember.DeferredMixin = Ember.Mixin.create({
+                    then: function (doneCallback, failCallback) {
+                        var promise = get(this, 'promise');
+                        return promise.then.apply(promise, arguments);
+                    },
+                    resolve: function (value) {
+                        get(this, 'promise').resolve(value);
+                    },
+                    reject: function (value) {
+                        get(this, 'promise').reject(value);
+                    },
+                    promise: Ember.computed(function () {
+                        return new RSVP.Promise();
+                    })
+                });
+            }());
+            (function () {
+            }());
+            (function () {
+                Ember.Container = requireModule('container');
+                Ember.Container.set = Ember.set;
+            }());
+            (function () {
+                var set = Ember.set, get = Ember.get, o_create = Ember.create, o_defineProperty = Ember.platform.defineProperty, GUID_KEY = Ember.GUID_KEY, guidFor = Ember.guidFor, generateGuid = Ember.generateGuid, meta = Ember.meta, rewatch = Ember.rewatch, finishChains = Ember.finishChains, destroy = Ember.destroy, schedule = Ember.run.schedule, Mixin = Ember.Mixin, applyMixin = Mixin._apply, finishPartial = Mixin.finishPartial, reopen = Mixin.prototype.reopen, MANDATORY_SETTER = Ember.ENV.MANDATORY_SETTER, indexOf = Ember.EnumerableUtils.indexOf;
+                var undefinedDescriptor = {
+                        configurable: true,
+                        writable: true,
+                        enumerable: false,
+                        value: undefined
+                    };
+                function makeCtor() {
+                    var wasApplied = false, initMixins, initProperties;
+                    var Class = function () {
+                        if (!wasApplied) {
+                            Class.proto();
+                        }
+                        o_defineProperty(this, GUID_KEY, undefinedDescriptor);
+                        o_defineProperty(this, '_super', undefinedDescriptor);
+                        var m = meta(this);
+                        m.proto = this;
+                        if (initMixins) {
+                            var mixins = initMixins;
+                            initMixins = null;
+                            this.reopen.apply(this, mixins);
+                        }
+                        if (initProperties) {
+                            var props = initProperties;
+                            initProperties = null;
+                            var concatenatedProperties = this.concatenatedProperties;
+                            for (var i = 0, l = props.length; i < l; i++) {
+                                var properties = props[i];
+                                for (var keyName in properties) {
+                                    if (!properties.hasOwnProperty(keyName)) {
+                                        continue;
+                                    }
+                                    var value = properties[keyName], IS_BINDING = Ember.IS_BINDING;
+                                    if (IS_BINDING.test(keyName)) {
+                                        var bindings = m.bindings;
+                                        if (!bindings) {
+                                            bindings = m.bindings = {};
+                                        } else if (!m.hasOwnProperty('bindings')) {
+                                            bindings = m.bindings = o_create(m.bindings);
+                                        }
+                                        bindings[keyName] = value;
+                                    }
+                                    var desc = m.descs[keyName];
+                                    Ember.assert('Ember.Object.create no longer supports defining computed properties.', !(value instanceof Ember.ComputedProperty));
+                                    Ember.assert('Ember.Object.create no longer supports defining methods that call _super.', !(typeof value === 'function' && value.toString().indexOf('._super') !== -1));
+                                    if (concatenatedProperties && indexOf(concatenatedProperties, keyName) >= 0) {
+                                        var baseValue = this[keyName];
+                                        if (baseValue) {
+                                            if ('function' === typeof baseValue.concat) {
+                                                value = baseValue.concat(value);
+                                            } else {
+                                                value = Ember.makeArray(baseValue).concat(value);
+                                            }
+                                        } else {
+                                            value = Ember.makeArray(value);
+                                        }
+                                    }
+                                    if (desc) {
+                                        desc.set(this, keyName, value);
+                                    } else {
+                                        if (typeof this.setUnknownProperty === 'function' && !(keyName in this)) {
+                                            this.setUnknownProperty(keyName, value);
+                                        } else if (MANDATORY_SETTER) {
+                                            Ember.defineProperty(this, keyName, null, value);
+                                        } else {
+                                            this[keyName] = value;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        finishPartial(this, m);
+                        delete m.proto;
+                        finishChains(this);
+                        this.init.apply(this, arguments);
+                    };
+                    Class.toString = Mixin.prototype.toString;
+                    Class.willReopen = function () {
+                        if (wasApplied) {
+                            Class.PrototypeMixin = Mixin.create(Class.PrototypeMixin);
+                        }
+                        wasApplied = false;
+                    };
+                    Class._initMixins = function (args) {
+                        initMixins = args;
+                    };
+                    Class._initProperties = function (args) {
+                        initProperties = args;
+                    };
+                    Class.proto = function () {
+                        var superclass = Class.superclass;
+                        if (superclass) {
+                            superclass.proto();
+                        }
+                        if (!wasApplied) {
+                            wasApplied = true;
+                            Class.PrototypeMixin.applyPartial(Class.prototype);
+                            rewatch(Class.prototype);
+                        }
+                        return this.prototype;
+                    };
+                    return Class;
+                }
+                var CoreObject = makeCtor();
+                CoreObject.toString = function () {
+                    return 'Ember.CoreObject';
+                };
+                CoreObject.PrototypeMixin = Mixin.create({
+                    reopen: function () {
+                        applyMixin(this, arguments, true);
+                        return this;
+                    },
+                    isInstance: true,
+                    init: function () {
+                    },
+                    concatenatedProperties: null,
+                    isDestroyed: false,
+                    isDestroying: false,
+                    destroy: function () {
+                        if (this._didCallDestroy) {
+                            return;
+                        }
+                        this.isDestroying = true;
+                        this._didCallDestroy = true;
+                        schedule('destroy', this, this._scheduledDestroy);
+                        return this;
+                    },
+                    willDestroy: Ember.K,
+                    _scheduledDestroy: function () {
+                        if (this.willDestroy) {
+                            this.willDestroy();
+                        }
+                        destroy(this);
+                        this.isDestroyed = true;
+                        if (this.didDestroy) {
+                            this.didDestroy();
+                        }
+                    },
+                    bind: function (to, from) {
+                        if (!(from instanceof Ember.Binding)) {
+                            from = Ember.Binding.from(from);
+                        }
+                        from.to(to).connect(this);
+                        return from;
+                    },
+                    toString: function toString() {
+                        var hasToStringExtension = typeof this.toStringExtension === 'function', extension = hasToStringExtension ? ':' + this.toStringExtension() : '';
+                        var ret = '<' + this.constructor.toString() + ':' + guidFor(this) + extension + '>';
+                        this.toString = makeToString(ret);
+                        return ret;
+                    }
+                });
+                CoreObject.PrototypeMixin.ownerConstructor = CoreObject;
+                function makeToString(ret) {
+                    return function () {
+                        return ret;
+                    };
+                }
+                if (Ember.config.overridePrototypeMixin) {
+                    Ember.config.overridePrototypeMixin(CoreObject.PrototypeMixin);
+                }
+                CoreObject.__super__ = null;
+                var ClassMixin = Mixin.create({
+                        ClassMixin: Ember.required(),
+                        PrototypeMixin: Ember.required(),
+                        isClass: true,
+                        isMethod: false,
+                        extend: function () {
+                            var Class = makeCtor(), proto;
+                            Class.ClassMixin = Mixin.create(this.ClassMixin);
+                            Class.PrototypeMixin = Mixin.create(this.PrototypeMixin);
+                            Class.ClassMixin.ownerConstructor = Class;
+                            Class.PrototypeMixin.ownerConstructor = Class;
+                            reopen.apply(Class.PrototypeMixin, arguments);
+                            Class.superclass = this;
+                            Class.__super__ = this.prototype;
+                            proto = Class.prototype = o_create(this.prototype);
+                            proto.constructor = Class;
+                            generateGuid(proto, 'ember');
+                            meta(proto).proto = proto;
+                            Class.ClassMixin.apply(Class);
+                            return Class;
+                        },
+                        createWithMixins: function () {
+                            var C = this;
+                            if (arguments.length > 0) {
+                                this._initMixins(arguments);
+                            }
+                            return new C();
+                        },
+                        create: function () {
+                            var C = this;
+                            if (arguments.length > 0) {
+                                this._initProperties(arguments);
+                            }
+                            return new C();
+                        },
+                        reopen: function () {
+                            this.willReopen();
+                            reopen.apply(this.PrototypeMixin, arguments);
+                            return this;
+                        },
+                        reopenClass: function () {
+                            reopen.apply(this.ClassMixin, arguments);
+                            applyMixin(this, arguments, false);
+                            return this;
+                        },
+                        detect: function (obj) {
+                            if ('function' !== typeof obj) {
+                                return false;
+                            }
+                            while (obj) {
+                                if (obj === this) {
+                                    return true;
+                                }
+                                obj = obj.superclass;
+                            }
+                            return false;
+                        },
+                        detectInstance: function (obj) {
+                            return obj instanceof this;
+                        },
+                        metaForProperty: function (key) {
+                            var desc = meta(this.proto(), false).descs[key];
+                            Ember.assert('metaForProperty() could not find a computed property with key \'' + key + '\'.', !!desc && desc instanceof Ember.ComputedProperty);
+                            return desc._meta || {};
+                        },
+                        eachComputedProperty: function (callback, binding) {
+                            var proto = this.proto(), descs = meta(proto).descs, empty = {}, property;
+                            for (var name in descs) {
+                                property = descs[name];
+                                if (property instanceof Ember.ComputedProperty) {
+                                    callback.call(binding || this, name, property._meta || empty);
+                                }
+                            }
+                        }
+                    });
+                ClassMixin.ownerConstructor = CoreObject;
+                if (Ember.config.overrideClassMixin) {
+                    Ember.config.overrideClassMixin(ClassMixin);
+                }
+                CoreObject.ClassMixin = ClassMixin;
+                ClassMixin.apply(CoreObject);
+                Ember.CoreObject = CoreObject;
+            }());
+            (function () {
+                Ember.Object = Ember.CoreObject.extend(Ember.Observable);
+                Ember.Object.toString = function () {
+                    return 'Ember.Object';
+                };
+            }());
+            (function () {
+                var get = Ember.get, indexOf = Ember.ArrayPolyfills.indexOf;
+                var Namespace = Ember.Namespace = Ember.Object.extend({
+                        isNamespace: true,
+                        init: function () {
+                            Ember.Namespace.NAMESPACES.push(this);
+                            Ember.Namespace.PROCESSED = false;
+                        },
+                        toString: function () {
+                            var name = get(this, 'name');
+                            if (name) {
+                                return name;
+                            }
+                            findNamespaces();
+                            return this[Ember.GUID_KEY + '_name'];
+                        },
+                        nameClasses: function () {
+                            processNamespace([this.toString()], this, {});
+                        },
+                        destroy: function () {
+                            var namespaces = Ember.Namespace.NAMESPACES;
+                            Ember.lookup[this.toString()] = undefined;
+                            namespaces.splice(indexOf.call(namespaces, this), 1);
+                            this._super();
+                        }
+                    });
+                Namespace.reopenClass({
+                    NAMESPACES: [Ember],
+                    NAMESPACES_BY_ID: {},
+                    PROCESSED: false,
+                    processAll: processAllNamespaces,
+                    byName: function (name) {
+                        if (!Ember.BOOTED) {
+                            processAllNamespaces();
+                        }
+                        return NAMESPACES_BY_ID[name];
+                    }
+                });
+                var NAMESPACES_BY_ID = Namespace.NAMESPACES_BY_ID;
+                var hasOwnProp = {}.hasOwnProperty, guidFor = Ember.guidFor;
+                function processNamespace(paths, root, seen) {
+                    var idx = paths.length;
+                    NAMESPACES_BY_ID[paths.join('.')] = root;
+                    for (var key in root) {
+                        if (!hasOwnProp.call(root, key)) {
+                            continue;
+                        }
+                        var obj = root[key];
+                        paths[idx] = key;
+                        if (obj && obj.toString === classToString) {
+                            obj.toString = makeToString(paths.join('.'));
+                            obj[NAME_KEY] = paths.join('.');
+                        } else if (obj && obj.isNamespace) {
+                            if (seen[guidFor(obj)]) {
+                                continue;
+                            }
+                            seen[guidFor(obj)] = true;
+                            processNamespace(paths, obj, seen);
+                        }
+                    }
+                    paths.length = idx;
+                }
+                function findNamespaces() {
+                    var Namespace = Ember.Namespace, lookup = Ember.lookup, obj, isNamespace;
+                    if (Namespace.PROCESSED) {
+                        return;
+                    }
+                    for (var prop in lookup) {
+                        if (prop === 'parent' || prop === 'top' || prop === 'frameElement') {
+                            continue;
+                        }
+                        if (prop === 'globalStorage' && lookup.StorageList && lookup.globalStorage instanceof lookup.StorageList) {
+                            continue;
+                        }
+                        if (lookup.hasOwnProperty && !lookup.hasOwnProperty(prop)) {
+                            continue;
+                        }
+                        try {
+                            obj = Ember.lookup[prop];
+                            isNamespace = obj && obj.isNamespace;
+                        } catch (e) {
+                            continue;
+                        }
+                        if (isNamespace) {
+                            Ember.deprecate('Namespaces should not begin with lowercase.', /^[A-Z]/.test(prop));
+                            obj[NAME_KEY] = prop;
+                        }
+                    }
+                }
+                var NAME_KEY = Ember.NAME_KEY = Ember.GUID_KEY + '_name';
+                function superClassString(mixin) {
+                    var superclass = mixin.superclass;
+                    if (superclass) {
+                        if (superclass[NAME_KEY]) {
+                            return superclass[NAME_KEY];
+                        } else {
+                            return superClassString(superclass);
+                        }
+                    } else {
+                        return;
+                    }
+                }
+                function classToString() {
+                    if (!Ember.BOOTED && !this[NAME_KEY]) {
+                        processAllNamespaces();
+                    }
+                    var ret;
+                    if (this[NAME_KEY]) {
+                        ret = this[NAME_KEY];
+                    } else {
+                        var str = superClassString(this);
+                        if (str) {
+                            ret = '(subclass of ' + str + ')';
+                        } else {
+                            ret = '(unknown mixin)';
+                        }
+                        this.toString = makeToString(ret);
+                    }
+                    return ret;
+                }
+                function processAllNamespaces() {
+                    var unprocessedNamespaces = !Namespace.PROCESSED, unprocessedMixins = Ember.anyUnprocessedMixins;
+                    if (unprocessedNamespaces) {
+                        findNamespaces();
+                        Namespace.PROCESSED = true;
+                    }
+                    if (unprocessedNamespaces || unprocessedMixins) {
+                        var namespaces = Namespace.NAMESPACES, namespace;
+                        for (var i = 0, l = namespaces.length; i < l; i++) {
+                            namespace = namespaces[i];
+                            processNamespace([namespace.toString()], namespace, {});
+                        }
+                        Ember.anyUnprocessedMixins = false;
+                    }
+                }
+                function makeToString(ret) {
+                    return function () {
+                        return ret;
+                    };
+                }
+                Ember.Mixin.prototype.toString = classToString;
+            }());
+            (function () {
+                Ember.Application = Ember.Namespace.extend();
+            }());
+            (function () {
+                var OUT_OF_RANGE_EXCEPTION = 'Index out of range';
+                var EMPTY = [];
+                var get = Ember.get, set = Ember.set;
+                Ember.ArrayProxy = Ember.Object.extend(Ember.MutableArray, {
+                    content: null,
+                    arrangedContent: Ember.computed.alias('content'),
+                    objectAtContent: function (idx) {
+                        return get(this, 'arrangedContent').objectAt(idx);
+                    },
+                    replaceContent: function (idx, amt, objects) {
+                        get(this, 'content').replace(idx, amt, objects);
+                    },
+                    _contentWillChange: Ember.beforeObserver(function () {
+                        this._teardownContent();
+                    }, 'content'),
+                    _teardownContent: function () {
+                        var content = get(this, 'content');
+                        if (content) {
+                            content.removeArrayObserver(this, {
+                                willChange: 'contentArrayWillChange',
+                                didChange: 'contentArrayDidChange'
+                            });
+                        }
+                    },
+                    contentArrayWillChange: Ember.K,
+                    contentArrayDidChange: Ember.K,
+                    _contentDidChange: Ember.observer(function () {
+                        var content = get(this, 'content');
+                        Ember.assert('Can\'t set ArrayProxy\'s content to itself', content !== this);
+                        this._setupContent();
+                    }, 'content'),
+                    _setupContent: function () {
+                        var content = get(this, 'content');
+                        if (content) {
+                            content.addArrayObserver(this, {
+                                willChange: 'contentArrayWillChange',
+                                didChange: 'contentArrayDidChange'
+                            });
+                        }
+                    },
+                    _arrangedContentWillChange: Ember.beforeObserver(function () {
+                        var arrangedContent = get(this, 'arrangedContent'), len = arrangedContent ? get(arrangedContent, 'length') : 0;
+                        this.arrangedContentArrayWillChange(this, 0, len, undefined);
+                        this.arrangedContentWillChange(this);
+                        this._teardownArrangedContent(arrangedContent);
+                    }, 'arrangedContent'),
+                    _arrangedContentDidChange: Ember.observer(function () {
+                        var arrangedContent = get(this, 'arrangedContent'), len = arrangedContent ? get(arrangedContent, 'length') : 0;
+                        Ember.assert('Can\'t set ArrayProxy\'s content to itself', arrangedContent !== this);
+                        this._setupArrangedContent();
+                        this.arrangedContentDidChange(this);
+                        this.arrangedContentArrayDidChange(this, 0, undefined, len);
+                    }, 'arrangedContent'),
+                    _setupArrangedContent: function () {
+                        var arrangedContent = get(this, 'arrangedContent');
+                        if (arrangedContent) {
+                            arrangedContent.addArrayObserver(this, {
+                                willChange: 'arrangedContentArrayWillChange',
+                                didChange: 'arrangedContentArrayDidChange'
+                            });
+                        }
+                    },
+                    _teardownArrangedContent: function () {
+                        var arrangedContent = get(this, 'arrangedContent');
+                        if (arrangedContent) {
+                            arrangedContent.removeArrayObserver(this, {
+                                willChange: 'arrangedContentArrayWillChange',
+                                didChange: 'arrangedContentArrayDidChange'
+                            });
+                        }
+                    },
+                    arrangedContentWillChange: Ember.K,
+                    arrangedContentDidChange: Ember.K,
+                    objectAt: function (idx) {
+                        return get(this, 'content') && this.objectAtContent(idx);
+                    },
+                    length: Ember.computed(function () {
+                        var arrangedContent = get(this, 'arrangedContent');
+                        return arrangedContent ? get(arrangedContent, 'length') : 0;
+                    }),
+                    _replace: function (idx, amt, objects) {
+                        var content = get(this, 'content');
+                        Ember.assert('The content property of ' + this.constructor + ' should be set before modifying it', content);
+                        if (content)
+                            this.replaceContent(idx, amt, objects);
+                        return this;
+                    },
+                    replace: function () {
+                        if (get(this, 'arrangedContent') === get(this, 'content')) {
+                            this._replace.apply(this, arguments);
+                        } else {
+                            throw new Ember.Error('Using replace on an arranged ArrayProxy is not allowed.');
+                        }
+                    },
+                    _insertAt: function (idx, object) {
+                        if (idx > get(this, 'content.length'))
+                            throw new Error(OUT_OF_RANGE_EXCEPTION);
+                        this._replace(idx, 0, [object]);
+                        return this;
+                    },
+                    insertAt: function (idx, object) {
+                        if (get(this, 'arrangedContent') === get(this, 'content')) {
+                            return this._insertAt(idx, object);
+                        } else {
+                            throw new Ember.Error('Using insertAt on an arranged ArrayProxy is not allowed.');
+                        }
+                    },
+                    removeAt: function (start, len) {
+                        if ('number' === typeof start) {
+                            var content = get(this, 'content'), arrangedContent = get(this, 'arrangedContent'), indices = [], i;
+                            if (start < 0 || start >= get(this, 'length')) {
+                                throw new Error(OUT_OF_RANGE_EXCEPTION);
+                            }
+                            if (len === undefined)
+                                len = 1;
+                            for (i = start; i < start + len; i++) {
+                                indices.push(content.indexOf(arrangedContent.objectAt(i)));
+                            }
+                            indices.sort(function (a, b) {
+                                return b - a;
+                            });
+                            Ember.beginPropertyChanges();
+                            for (i = 0; i < indices.length; i++) {
+                                this._replace(indices[i], 1, EMPTY);
+                            }
+                            Ember.endPropertyChanges();
+                        }
+                        return this;
+                    },
+                    pushObject: function (obj) {
+                        this._insertAt(get(this, 'content.length'), obj);
+                        return obj;
+                    },
+                    pushObjects: function (objects) {
+                        this._replace(get(this, 'length'), 0, objects);
+                        return this;
+                    },
+                    setObjects: function (objects) {
+                        if (objects.length === 0)
+                            return this.clear();
+                        var len = get(this, 'length');
+                        this._replace(0, len, objects);
+                        return this;
+                    },
+                    unshiftObject: function (obj) {
+                        this._insertAt(0, obj);
+                        return obj;
+                    },
+                    unshiftObjects: function (objects) {
+                        this._replace(0, 0, objects);
+                        return this;
+                    },
+                    slice: function () {
+                        var arr = this.toArray();
+                        return arr.slice.apply(arr, arguments);
+                    },
+                    arrangedContentArrayWillChange: function (item, idx, removedCnt, addedCnt) {
+                        this.arrayContentWillChange(idx, removedCnt, addedCnt);
+                    },
+                    arrangedContentArrayDidChange: function (item, idx, removedCnt, addedCnt) {
+                        this.arrayContentDidChange(idx, removedCnt, addedCnt);
+                    },
+                    init: function () {
+                        this._super();
+                        this._setupContent();
+                        this._setupArrangedContent();
+                    },
+                    willDestroy: function () {
+                        this._teardownArrangedContent();
+                        this._teardownContent();
+                    }
+                });
+            }());
+            (function () {
+                var get = Ember.get, set = Ember.set, fmt = Ember.String.fmt, addBeforeObserver = Ember.addBeforeObserver, addObserver = Ember.addObserver, removeBeforeObserver = Ember.removeBeforeObserver, removeObserver = Ember.removeObserver, propertyWillChange = Ember.propertyWillChange, propertyDidChange = Ember.propertyDidChange;
+                function contentPropertyWillChange(content, contentKey) {
+                    var key = contentKey.slice(8);
+                    if (key in this) {
+                        return;
+                    }
+                    propertyWillChange(this, key);
+                }
+                function contentPropertyDidChange(content, contentKey) {
+                    var key = contentKey.slice(8);
+                    if (key in this) {
+                        return;
+                    }
+                    propertyDidChange(this, key);
+                }
+                Ember.ObjectProxy = Ember.Object.extend({
+                    content: null,
+                    _contentDidChange: Ember.observer(function () {
+                        Ember.assert('Can\'t set ObjectProxy\'s content to itself', this.get('content') !== this);
+                    }, 'content'),
+                    isTruthy: Ember.computed.bool('content'),
+                    _debugContainerKey: null,
+                    willWatchProperty: function (key) {
+                        var contentKey = 'content.' + key;
+                        addBeforeObserver(this, contentKey, null, contentPropertyWillChange);
+                        addObserver(this, contentKey, null, contentPropertyDidChange);
+                    },
+                    didUnwatchProperty: function (key) {
+                        var contentKey = 'content.' + key;
+                        removeBeforeObserver(this, contentKey, null, contentPropertyWillChange);
+                        removeObserver(this, contentKey, null, contentPropertyDidChange);
+                    },
+                    unknownProperty: function (key) {
+                        var content = get(this, 'content');
+                        if (content) {
+                            return get(content, key);
+                        }
+                    },
+                    setUnknownProperty: function (key, value) {
+                        var content = get(this, 'content');
+                        Ember.assert(fmt('Cannot delegate set(\'%@\', %@) to the \'content\' property of object proxy %@: its \'content\' is undefined.', [
+                            key,
+                            value,
+                            this
+                        ]), content);
+                        return set(content, key, value);
+                    }
+                });
+                Ember.ObjectProxy.reopenClass({
+                    create: function () {
+                        var mixin, prototype, i, l, properties, keyName;
+                        if (arguments.length) {
+                            prototype = this.proto();
+                            for (i = 0, l = arguments.length; i < l; i++) {
+                                properties = arguments[i];
+                                for (keyName in properties) {
+                                    if (!properties.hasOwnProperty(keyName) || keyName in prototype) {
+                                        continue;
+                                    }
+                                    if (!mixin)
+                                        mixin = {};
+                                    mixin[keyName] = null;
+                                }
+                            }
+                            if (mixin)
+                                this._initMixins([mixin]);
+                        }
+                        return this._super.apply(this, arguments);
+                    }
+                });
+            }());
+            (function () {
+                var set = Ember.set, get = Ember.get, guidFor = Ember.guidFor;
+                var forEach = Ember.EnumerableUtils.forEach;
+                var EachArray = Ember.Object.extend(Ember.Array, {
+                        init: function (content, keyName, owner) {
+                            this._super();
+                            this._keyName = keyName;
+                            this._owner = owner;
+                            this._content = content;
+                        },
+                        objectAt: function (idx) {
+                            var item = this._content.objectAt(idx);
+                            return item && get(item, this._keyName);
+                        },
+                        length: Ember.computed(function () {
+                            var content = this._content;
+                            return content ? get(content, 'length') : 0;
+                        })
+                    });
+                var IS_OBSERVER = /^.+:(before|change)$/;
+                function addObserverForContentKey(content, keyName, proxy, idx, loc) {
+                    var objects = proxy._objects, guid;
+                    if (!objects)
+                        objects = proxy._objects = {};
+                    while (--loc >= idx) {
+                        var item = content.objectAt(loc);
+                        if (item) {
+                            Ember.addBeforeObserver(item, keyName, proxy, 'contentKeyWillChange');
+                            Ember.addObserver(item, keyName, proxy, 'contentKeyDidChange');
+                            guid = guidFor(item);
+                            if (!objects[guid])
+                                objects[guid] = [];
+                            objects[guid].push(loc);
+                        }
+                    }
+                }
+                function removeObserverForContentKey(content, keyName, proxy, idx, loc) {
+                    var objects = proxy._objects;
+                    if (!objects)
+                        objects = proxy._objects = {};
+                    var indicies, guid;
+                    while (--loc >= idx) {
+                        var item = content.objectAt(loc);
+                        if (item) {
+                            Ember.removeBeforeObserver(item, keyName, proxy, 'contentKeyWillChange');
+                            Ember.removeObserver(item, keyName, proxy, 'contentKeyDidChange');
+                            guid = guidFor(item);
+                            indicies = objects[guid];
+                            indicies[indicies.indexOf(loc)] = null;
+                        }
+                    }
+                }
+                Ember.EachProxy = Ember.Object.extend({
+                    init: function (content) {
+                        this._super();
+                        this._content = content;
+                        content.addArrayObserver(this);
+                        forEach(Ember.watchedEvents(this), function (eventName) {
+                            this.didAddListener(eventName);
+                        }, this);
+                    },
+                    unknownProperty: function (keyName, value) {
+                        var ret;
+                        ret = new EachArray(this._content, keyName, this);
+                        Ember.defineProperty(this, keyName, null, ret);
+                        this.beginObservingContentKey(keyName);
+                        return ret;
+                    },
+                    arrayWillChange: function (content, idx, removedCnt, addedCnt) {
+                        var keys = this._keys, key, lim;
+                        lim = removedCnt > 0 ? idx + removedCnt : -1;
+                        Ember.beginPropertyChanges(this);
+                        for (key in keys) {
+                            if (!keys.hasOwnProperty(key)) {
+                                continue;
+                            }
+                            if (lim > 0)
+                                removeObserverForContentKey(content, key, this, idx, lim);
+                            Ember.propertyWillChange(this, key);
+                        }
+                        Ember.propertyWillChange(this._content, '@each');
+                        Ember.endPropertyChanges(this);
+                    },
+                    arrayDidChange: function (content, idx, removedCnt, addedCnt) {
+                        var keys = this._keys, key, lim;
+                        lim = addedCnt > 0 ? idx + addedCnt : -1;
+                        Ember.beginPropertyChanges(this);
+                        for (key in keys) {
+                            if (!keys.hasOwnProperty(key)) {
+                                continue;
+                            }
+                            if (lim > 0)
+                                addObserverForContentKey(content, key, this, idx, lim);
+                            Ember.propertyDidChange(this, key);
+                        }
+                        Ember.propertyDidChange(this._content, '@each');
+                        Ember.endPropertyChanges(this);
+                    },
+                    didAddListener: function (eventName) {
+                        if (IS_OBSERVER.test(eventName)) {
+                            this.beginObservingContentKey(eventName.slice(0, -7));
+                        }
+                    },
+                    didRemoveListener: function (eventName) {
+                        if (IS_OBSERVER.test(eventName)) {
+                            this.stopObservingContentKey(eventName.slice(0, -7));
+                        }
+                    },
+                    beginObservingContentKey: function (keyName) {
+                        var keys = this._keys;
+                        if (!keys)
+                            keys = this._keys = {};
+                        if (!keys[keyName]) {
+                            keys[keyName] = 1;
+                            var content = this._content, len = get(content, 'length');
+                            addObserverForContentKey(content, keyName, this, 0, len);
+                        } else {
+                            keys[keyName]++;
+                        }
+                    },
+                    stopObservingContentKey: function (keyName) {
+                        var keys = this._keys;
+                        if (keys && keys[keyName] > 0 && --keys[keyName] <= 0) {
+                            var content = this._content, len = get(content, 'length');
+                            removeObserverForContentKey(content, keyName, this, 0, len);
+                        }
+                    },
+                    contentKeyWillChange: function (obj, keyName) {
+                        Ember.propertyWillChange(this, keyName);
+                    },
+                    contentKeyDidChange: function (obj, keyName) {
+                        Ember.propertyDidChange(this, keyName);
+                    }
+                });
+            }());
+            (function () {
+                var get = Ember.get, set = Ember.set;
+                var NativeArray = Ember.Mixin.create(Ember.MutableArray, Ember.Observable, Ember.Copyable, {
+                        get: function (key) {
+                            if (key === 'length')
+                                return this.length;
+                            else if ('number' === typeof key)
+                                return this[key];
+                            else
+                                return this._super(key);
+                        },
+                        objectAt: function (idx) {
+                            return this[idx];
+                        },
+                        replace: function (idx, amt, objects) {
+                            if (this.isFrozen)
+                                throw Ember.FROZEN_ERROR;
+                            var len = objects ? get(objects, 'length') : 0;
+                            this.arrayContentWillChange(idx, amt, len);
+                            if (!objects || objects.length === 0) {
+                                this.splice(idx, amt);
+                            } else {
+                                var args = [
+                                        idx,
+                                        amt
+                                    ].concat(objects);
+                                this.splice.apply(this, args);
+                            }
+                            this.arrayContentDidChange(idx, amt, len);
+                            return this;
+                        },
+                        unknownProperty: function (key, value) {
+                            var ret;
+                            if (value !== undefined && ret === undefined) {
+                                ret = this[key] = value;
+                            }
+                            return ret;
+                        },
+                        indexOf: function (object, startAt) {
+                            var idx, len = this.length;
+                            if (startAt === undefined)
+                                startAt = 0;
+                            else
+                                startAt = startAt < 0 ? Math.ceil(startAt) : Math.floor(startAt);
+                            if (startAt < 0)
+                                startAt += len;
+                            for (idx = startAt; idx < len; idx++) {
+                                if (this[idx] === object)
+                                    return idx;
+                            }
+                            return -1;
+                        },
+                        lastIndexOf: function (object, startAt) {
+                            var idx, len = this.length;
+                            if (startAt === undefined)
+                                startAt = len - 1;
+                            else
+                                startAt = startAt < 0 ? Math.ceil(startAt) : Math.floor(startAt);
+                            if (startAt < 0)
+                                startAt += len;
+                            for (idx = startAt; idx >= 0; idx--) {
+                                if (this[idx] === object)
+                                    return idx;
+                            }
+                            return -1;
+                        },
+                        copy: function (deep) {
+                            if (deep) {
+                                return this.map(function (item) {
+                                    return Ember.copy(item, true);
+                                });
+                            }
+                            return this.slice();
+                        }
+                    });
+                var ignore = ['length'];
+                Ember.EnumerableUtils.forEach(NativeArray.keys(), function (methodName) {
+                    if (Array.prototype[methodName])
+                        ignore.push(methodName);
+                });
+                if (ignore.length > 0) {
+                    NativeArray = NativeArray.without.apply(NativeArray, ignore);
+                }
+                Ember.NativeArray = NativeArray;
+                Ember.A = function (arr) {
+                    if (arr === undefined) {
+                        arr = [];
+                    }
+                    return Ember.Array.detect(arr) ? arr : Ember.NativeArray.apply(arr);
+                };
+                Ember.NativeArray.activate = function () {
+                    NativeArray.apply(Array.prototype);
+                    Ember.A = function (arr) {
+                        return arr || [];
+                    };
+                };
+                if (Ember.EXTEND_PROTOTYPES === true || Ember.EXTEND_PROTOTYPES.Array) {
+                    Ember.NativeArray.activate();
+                }
+            }());
+            (function () {
+                var get = Ember.get, set = Ember.set, guidFor = Ember.guidFor, none = Ember.isNone, fmt = Ember.String.fmt;
+                Ember.Set = Ember.CoreObject.extend(Ember.MutableEnumerable, Ember.Copyable, Ember.Freezable, {
+                    length: 0,
+                    clear: function () {
+                        if (this.isFrozen) {
+                            throw new Error(Ember.FROZEN_ERROR);
+                        }
+                        var len = get(this, 'length');
+                        if (len === 0) {
+                            return this;
+                        }
+                        var guid;
+                        this.enumerableContentWillChange(len, 0);
+                        Ember.propertyWillChange(this, 'firstObject');
+                        Ember.propertyWillChange(this, 'lastObject');
+                        for (var i = 0; i < len; i++) {
+                            guid = guidFor(this[i]);
+                            delete this[guid];
+                            delete this[i];
+                        }
+                        set(this, 'length', 0);
+                        Ember.propertyDidChange(this, 'firstObject');
+                        Ember.propertyDidChange(this, 'lastObject');
+                        this.enumerableContentDidChange(len, 0);
+                        return this;
+                    },
+                    isEqual: function (obj) {
+                        if (!Ember.Enumerable.detect(obj))
+                            return false;
+                        var loc = get(this, 'length');
+                        if (get(obj, 'length') !== loc)
+                            return false;
+                        while (--loc >= 0) {
+                            if (!obj.contains(this[loc]))
+                                return false;
+                        }
+                        return true;
+                    },
+                    add: Ember.aliasMethod('addObject'),
+                    remove: Ember.aliasMethod('removeObject'),
+                    pop: function () {
+                        if (get(this, 'isFrozen'))
+                            throw new Error(Ember.FROZEN_ERROR);
+                        var obj = this.length > 0 ? this[this.length - 1] : null;
+                        this.remove(obj);
+                        return obj;
+                    },
+                    push: Ember.aliasMethod('addObject'),
+                    shift: Ember.aliasMethod('pop'),
+                    unshift: Ember.aliasMethod('push'),
+                    addEach: Ember.aliasMethod('addObjects'),
+                    removeEach: Ember.aliasMethod('removeObjects'),
+                    init: function (items) {
+                        this._super();
+                        if (items)
+                            this.addObjects(items);
+                    },
+                    nextObject: function (idx) {
+                        return this[idx];
+                    },
+                    firstObject: Ember.computed(function () {
+                        return this.length > 0 ? this[0] : undefined;
+                    }),
+                    lastObject: Ember.computed(function () {
+                        return this.length > 0 ? this[this.length - 1] : undefined;
+                    }),
+                    addObject: function (obj) {
+                        if (get(this, 'isFrozen'))
+                            throw new Error(Ember.FROZEN_ERROR);
+                        if (none(obj))
+                            return this;
+                        var guid = guidFor(obj), idx = this[guid], len = get(this, 'length'), added;
+                        if (idx >= 0 && idx < len && this[idx] === obj)
+                            return this;
+                        added = [obj];
+                        this.enumerableContentWillChange(null, added);
+                        Ember.propertyWillChange(this, 'lastObject');
+                        len = get(this, 'length');
+                        this[guid] = len;
+                        this[len] = obj;
+                        set(this, 'length', len + 1);
+                        Ember.propertyDidChange(this, 'lastObject');
+                        this.enumerableContentDidChange(null, added);
+                        return this;
+                    },
+                    removeObject: function (obj) {
+                        if (get(this, 'isFrozen'))
+                            throw new Error(Ember.FROZEN_ERROR);
+                        if (none(obj))
+                            return this;
+                        var guid = guidFor(obj), idx = this[guid], len = get(this, 'length'), isFirst = idx === 0, isLast = idx === len - 1, last, removed;
+                        if (idx >= 0 && idx < len && this[idx] === obj) {
+                            removed = [obj];
+                            this.enumerableContentWillChange(removed, null);
+                            if (isFirst) {
+                                Ember.propertyWillChange(this, 'firstObject');
+                            }
+                            if (isLast) {
+                                Ember.propertyWillChange(this, 'lastObject');
+                            }
+                            if (idx < len - 1) {
+                                last = this[len - 1];
+                                this[idx] = last;
+                                this[guidFor(last)] = idx;
+                            }
+                            delete this[guid];
+                            delete this[len - 1];
+                            set(this, 'length', len - 1);
+                            if (isFirst) {
+                                Ember.propertyDidChange(this, 'firstObject');
+                            }
+                            if (isLast) {
+                                Ember.propertyDidChange(this, 'lastObject');
+                            }
+                            this.enumerableContentDidChange(removed, null);
+                        }
+                        return this;
+                    },
+                    contains: function (obj) {
+                        return this[guidFor(obj)] >= 0;
+                    },
+                    copy: function () {
+                        var C = this.constructor, ret = new C(), loc = get(this, 'length');
+                        set(ret, 'length', loc);
+                        while (--loc >= 0) {
+                            ret[loc] = this[loc];
+                            ret[guidFor(this[loc])] = loc;
+                        }
+                        return ret;
+                    },
+                    toString: function () {
+                        var len = this.length, idx, array = [];
+                        for (idx = 0; idx < len; idx++) {
+                            array[idx] = this[idx];
+                        }
+                        return fmt('Ember.Set<%@>', [array.join(',')]);
+                    }
+                });
+            }());
+            (function () {
+                var DeferredMixin = Ember.DeferredMixin, get = Ember.get;
+                var Deferred = Ember.Object.extend(DeferredMixin);
+                Deferred.reopenClass({
+                    promise: function (callback, binding) {
+                        var deferred = Deferred.create();
+                        callback.call(binding, deferred);
+                        return get(deferred, 'promise');
+                    }
+                });
+                Ember.Deferred = Deferred;
+            }());
+            (function () {
+                var loadHooks = Ember.ENV.EMBER_LOAD_HOOKS || {};
+                var loaded = {};
+                Ember.onLoad = function (name, callback) {
+                    var object;
+                    loadHooks[name] = loadHooks[name] || Ember.A();
+                    loadHooks[name].pushObject(callback);
+                    if (object = loaded[name]) {
+                        callback(object);
+                    }
+                };
+                Ember.runLoadHooks = function (name, object) {
+                    var hooks;
+                    loaded[name] = object;
+                    if (hooks = loadHooks[name]) {
+                        loadHooks[name].forEach(function (callback) {
+                            callback(object);
+                        });
+                    }
+                };
+            }());
+            (function () {
+            }());
+            (function () {
+                var get = Ember.get;
+                Ember.ControllerMixin = Ember.Mixin.create({
+                    isController: true,
+                    target: null,
+                    container: null,
+                    store: null,
+                    model: Ember.computed.alias('content'),
+                    send: function (actionName) {
+                        var args = [].slice.call(arguments, 1), target;
+                        if (this[actionName]) {
+                            Ember.assert('The controller ' + this + ' does not have the action ' + actionName, typeof this[actionName] === 'function');
+                            this[actionName].apply(this, args);
+                        } else if (target = get(this, 'target')) {
+                            Ember.assert('The target for controller ' + this + ' (' + target + ') did not define a `send` method', typeof target.send === 'function');
+                            target.send.apply(target, arguments);
+                        }
+                    }
+                });
+                Ember.Controller = Ember.Object.extend(Ember.ControllerMixin);
+            }());
+            (function () {
+                var get = Ember.get, set = Ember.set, forEach = Ember.EnumerableUtils.forEach;
+                Ember.SortableMixin = Ember.Mixin.create(Ember.MutableEnumerable, {
+                    sortProperties: null,
+                    sortAscending: true,
+                    orderBy: function (item1, item2) {
+                        var result = 0, sortProperties = get(this, 'sortProperties'), sortAscending = get(this, 'sortAscending');
+                        Ember.assert('you need to define `sortProperties`', !!sortProperties);
+                        forEach(sortProperties, function (propertyName) {
+                            if (result === 0) {
+                                result = Ember.compare(get(item1, propertyName), get(item2, propertyName));
+                                if (result !== 0 && !sortAscending) {
+                                    result = -1 * result;
+                                }
+                            }
+                        });
+                        return result;
+                    },
+                    destroy: function () {
+                        var content = get(this, 'content'), sortProperties = get(this, 'sortProperties');
+                        if (content && sortProperties) {
+                            forEach(content, function (item) {
+                                forEach(sortProperties, function (sortProperty) {
+                                    Ember.removeObserver(item, sortProperty, this, 'contentItemSortPropertyDidChange');
+                                }, this);
+                            }, this);
+                        }
+                        return this._super();
+                    },
+                    isSorted: Ember.computed.bool('sortProperties'),
+                    arrangedContent: Ember.computed('content', 'sortProperties.@each', function (key, value) {
+                        var content = get(this, 'content'), isSorted = get(this, 'isSorted'), sortProperties = get(this, 'sortProperties'), self = this;
+                        if (content && isSorted) {
+                            content = content.slice();
+                            content.sort(function (item1, item2) {
+                                return self.orderBy(item1, item2);
+                            });
+                            forEach(content, function (item) {
+                                forEach(sortProperties, function (sortProperty) {
+                                    Ember.addObserver(item, sortProperty, this, 'contentItemSortPropertyDidChange');
+                                }, this);
+                            }, this);
+                            return Ember.A(content);
+                        }
+                        return content;
+                    }),
+                    _contentWillChange: Ember.beforeObserver(function () {
+                        var content = get(this, 'content'), sortProperties = get(this, 'sortProperties');
+                        if (content && sortProperties) {
+                            forEach(content, function (item) {
+                                forEach(sortProperties, function (sortProperty) {
+                                    Ember.removeObserver(item, sortProperty, this, 'contentItemSortPropertyDidChange');
+                                }, this);
+                            }, this);
+                        }
+                        this._super();
+                    }, 'content'),
+                    sortAscendingWillChange: Ember.beforeObserver(function () {
+                        this._lastSortAscending = get(this, 'sortAscending');
+                    }, 'sortAscending'),
+                    sortAscendingDidChange: Ember.observer(function () {
+                        if (get(this, 'sortAscending') !== this._lastSortAscending) {
+                            var arrangedContent = get(this, 'arrangedContent');
+                            arrangedContent.reverseObjects();
+                        }
+                    }, 'sortAscending'),
+                    contentArrayWillChange: function (array, idx, removedCount, addedCount) {
+                        var isSorted = get(this, 'isSorted');
+                        if (isSorted) {
+                            var arrangedContent = get(this, 'arrangedContent');
+                            var removedObjects = array.slice(idx, idx + removedCount);
+                            var sortProperties = get(this, 'sortProperties');
+                            forEach(removedObjects, function (item) {
+                                arrangedContent.removeObject(item);
+                                forEach(sortProperties, function (sortProperty) {
+                                    Ember.removeObserver(item, sortProperty, this, 'contentItemSortPropertyDidChange');
+                                }, this);
+                            }, this);
+                        }
+                        return this._super(array, idx, removedCount, addedCount);
+                    },
+                    contentArrayDidChange: function (array, idx, removedCount, addedCount) {
+                        var isSorted = get(this, 'isSorted'), sortProperties = get(this, 'sortProperties');
+                        if (isSorted) {
+                            var addedObjects = array.slice(idx, idx + addedCount);
+                            forEach(addedObjects, function (item) {
+                                this.insertItemSorted(item);
+                                forEach(sortProperties, function (sortProperty) {
+                                    Ember.addObserver(item, sortProperty, this, 'contentItemSortPropertyDidChange');
+                                }, this);
+                            }, this);
+                        }
+                        return this._super(array, idx, removedCount, addedCount);
+                    },
+                    insertItemSorted: function (item) {
+                        var arrangedContent = get(this, 'arrangedContent');
+                        var length = get(arrangedContent, 'length');
+                        var idx = this._binarySearch(item, 0, length);
+                        arrangedContent.insertAt(idx, item);
+                    },
+                    contentItemSortPropertyDidChange: function (item) {
+                        var arrangedContent = get(this, 'arrangedContent'), oldIndex = arrangedContent.indexOf(item), leftItem = arrangedContent.objectAt(oldIndex - 1), rightItem = arrangedContent.objectAt(oldIndex + 1), leftResult = leftItem && this.orderBy(item, leftItem), rightResult = rightItem && this.orderBy(item, rightItem);
+                        if (leftResult < 0 || rightResult > 0) {
+                            arrangedContent.removeObject(item);
+                            this.insertItemSorted(item);
+                        }
+                    },
+                    _binarySearch: function (item, low, high) {
+                        var mid, midItem, res, arrangedContent;
+                        if (low === high) {
+                            return low;
+                        }
+                        arrangedContent = get(this, 'arrangedContent');
+                        mid = low + Math.floor((high - low) / 2);
+                        midItem = arrangedContent.objectAt(mid);
+                        res = this.orderBy(midItem, item);
+                        if (res < 0) {
+                            return this._binarySearch(item, mid + 1, high);
+                        } else if (res > 0) {
+                            return this._binarySearch(item, low, mid);
+                        }
+                        return mid;
+                    }
+                });
+            }());
+            (function () {
+                var get = Ember.get, set = Ember.set, forEach = Ember.EnumerableUtils.forEach, replace = Ember.EnumerableUtils.replace;
+                Ember.ArrayController = Ember.ArrayProxy.extend(Ember.ControllerMixin, Ember.SortableMixin, {
+                    itemController: null,
+                    lookupItemController: function (object) {
+                        return get(this, 'itemController');
+                    },
+                    objectAtContent: function (idx) {
+                        var length = get(this, 'length'), arrangedContent = get(this, 'arrangedContent'), object = arrangedContent && arrangedContent.objectAt(idx);
+                        if (idx >= 0 && idx < length) {
+                            var controllerClass = this.lookupItemController(object);
+                            if (controllerClass) {
+                                return this.controllerAt(idx, object, controllerClass);
+                            }
+                        }
+                        return object;
+                    },
+                    arrangedContentDidChange: function () {
+                        this._super();
+                        this._resetSubControllers();
+                    },
+                    arrayContentDidChange: function (idx, removedCnt, addedCnt) {
+                        var subControllers = get(this, '_subControllers'), subControllersToRemove = subControllers.slice(idx, idx + removedCnt);
+                        forEach(subControllersToRemove, function (subController) {
+                            if (subController) {
+                                subController.destroy();
+                            }
+                        });
+                        replace(subControllers, idx, removedCnt, new Array(addedCnt));
+                        this._super(idx, removedCnt, addedCnt);
+                    },
+                    init: function () {
+                        this._super();
+                        if (!this.get('content')) {
+                            Ember.defineProperty(this, 'content', undefined, Ember.A());
+                        }
+                        this.set('_subControllers', Ember.A());
+                    },
+                    controllerAt: function (idx, object, controllerClass) {
+                        var container = get(this, 'container'), subControllers = get(this, '_subControllers'), subController = subControllers[idx];
+                        if (!subController) {
+                            subController = container.lookup('controller:' + controllerClass, { singleton: false });
+                            subControllers[idx] = subController;
+                        }
+                        if (!subController) {
+                            throw new Error('Could not resolve itemController: "' + controllerClass + '"');
+                        }
+                        subController.set('target', this);
+                        subController.set('content', object);
+                        return subController;
+                    },
+                    _subControllers: null,
+                    _resetSubControllers: function () {
+                        var subControllers = get(this, '_subControllers');
+                        forEach(subControllers, function (subController) {
+                            if (subController) {
+                                subController.destroy();
+                            }
+                        });
+                        this.set('_subControllers', Ember.A());
+                    }
+                });
+            }());
+            (function () {
+                Ember.ObjectController = Ember.ObjectProxy.extend(Ember.ControllerMixin);
+            }());
+            (function () {
+            }());
+            (function () {
+            }());
+        }());
     });
     require.define('/lib/functional-helpers.js', function (module, exports, __dirname, __filename) {
         var concat, foldl, map, nub, span;
