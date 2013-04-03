@@ -31,7 +31,7 @@ GEM
       ember_script-source (>= 0.0.2)
       execjs
       tilt
-    ember_script-source (0.0.6)
+    ember_script-source (0.0.7)
     eventmachine (1.0.0)
     execjs (1.4.0)
       multi_json (~> 1.0)
