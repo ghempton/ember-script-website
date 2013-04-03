@@ -1,10 +1,7 @@
 class PostsController extends Ember.ArrayController
 
-  headerDisplay: ~>
-    if @content.length > 0
-      "#{@content.length} Posts"
-    else
-      "No Posts"
+  trimmedPosts: ~>
+    @content?.slice(0, 3)
 
   +observer content.@each
   postsChanged: ->
