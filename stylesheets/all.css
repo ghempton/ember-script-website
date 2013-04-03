@@ -493,11 +493,11 @@ figure.example {
   /* line 88, all.css.sass */
   figure.example .emberscript:after {
     content: "EmberScript";
-    background: #99765f; }
+    background: #df572d; }
   /* line 91, all.css.sass */
   figure.example .javascript:after {
     content: "JavaScript";
-    background: #29cc18; }
+    background: #2260a9; }
   /* line 94, all.css.sass */
   figure.example .javascript:after, figure.example .emberscript:after {
     text-transform: uppercase;

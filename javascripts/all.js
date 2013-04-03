@@ -54067,12 +54067,17 @@ if ( typeof define === "function" && define.amd && define.amd.jQuery ) {
       };
       editor = ace.edit($emberscript[0]);
       editor.getSession().setMode("ace/mode/coffee");
-      editor.session.setUseWorker(false);
+      editor.getSession().setUseWorker(false);
+      editor.getSession().setUseSoftTabs(true);
+      editor.getSession().setTabSize(2);
       editor.getSession().on('change', function() {
         return updateJS();
       });
       output = ace.edit($javascript[0]);
       output.getSession().setMode("ace/mode/javascript");
+      editor.getSession().setUseWorker(false);
+      editor.getSession().setUseSoftTabs(true);
+      editor.getSession().setTabSize(2);
       output.setHighlightActiveLine(false);
       output.setReadOnly(true);
       return updateJS();
